@@ -12,14 +12,27 @@ Single-tenant. One OpenCase instance per firm. Two modes:
 
 ## Service Topology
 
-```text
-Browser → Next.js → FastAPI → PostgreSQL
-                             → Qdrant
-                             → MinIO (S3)
-                             → Ollama
-                             → Redis → Celery + Beat → Tika + Tesseract
-                                                      → celery-tmp (ephemeral)
-                                                      → OneDrive / SharePoint
+```mermaid
+graph LR
+    Browser -->|:3000| NextJS[Next.js]
+    NextJS -->|:8000| FastAPI
+
+    subgraph docker[Docker Network - internal]
+        FastAPI --> PostgreSQL[("PostgreSQL\n:5432")]
+        FastAPI --> Qdrant[("Qdrant\n:6333")]
+        FastAPI --> MinIO[("MinIO S3\n:9000")]
+        FastAPI --> Ollama[("Ollama\n:11434")]
+        FastAPI --> Redis[("Redis\n:6379")]
+        Redis --> Celery[Celery + Beat]
+        Celery --> Tika[Tika + Tesseract]
+        Celery --> TmpVol[(celery-tmp)]
+    end
+
+    Celery -.->|internet mode only| OneDrive[OneDrive / SharePoint]
+
+    style docker fill:#f8f9fa,stroke:#333
+    style Browser fill:#fff,stroke:#333
+    style OneDrive fill:#fff,stroke:#999,stroke-dasharray: 5 5
 ```
 
 ### Services
@@ -40,34 +53,6 @@ Only Next.js can reach it from inside the Docker network.
 
 **LangChain runs inside FastAPI as a library** — not a
 separate service.
-
-## Network Boundary
-
-```text
-┌──────────────────────────────────────────────────────┐
-│ Docker Network (internal)                            │
-│                                                      │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐         │
-│  │ Next.js  │─▶│ FastAPI  │─▶│ PostgreSQL │         │
-│  │ :3000    │  │ :8000    │  │ :5432      │         │
-│  └──────────┘  └────┬─────┘  └────────────┘         │
-│       ▲              │                               │
-│       │              ├───────▶ Qdrant :6333           │
-│       │              ├───────▶ MinIO :9000            │
-│       │              ├───────▶ Ollama :11434          │
-│       │              └───────▶ Redis :6379            │
-│       │                           │                  │
-│       │                      ┌────┴─────┐            │
-│       │                      │ Celery + │            │
-│       │                      │ Beat     │            │
-│       │                      └────┬─────┘            │
-│       │                           │                  │
-│       │                      Tika + Tesseract        │
-│       │                      celery-tmp volume       │
-└───────┼──────────────────────────────────────────────┘
-        │
-   Port 3000 (only exposed port)
-```
 
 Only port **3000** (Next.js) is exposed to the host.
 All other services communicate over the internal Docker
@@ -143,29 +128,18 @@ frontend/
 
 ## Data Flow: Document Ingestion
 
-```text
-Upload / Cloud Poll
-       │
-       ▼
-  SHA-256 hash (dedup check against PostgreSQL)
-       │
-       ▼
-  MinIO S3 (store original file: /{firm}/{matter}/{doc})
-       │
-       ▼
-  Tika + Tesseract (text extraction + OCR)
-       │
-       ▼
-  Chunker (split into passages)
-       │
-       ▼
-  Ollama nomic-embed-text (generate embeddings)
-       │
-       ▼
-  Qdrant (store vectors + permission payload)
-       │
-       ▼
-  PostgreSQL (document metadata + audit log entry)
+```mermaid
+flowchart TD
+    A[Upload / Cloud Poll] --> B[SHA-256 hash]
+    B -->|dedup check| C{Hash exists?}
+    C -->|yes| D[Reject as duplicate]
+    C -->|no| E[Store original in MinIO S3]
+    E --> F[Tika + Tesseract]
+    F -->|text extraction + OCR| G[Chunker]
+    G -->|split into passages| H[Ollama nomic-embed-text]
+    H -->|generate embeddings| I[Store in Qdrant]
+    I -->|vectors + permission payload| J[Record in PostgreSQL]
+    J -->|metadata + audit log entry| K[Done]
 ```
 
 ## Document Storage
@@ -212,32 +186,19 @@ Every vector in Qdrant carries this permission payload:
 
 ## Data Flow: RAG Query
 
-```text
-User question (matter-scoped)
-       │
-       ▼
-  Ollama nomic-embed-text (embed query)
-       │
-       ▼
-  build_qdrant_filter() ← SECURITY CRITICAL
-       │
-       ▼
-  Qdrant search (matter + role + Jencks filtered)
-       │
-       ▼
-  LangChain prompt (question + retrieved chunks)
-       │
-       ▼
-  Ollama LLM (Llama 3 / Mistral)
-       │
-       ▼
-  Citation assembly (doc name, Bates #, page, chunk)
-       │
-       ▼
-  Audit log entry (query + response + sources)
-       │
-       ▼
-  Response to user (citations + AI disclaimer)
+```mermaid
+flowchart TD
+    A[User question - matter-scoped] --> B[Ollama nomic-embed-text]
+    B -->|embed query| C[build_qdrant_filter]
+    C -->|SECURITY CRITICAL| D[Qdrant search]
+    D -->|matter + role + Jencks filtered| E[LangChain prompt]
+    E -->|question + retrieved chunks| F[Ollama LLM]
+    F -->|Llama 3 / Mistral| G[Citation assembly]
+    G -->|doc name, Bates #, page, chunk| H[Audit log entry]
+    H -->|query + response + sources| I[Response to user]
+    I -->|citations + AI disclaimer| J[Done]
+
+    style C fill:#ff6b6b,color:#fff
 ```
 
 ## Permission Model
