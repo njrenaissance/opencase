@@ -5,7 +5,7 @@
 | ID | Feature | Status |
 | --- | --- | --- |
 | 0.1 | FastAPI skeleton (health endpoint, package structure) | Done |
-| 0.2 | AppConfiguration (JSON + env via python-dotenv) | Pending |
+| 0.2 | AppConfiguration (JSON + env via pydantic-settings) | Done |
 | 0.3 | Logging (Python logging, level from AppConfiguration) | Pending |
 | 0.4 | Observability (OpenTelemetry traces/spans, metrics) | Pending |
 | 0.5 | Backend Dockerfile (run app for integration testing) | Pending |

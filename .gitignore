@@ -15,10 +15,12 @@ node_modules/
 .next/
 out/
 
-# Environment
+# Environment / config
 .env
 .env.local
 .env.*.local
+/config.json
+backend/config.json
 
 # IDE
 .vscode/
