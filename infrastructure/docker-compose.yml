@@ -22,7 +22,7 @@ services:
   fastapi:
     build:
       context: ../backend
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     expose:
       - "8000"
     environment:

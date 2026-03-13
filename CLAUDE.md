@@ -75,6 +75,8 @@ not a separate service.
 | Document parsing | Apache Tika + Tesseract OCR |
 | Cloud ingestion | Microsoft Graph API (OneDrive + SharePoint) |
 | Deployment | Docker Compose |
+| Container base | Debian slim (`python:3.12-slim`, `node:22-slim`) |
+| Container pattern | Two-stage builds (builder + runtime), non-root user |
 | Testing (BDD) | pytest-bdd, Gherkin `.feature` files |
 
 ---
