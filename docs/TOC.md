@@ -8,6 +8,11 @@
   network topology, module structure, data flows,
   permission model, security invariants
 
+### Planning
+
+- [Feature Roadmap](FEATURES.md) — Prioritized feature
+  list with spec and implementation status
+
 ### Specifications
 
 *Coming soon — feature specifications and Gherkin

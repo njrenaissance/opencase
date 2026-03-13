@@ -1,0 +1,206 @@
+services:
+
+  # --- UI & Proxy -------------------------------------------
+  nextjs:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000/api
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=http://localhost:3000
+      - FASTAPI_UPSTREAM=http://fastapi:8000
+    depends_on:
+      - fastapi
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- API Layer --------------------------------------------
+  fastapi:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=opencase
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_LLM_MODEL=${OLLAMA_LLM_MODEL:-llama3:8b}
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-opencase}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-changeme}
+      - MINIO_BUCKET=opencase
+      - MINIO_USE_SSL=false
+      - FASTAPI_SECRET_KEY=${FASTAPI_SECRET_KEY}
+      - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- Document Object Storage ------------------------------
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    expose:
+      - "9000"
+      - "9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-opencase}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-changeme}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- Local LLM + Embeddings ------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    expose:
+      - "11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - opencase
+    restart: unless-stopped
+    # GPU support: uncomment below for NVIDIA GPU acceleration
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # --- Relational Database ----------------------------------
+  postgres:
+    image: postgres:16-alpine
+    expose:
+      - "5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-opencase}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+      - POSTGRES_DB=${POSTGRES_DB:-opencase}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opencase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- Vector Store -----------------------------------------
+  qdrant:
+    image: qdrant/qdrant:latest
+    expose:
+      - "6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- Task Queue Broker ------------------------------------
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  # --- Background Workers -----------------------------------
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers worker -l info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-opencase}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-changeme}
+      - MINIO_BUCKET=opencase
+      - MINIO_USE_SSL=false
+      - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
+      # Cloud ingestion (internet mode only)
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+    volumes:
+      - celery-tmp:/tmp/celery
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - opencase
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers beat -l info
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - opencase
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  qdrant-data:
+  redis-data:
+  ollama-models:
+  minio-data:
+  celery-tmp:
+
+networks:
+  opencase:
+    driver: bridge
