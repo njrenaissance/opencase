@@ -38,9 +38,10 @@
 | 2.3 | Celery worker container + Dockerfile | Pending | Pending |
 | 2.4 | Celery Beat scheduler container | Pending | Pending |
 | 2.5 | API integration (Celery client, task.delay() submission) | Pending | Pending |
-| 2.6 | Observability (Flower container + OTel Celery instrumentation) | Pending | Pending |
-| 2.7 | Task result persistence (separate Postgres instance, task lifecycle table for audit) | Pending | Pending |
-| 2.8 | Configuration + env vars (CelerySettings, RedisSettings, FlowerSettings) | Pending | Pending |
+| 2.6 | Task status API endpoint (read-only — query task progress/result by task ID for API-triggered tasks) | Pending | Pending |
+| 2.7 | Observability (Flower container + OTel Celery instrumentation) | Pending | Pending |
+| 2.8 | Task result persistence (separate Postgres instance, task lifecycle table for audit) | Pending | Pending |
+| 2.9 | Configuration + env vars (CelerySettings, RedisSettings, FlowerSettings) | Pending | Pending |
 
 ## Feature 3 — S3 Storage
 
@@ -75,66 +76,99 @@
 
 | ID | Feature | Specs | Code |
 | --- | --- | --- | --- |
-| 6.1 | Manual upload (async via Celery, SHA-256 dedup, legal hold) | Pending | Pending |
-| 6.2 | Cloud ingestion (OneDrive/SharePoint via Graph API) | Pending | Pending |
-| 6.3 | Configuration + env vars (IngestionSettings) | Pending | Pending |
-| 6.4 | Observability (ingestion spans/metrics) | Pending | Pending |
+| 6.1 | DB models + migration (documents table — metadata, SHA-256 hash, matter association, MinIO path, ingestion status; seed global knowledge matter) | Pending | Pending |
+| 6.2 | Global knowledge matter (well-known system matter_id for CPL, case law, court rules — accessible to all users) | Pending | Pending |
+| 6.3 | Manual upload Celery task (SHA-256 dedup, legal hold, store to MinIO, trigger extraction) | Pending | Pending |
+| 6.4 | Manual upload API endpoint (receive file, call task.delay()) | Pending | Pending |
+| 6.5 | Bulk upload API endpoint (multi-file, fan-out to individual tasks) | Pending | Pending |
+| 6.6 | Document listing/status API endpoint (read-only — query documents by matter, ingestion status, metadata) | Pending | Pending |
+| 6.7 | Cloud ingestion Celery task (OneDrive/SharePoint via Graph API) | Pending | Pending |
+| 6.8 | Cloud ingestion Beat schedule (15-min polling interval) | Pending | Pending |
+| 6.9 | Configuration + env vars (IngestionSettings) | Pending | Pending |
+| 6.10 | Observability (ingestion spans/metrics) | Pending | Pending |
 
-## Feature 7 — Chatbot / Q&A
-
-| ID | Feature | Specs | Code |
-| --- | --- | --- | --- |
-| 7.1 | Matter-scoped RAG query | Pending | Pending |
-| 7.2 | Citation assembly | Pending | Pending |
-| 7.3 | AI disclaimer | Pending | Pending |
-| 7.4 | Conversation history | Pending | Pending |
-| 7.5 | Audit logging of queries | Pending | Pending |
-
-## Feature 8 — Brady/Giglio Tracker
+## Feature 7 — Audit Logging
 
 | ID | Feature | Specs | Code |
 | --- | --- | --- | --- |
-| 8.1 | CPL 245 disclosure clocks | Pending | Pending |
-| 8.2 | CPL 30.30 speedy trial clock | Pending | Pending |
-| 8.3 | Demand/response log | Pending | Pending |
-| 8.4 | Brady/Giglio classification | Pending | Pending |
-| 8.5 | Deadline alerts | Pending | Pending |
+| 7.1 | DB models + migration (audit_log table — hash-chained entries) | Pending | Pending |
+| 7.2 | Hash-chained log | Pending | Pending |
+| 7.3 | Nightly chain validation | Pending | Pending |
+| 7.4 | Audit log API endpoints (read-only — query, filter by event type/date/user/matter, export as PDF/CSV) | Pending | Pending |
+| 7.5 | Configuration + env vars (AuditSettings — retention period, chain validation schedule, export formats) | Pending | Pending |
 
-## Feature 9 — Document Viewer & Review
-
-| ID | Feature | Specs | Code |
-| --- | --- | --- | --- |
-| 9.1 | Document retrieval from S3 | Pending | Pending |
-| 9.2 | Hit highlighting | Pending | Pending |
-| 9.3 | Batch tagging | Pending | Pending |
-| 9.4 | Notes/annotations | Pending | Pending |
-| 9.5 | Bates number display | Pending | Pending |
-
-## Feature 10 — Witness Index
+## Feature 8 — RBAC & MFA
 
 | ID | Feature | Specs | Code |
 | --- | --- | --- | --- |
-| 10.1 | Entity extraction | Pending | Pending |
-| 10.2 | Giglio flagging | Pending | Pending |
-| 10.3 | Jencks material gating | Pending | Pending |
-| 10.4 | Witness-document linking | Pending | Pending |
+| 8.1 | DB models + migration (roles, user-role mapping, matter-user assignments, permissions) | Pending | Pending |
+| 8.2 | Auth API endpoints (login, logout, refresh, MFA setup/verify) | Pending | Pending |
+| 8.3 | JWT authentication | Pending | Pending |
+| 8.4 | MFA (TOTP) | Pending | Pending |
+| 8.5 | User management API endpoints (CRUD users, assign roles) | Pending | Pending |
+| 8.6 | Four roles (Admin, Attorney, Paralegal, Investigator) | Pending | Pending |
+| 8.7 | Matter assignment API endpoints (assign/revoke user-matter access) | Pending | Pending |
+| 8.8 | Work product visibility | Pending | Pending |
+| 8.9 | Session management (httpOnly cookies) | Pending | Pending |
+| 8.10 | Auth audit trail (role changes, permission grants, matter assignment changes → audit log) | Pending | Pending |
+| 8.11 | Observability (login/logout, failed attempts, MFA challenges, session metrics) | Pending | Pending |
+| 8.12 | Configuration + env vars (AuthSettings — token expiry, refresh TTL, MFA window, lockout policy) | Pending | Pending |
 
-## Feature 11 — RBAC & MFA
-
-| ID | Feature | Specs | Code |
-| --- | --- | --- | --- |
-| 11.1 | JWT authentication | Pending | Pending |
-| 11.2 | MFA (TOTP) | Pending | Pending |
-| 11.3 | Four roles (Admin, Attorney, Paralegal, Investigator) | Pending | Pending |
-| 11.4 | Matter assignment | Pending | Pending |
-| 11.5 | Work product visibility | Pending | Pending |
-| 11.6 | Session management (httpOnly cookies) | Pending | Pending |
-
-## Feature 12 — Audit Logging
+## Feature 9 — Chatbot / Q&A
 
 | ID | Feature | Specs | Code |
 | --- | --- | --- | --- |
-| 12.1 | Hash-chained log | Pending | Pending |
-| 12.2 | Nightly chain validation | Pending | Pending |
-| 12.3 | PDF/CSV export | Pending | Pending |
-| 12.4 | Event type filtering | Pending | Pending |
+| 9.1 | DB models + migration (chat_queries, conversation_history, feedback tables) | Pending | Pending |
+| 9.2 | LLM inference model setup (Ollama model pull — Llama 3 8B / Mistral 7B, health check) | Pending | Pending |
+| 9.3 | Matter-scoped RAG query API endpoint (LangChain + Qdrant retrieval + Ollama inference, wired up via FastAPI) | Pending | Pending |
+| 9.4 | Minimal chat interface (CLI command or lightweight web UI for testing/demo) | Pending | Pending |
+| 9.5 | Citation assembly | Pending | Pending |
+| 9.6 | AI disclaimer | Pending | Pending |
+| 9.7 | Conversation history | Pending | Pending |
+| 9.8 | Audit logging of queries (metadata + reference ID → audit log, full query/response → chat_queries table) | Pending | Pending |
+| 9.9 | User feedback API endpoints (submit: thumbs up/down, flag bad citations; query: filter by matter/date for analysis) | Pending | Pending |
+| 9.10 | Configuration + env vars (ChatbotSettings — system prompt, model selection, temperature, max tokens, chunk retrieval count) | Pending | Pending |
+| 9.11 | Observability (RAG query times, LLM response times, failed queries) | Pending | Pending |
+
+## Feature 10 — Brady/Giglio Tracker
+
+| ID | Feature | Specs | Code |
+| --- | --- | --- | --- |
+| 10.1 | DB models + migration (disclosure_checklist, cpl_3030_events, motions, coc_tracking tables) | Pending | Pending |
+| 10.2 | Tracker API endpoints (read-only — clocks, checklist, CoC status, motions, 30.30 events) | Pending | Pending |
+| 10.3 | CPL 245 disclosure clocks | Pending | Pending |
+| 10.4 | CPL 245.20(1) disclosure checklist (category tracking — what's received, what's outstanding) | Pending | Pending |
+| 10.5 | Certificate of Compliance tracking (prosecution certification, defense challenges) | Pending | Pending |
+| 10.6 | CPL 30.30 speedy trial clock (chargeable time, tolling events) | Pending | Pending |
+| 10.7 | CPL 30.30 event ledger (dedicated table — every clock-affecting event with source document, chargeable party, running total) | Pending | Pending |
+| 10.8 | Motion tracking (filed motions that affect clock tolling) | Pending | Pending |
+| 10.9 | Brady/Giglio classification (AI-driven, updates disclosure checklist) | Pending | Pending |
+| 10.10 | Deadline alerts (Celery Beat, approaching deadlines and overdue items) | Pending | Pending |
+| 10.11 | Export API (CSV/JSON — disclosure checklist, clock status, classifications for case management import) | Pending | Pending |
+| 10.12 | Configuration + env vars (TrackerSettings) | Pending | Pending |
+| 10.13 | Observability (tracker spans/metrics) | Pending | Pending |
+
+## Feature 11 — Witness Index
+
+| ID | Feature | Specs | Code |
+| --- | --- | --- | --- |
+| 11.1 | DB models + migration (witnesses, witness-document links, testimony status, aliases) | Pending | Pending |
+| 11.2 | Witness API endpoints (read-only — list witnesses, view linked documents, testimony status) | Pending | Pending |
+| 11.3 | Entity extraction Celery task (AI-driven name extraction from ingested documents) | Pending | Pending |
+| 11.4 | Witness deduplication (resolve name variants — "Officer J. Smith" / "Det. Smith") | Pending | Pending |
+| 11.5 | Witness-document linking | Pending | Pending |
+| 11.6 | Giglio flagging (mark witnesses with impeachment material) | Pending | Pending |
+| 11.7 | Jencks material gating (filter prior statements until has_testified = true) | Pending | Pending |
+| 11.8 | Configuration + env vars (WitnessIndexSettings) | Pending | Pending |
+| 11.9 | Observability (entity extraction spans/metrics) | Pending | Pending |
+
+## Feature 12 — Legal Hold
+
+| ID | Feature | Specs | Code |
+| --- | --- | --- | --- |
+| 12.1 | Hold model (matter-level and document-level holds in PostgreSQL) | Pending | Pending |
+| 12.2 | Hold API (create, release, query hold status) | Pending | Pending |
+| 12.3 | Enforcement hooks (block delete/modify on held documents in S3 and DB) | Pending | Pending |
+| 12.4 | Hold audit trail (all hold/release actions logged to audit chain) | Pending | Pending |
+| 12.5 | Configuration + env vars (HoldSettings) | Pending | Pending |
+| 12.6 | Observability (hold enforcement spans/metrics) | Pending | Pending |
