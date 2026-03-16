@@ -12,13 +12,20 @@ Columns:
         role. Investigators can never receive True. Only Admin can grant it.
 """
 
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.matter import Matter
+    from app.db.models.user import User
 
 
 class MatterAccess(Base):
@@ -37,5 +44,5 @@ class MatterAccess(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    user: Mapped["User"] = relationship(back_populates="matter_access")  # noqa: F821
-    matter: Mapped["Matter"] = relationship(back_populates="access_grants")  # noqa: F821
+    user: Mapped[User] = relationship(back_populates="matter_access")
+    matter: Mapped[Matter] = relationship(back_populates="access_grants")

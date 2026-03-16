@@ -1,8 +1,11 @@
 """User model — one row per firm employee/user."""
 
+from __future__ import annotations
+
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -17,6 +20,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.firm import Firm
+    from app.db.models.matter_access import MatterAccess
 
 
 class Role(enum.StrEnum):
@@ -70,8 +77,8 @@ class User(Base):
         nullable=False,
     )
 
-    firm: Mapped["Firm"] = relationship(back_populates="users")  # noqa: F821
-    matter_access: Mapped[list["MatterAccess"]] = relationship(  # noqa: F821
+    firm: Mapped[Firm] = relationship(back_populates="users")
+    matter_access: Mapped[list[MatterAccess]] = relationship(
         back_populates="user", passive_deletes=True
     )
 

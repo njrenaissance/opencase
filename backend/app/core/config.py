@@ -89,8 +89,8 @@ class Settings(BaseSettings):
     deployment_mode: str = "airgapped"
     otel: OtelSettings = OtelSettings()
     api: ApiSettings = ApiSettings()
-    auth: AuthSettings = AuthSettings()
-    db: DbSettings = DbSettings()
+    auth: AuthSettings = AuthSettings()  # type: ignore[call-arg]
+    db: DbSettings = DbSettings()  # type: ignore[call-arg]
 
     model_config = SettingsConfigDict(
         env_prefix="OPENCASE_",
