@@ -9,7 +9,7 @@
 | 0.3 | Logging (Python logging, level from AppConfiguration) | Done |
 | 0.4 | Observability (OpenTelemetry traces/spans, metrics) | Done |
 | 0.5 | Backend Dockerfile (run app for integration testing) | Done |
-| 0.6 | `.env.example` | Pending |
+| 0.6 | `.env.example` | Done |
 | 0.7a | CI: `format-lint.yml` (ruff) | Pending |
 | 0.7b | CI: `unit-tests.yml` (pytest @unit) | Pending |
 | 0.7c | CI: `integration-tests.yml` (pytest @integration) | Pending |

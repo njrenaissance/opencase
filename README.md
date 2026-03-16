@@ -61,6 +61,21 @@ full details.
 | Minimum | 32 GB | 8 cores | 500 GB | None (CPU-only) |
 | Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
 
+## Quick Start
+
+1. Copy the example environment file and edit secrets:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env — replace every CHANGE_ME value
+   ```
+
+2. Start all services:
+
+   ```bash
+   docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
+   ```
+
 ## Privacy & Security
 
 - All data stays on your infrastructure — no exceptions
