@@ -21,7 +21,7 @@
 
 | ID | Feature | Specs | Code | Docs |
 | --- | --- | --- | --- | --- |
-| 1.1 | Configuration + env vars (AuthSettings, DbSettings) | Done | Done | Pending |
+| 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Pending |
 | 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Pending |
 | 1.3 | Observability (auth spans/metrics, DB tracing) | Pending | Pending | Pending |
 | 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Pending | Pending | Pending |

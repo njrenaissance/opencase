@@ -72,7 +72,7 @@ class User(Base):
 
     firm: Mapped["Firm"] = relationship(back_populates="users")  # noqa: F821
     matter_access: Mapped[list["MatterAccess"]] = relationship(  # noqa: F821
-        back_populates="user"
+        back_populates="user", passive_deletes=True
     )
 
     # Unique email per firm — same email can exist across different firms

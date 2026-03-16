@@ -30,7 +30,14 @@ services:
       dockerfile: docker/Dockerfile
     expose:
       - "8000"
+    # Host port mapping for local development and integration tests.
+    # In production, remove this — FastAPI is never exposed on a public port;
+    # all external traffic routes through Next.js.
+    ports:
+      - "8000:8000"
     environment:
+      - OPENCASE_API_HOST=${OPENCASE_API_HOST:-0.0.0.0}
+      - OPENCASE_API_PORT=${OPENCASE_API_PORT:-8000}
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
       - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}

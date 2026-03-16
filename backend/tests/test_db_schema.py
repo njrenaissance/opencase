@@ -11,6 +11,7 @@ import uuid
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -20,7 +21,9 @@ from app.db.models import Firm, Matter, MatterAccess, User
 from app.db.models.matter import MatterStatus
 from app.db.models.user import Role
 
-pytestmark = pytest.mark.integration
+# All tests share the session-scoped async engine fixture, so they must run
+# in the same event loop — loop_scope="session" ensures that.
+pytestmark = [pytest.mark.integration, pytest.mark.asyncio(loop_scope="session")]
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +33,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest_asyncio.fixture(scope="session")
-async def engine():
+async def engine(postgres_service):  # noqa: ARG001 — ensures pytest-docker starts postgres first
     engine = create_async_engine(settings.db.url, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -159,8 +162,9 @@ async def test_user_cascade_delete_with_firm(session):
     await session.delete(firm)
     await session.flush()
 
-    result = await session.get(User, user.id)
-    assert result is None  # cascaded
+    # Use select() to bypass the identity map and confirm the DB row is gone
+    row = await session.execute(select(User).where(User.id == user.id))
+    assert row.scalar_one_or_none() is None  # cascaded by DB-level ON DELETE CASCADE
 
 
 # ---------------------------------------------------------------------------

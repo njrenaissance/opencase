@@ -18,5 +18,11 @@ class Firm(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    users: Mapped[list["User"]] = relationship(back_populates="firm")  # noqa: F821
-    matters: Mapped[list["Matter"]] = relationship(back_populates="firm")  # noqa: F821
+    # passive_deletes=True: DB-level CASCADE handles child deletion; ORM does not
+    # attempt to nullify FKs before the DELETE is issued.
+    users: Mapped[list["User"]] = relationship(  # noqa: F821
+        back_populates="firm", passive_deletes=True
+    )
+    matters: Mapped[list["Matter"]] = relationship(  # noqa: F821
+        back_populates="firm", passive_deletes=True
+    )

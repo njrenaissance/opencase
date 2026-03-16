@@ -13,7 +13,7 @@ import pytest
 from dotenv import dotenv_values
 from pydantic import ValidationError
 
-from app.core.config import AuthSettings, DbSettings, Settings
+from app.core.config import ApiSettings, AuthSettings, DbSettings, Settings
 
 # Read required test values from .env.test — single source of truth.
 _ENV_TEST = dotenv_values(Path(__file__).parent.parent / ".env.test")
@@ -25,6 +25,10 @@ DEFAULTS = {
     "log_level": "INFO",
     "log_output": "stdout",
     "deployment_mode": "airgapped",
+    "api": {
+        "host": "0.0.0.0",
+        "port": 8000,
+    },
     "otel": {
         "enabled": False,
         "exporter": "console",
@@ -120,6 +124,23 @@ def test_missing_json_is_ignored(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     cfg = Settings()
     assert cfg.model_dump() == DEFAULTS
+
+
+# ---------------------------------------------------------------------------
+# ApiSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_api_defaults():
+    cfg = ApiSettings()
+    assert cfg.host == "0.0.0.0"
+    assert cfg.port == 8000
+
+
+def test_api_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_API_PORT", "9000")
+    cfg = ApiSettings()
+    assert cfg.port == 9000
 
 
 # ---------------------------------------------------------------------------
