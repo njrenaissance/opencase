@@ -10,11 +10,11 @@
 | 0.4 | Observability (OpenTelemetry traces/spans, metrics) | Done |
 | 0.5 | Backend Dockerfile (run app for integration testing) | Done |
 | 0.6 | `.env.example` | Done |
-| 0.7a | CI: `format-lint.yml` (ruff) | Pending |
-| 0.7b | CI: `unit-tests.yml` (pytest @unit) | Pending |
-| 0.7c | CI: `integration-tests.yml` (pytest @integration) | Pending |
-| 0.7d | CI: `ai-code-review.yml` (same as Signatrust_v4) | Pending |
-| 0.7e | CI: `build-container.yml` (on spec/code change) | Pending |
+| 0.7a | CI: `format-lint.yml` (ruff) | Done |
+| 0.7b | CI: `unit-tests.yml` (pytest @unit) | Done |
+| 0.7c | CI: `integration-tests.yml` (pytest @integration) | Deferred |
+| 0.7d | CI: `ai-code-review.yml` (same as Signatrust_v4) | Done |
+| 0.7e | CI: `build-container.yml` (on spec/code change) | Done |
 
 ## Feature 1 — API
 

@@ -1,0 +1,74 @@
+name: Unit Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit Tests & Coverage
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('backend/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run unit tests with coverage
+        run: |
+          uv run pytest -m "not integration" \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=json:coverage.json \
+            -v
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: backend/coverage.json
+          retention-days: 30
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          echo "## Unit Test Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f coverage.json ]; then
+            uv run python -c "
+          import json
+          with open('coverage.json') as f:
+              data = json.load(f)
+          totals = data.get('totals', {})
+          pct = totals.get('percent_covered_display', 'N/A')
+          print('| Metric | Value |')
+          print('|--------|-------|')
+          print(f'| Line coverage | {pct}% |')
+          print(f'| Lines covered | {totals.get(\"covered_lines\", \"N/A\")} |')
+          print(f'| Lines missing | {totals.get(\"missing_lines\", \"N/A\")} |')
+          " >> "$GITHUB_STEP_SUMMARY"
+          fi

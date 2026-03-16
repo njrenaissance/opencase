@@ -100,6 +100,28 @@ full details.
 - New York State (CPL Article 245, CPL 30.30)
 - Federal (FRCP Rule 16, Brady, Giglio, Jencks Act)
 
+## CI
+
+Workflows live in `.github/workflows/` at the repo root
+(GitHub Actions only reads from this path). CI currently
+covers only the `backend/` service — all jobs are scoped
+via `working-directory` and path filters.
+
+Pull requests run the full pipeline via GitHub Actions:
+lint → unit tests → container build.
+
+AI code review runs separately on PR open.
+
+### Required GitHub Secrets
+
+| Secret | Workflow | Purpose |
+| --- | --- | --- |
+| `GH_PAT` | `ai-code-review.yml` | Clone `SignaTrustDev/pr-review-agent` |
+| `ANTHROPIC_API_KEY` | `ai-code-review.yml` | Anthropic API for review |
+
+`GITHUB_TOKEN` is provided automatically by GitHub
+Actions and requires no configuration.
+
 ## Status
 
 Early development. Not yet suitable for production use.
