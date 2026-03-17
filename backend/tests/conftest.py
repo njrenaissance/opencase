@@ -73,6 +73,13 @@ def _api_ready(url: str) -> bool:
         return False
 
 
+def _jaeger_ready(host: str, port: int) -> bool:
+    try:
+        return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
 def _pg_ready(host: str, port: int) -> bool:
     import socket
 
@@ -96,6 +103,17 @@ def postgres_service(docker_ip, docker_services):
         check=lambda: _pg_ready(docker_ip, 5432),
     )
     return docker_ip, 5432
+
+
+@pytest.fixture(scope="session")
+def jaeger_service(docker_ip, docker_services):
+    """Wait for Jaeger to be ready and return the query API base URL."""
+    docker_services.wait_until_responsive(
+        timeout=60.0,
+        pause=0.5,
+        check=lambda: _jaeger_ready(docker_ip, 16686),
+    )
+    return f"http://{docker_ip}:16686"
 
 
 @pytest.fixture(scope="session")

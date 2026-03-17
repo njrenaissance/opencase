@@ -52,6 +52,7 @@ from opentelemetry import metrics, trace
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
     ConsoleMetricExporter,
+    MetricExporter,
     PeriodicExportingMetricReader,
 )
 from opentelemetry.sdk.resources import Resource
@@ -59,6 +60,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     ConsoleSpanExporter,
     SimpleSpanProcessor,
+    SpanExporter,
 )
 from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
@@ -73,6 +75,50 @@ _tracer_provider: TracerProvider | None = None
 
 # Global meter for creating metrics instruments across the application.
 meter = metrics.get_meter("opencase")
+
+_METRIC_EXPORT_INTERVAL_MS = 60000
+
+
+def _create_span_exporter(settings: Settings) -> SpanExporter:
+    """Factory: return the configured span exporter.
+
+    Lazy-imports backend-specific packages so the console path never
+    requires the OTLP package to be installed.
+    """
+    if settings.otel.exporter == "otlp":
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+            OTLPSpanExporter,
+        )
+
+        endpoint = f"{settings.otel.endpoint}/v1/traces"
+        logger.debug("Span exporter: otlp → %s", endpoint)
+        return OTLPSpanExporter(endpoint=endpoint)
+
+    # Default: console
+    logger.debug("Span exporter: console")
+    return ConsoleSpanExporter()
+
+
+def _create_metric_exporter(settings: Settings) -> MetricExporter:
+    """Factory: return the configured metric exporter.
+
+    Note: Jaeger does not implement the OTLP metrics endpoint (/v1/metrics).
+    When exporter=otlp, OTLPMetricExporter will receive 404 responses and log
+    a warning on each export cycle — the application continues normally.
+    A future OTel Collector sidecar will replace Jaeger as the metrics sink.
+    """
+    if settings.otel.exporter == "otlp":
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+            OTLPMetricExporter,
+        )
+
+        endpoint = f"{settings.otel.endpoint}/v1/metrics"
+        logger.debug("Metric exporter: otlp → %s", endpoint)
+        return OTLPMetricExporter(endpoint=endpoint)
+
+    # Default: console
+    logger.debug("Metric exporter: console")
+    return ConsoleMetricExporter()
 
 
 def setup_telemetry(settings: Settings) -> TracerProvider | None:
@@ -105,32 +151,22 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
     # Tracing
     sampler = TraceIdRatioBased(settings.otel.sample_rate)
     provider = TracerProvider(resource=resource, sampler=sampler)
-    logger.debug(
-        "TracerProvider created: sample_rate=%s",
-        settings.otel.sample_rate,
-    )
-
-    if settings.otel.exporter == "console":
-        provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
-        logger.debug("Span exporter wired: console")
-
+    logger.debug("TracerProvider created: sample_rate=%s", settings.otel.sample_rate)
+    provider.add_span_processor(SimpleSpanProcessor(_create_span_exporter(settings)))
     trace.set_tracer_provider(provider)
     _tracer_provider = provider
 
     # Metrics
-    if settings.otel.exporter == "console":
-        interval_ms = 60000
-        metric_reader = PeriodicExportingMetricReader(
-            ConsoleMetricExporter(),
-            export_interval_millis=interval_ms,
-        )
-        meter_provider = MeterProvider(
-            resource=resource, metric_readers=[metric_reader]
-        )
-        metrics.set_meter_provider(meter_provider)
-        logger.debug(
-            "Metric exporter wired: console (interval=%ds)", interval_ms // 1000
-        )
+    metric_reader = PeriodicExportingMetricReader(
+        _create_metric_exporter(settings),
+        export_interval_millis=_METRIC_EXPORT_INTERVAL_MS,
+    )
+    meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+    metrics.set_meter_provider(meter_provider)
+    logger.debug(
+        "MeterProvider created: interval=%ds",
+        _METRIC_EXPORT_INTERVAL_MS // 1000,
+    )
 
     logger.info(
         "OpenTelemetry enabled: exporter=%s, service=%s",

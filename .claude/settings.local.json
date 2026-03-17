@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv pip:*)",
+      "Bash(uv run:*)",
+      "Bash(git commit:*)",
+      "Bash(docker build:*)",
+      "Bash(find /c/Users/jon_m/github/opencase/docs -type f -name *.md)",
+      "Bash(find /c/Users/jon_m/github/opencase -name *.json -path */docs/* -o -name *openapi*)",
+      "Bash(find /c/Users/jon_m/github/opencase/backend/tests -name *.feature)",
+      "Read(//c/Users/jon_m/github/Signatrust_v4/**)",
+      "Read(//c/Users/jon_m/github/Signatrust_v4/integration/**)",
+      "Bash(find /c/Users/jon_m/github/opencase/backend -type f -name *.py ! -path */.venv/* ! -path */.pytest_cache/*)",
+      "Bash(find /c/Users/jon_m/github/Signatrust_v4/lib -type f -name *.ts)",
+      "Bash(find /c/Users/jon_m/github/Signatrust_v4/.github/workflows/ -type f -name *.yml)",
+      "Bash(npx markdownlint-cli:*)",
+      "Bash(OPENCASE_AUTH_SECRET_KEY=\"test-secret\" OPENCASE_DB_URL=\"postgresql+asyncpg://u:p@localhost/db\" python -m pytest tests/ -x -q)",
+      "Bash(OPENCASE_AUTH_SECRET_KEY=\"test-secret\" OPENCASE_DB_URL=\"postgresql+asyncpg://u:p@localhost/db\" uv run pytest tests/ -x -q)",
+      "Bash(OPENCASE_AUTH_SECRET_KEY=\"test-secret-key-for-automated-testing-only\" OPENCASE_DB_URL=\"postgresql+asyncpg://opencase:FynbWI4dix30YGjioiY8kwg4962U3pwOMMpdUpipW6c=@localhost:5432/opencase_test\" uv run alembic upgrade head)",
+      "Bash(docker compose:*)",
+      "Bash(docker network:*)",
+      "Bash(python3 -c \"import sys,json; nets=json.load\\(sys.stdin\\); print\\(list\\(nets.keys\\(\\)\\)\\)\")",
+      "Bash(docker inspect:*)",
+      "Bash(docker run:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker rm:*)",
+      "Bash(OPENCASE_AUTH_SECRET_KEY=\"test-secret-key-for-automated-testing-only\" OPENCASE_DB_URL=\"postgresql+asyncpg://opencase:FynbWI4dix30YGjioiY8kwg4962U3pwOMMpdUpipW6c=@localhost:5432/opencase\" uv run alembic current)",
+      "Bash(OPENCASE_AUTH_SECRET_KEY=\"test-secret-key-for-automated-testing-only\" OPENCASE_DB_URL=\"postgresql+asyncpg://opencase:FynbWI4dix30YGjioiY8kwg4962U3pwOMMpdUpipW6c=@localhost:5432/opencase_test\" uv run alembic current)",
+      "Bash(python -m pytest -m integration --timeout=120 -v)",
+      "Bash(uv python:*)",
+      "Bash(env)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/ready)"
+    ]
+  }
+}
