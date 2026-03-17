@@ -18,8 +18,8 @@
 
 | ID | Feature | Specs | Code | Docs |
 | --- | --- | --- | --- | --- |
-| 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Pending |
-| 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Pending |
+| 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Done |
+| 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Done |
 | 1.3 | Observability (auth spans/metrics, DB tracing) | Done | Done | Done |
 | 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Pending | Pending | Pending |
 | 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Pending | Pending | Pending |
