@@ -22,7 +22,6 @@ Top-level application settings.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `OPENCASE_APP_NAME` | `OpenCase` | Application display name |
-| `OPENCASE_APP_VERSION` | *(package metadata)* | Read from installed package version |
 | `OPENCASE_DEBUG` | `false` | Enable FastAPI debug mode |
 | `OPENCASE_LOG_LEVEL` | `INFO` | Log verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `OPENCASE_LOG_OUTPUT` | `stdout` | Log stream: `stdout` or `stderr` |
@@ -64,6 +63,8 @@ PostgreSQL connection and connection-pool settings.
 | `OPENCASE_DB_ECHO` | `false` | Log all SQL statements — set `true` only for debugging |
 
 `OPENCASE_DB_URL` is required — the application will not start without it.
+In Docker Compose this value is assembled automatically from `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, and `POSTGRES_DB`; you do not set it directly in `.env`.
 
 ---
 
