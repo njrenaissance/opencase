@@ -1,10 +1,9 @@
 from fastapi import FastAPI
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from app.api.health import router as health_router
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.core.telemetry import setup_telemetry
+from app.core.telemetry import configure_instrumentation, setup_telemetry
 
 setup_logging(settings.log_level, settings.log_output)
 setup_telemetry(settings)
@@ -18,5 +17,4 @@ app = FastAPI(
 
 app.include_router(health_router)
 
-if settings.otel.enabled:
-    FastAPIInstrumentor.instrument_app(app)
+configure_instrumentation(app, settings)

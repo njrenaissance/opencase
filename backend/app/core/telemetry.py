@@ -46,8 +46,12 @@ Use the module-level ``meter`` to create counters, histograms, etc.::
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from opentelemetry import metrics, trace
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import (
     ConsoleMetricExporter,
@@ -92,13 +96,23 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
             "service.version": settings.app_version,
         }
     )
+    logger.debug(
+        "OTel resource created: service=%s version=%s",
+        settings.otel.service_name,
+        settings.app_version,
+    )
 
     # Tracing
     sampler = TraceIdRatioBased(settings.otel.sample_rate)
     provider = TracerProvider(resource=resource, sampler=sampler)
+    logger.debug(
+        "TracerProvider created: sample_rate=%s",
+        settings.otel.sample_rate,
+    )
 
     if settings.otel.exporter == "console":
         provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
+        logger.debug("Span exporter wired: console")
 
     trace.set_tracer_provider(provider)
     _tracer_provider = provider
@@ -113,6 +127,7 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
             resource=resource, metric_readers=[metric_reader]
         )
         metrics.set_meter_provider(meter_provider)
+        logger.debug("Metric exporter wired: console (interval=60s)")
 
     logger.info(
         "OpenTelemetry enabled: exporter=%s, service=%s",
@@ -120,3 +135,24 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
         settings.otel.service_name,
     )
     return provider
+
+
+def configure_instrumentation(app: "FastAPI", settings: Settings) -> None:
+    """Wire OTel instrumentors for FastAPI and SQLAlchemy.
+
+    Called from main.py after the FastAPI app and DB engine are both created.
+    Lazy imports keep telemetry.py free of circular dependencies at module level.
+    ``app`` is passed in rather than imported — telemetry.py never imports main.py.
+    """
+    if not settings.otel.enabled:
+        logger.debug("OTel disabled — skipping instrumentation")
+        return
+
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+    from app.db.session import engine
+
+    FastAPIInstrumentor.instrument_app(app)
+    SQLAlchemyInstrumentor().instrument(engine=engine)
+    logger.debug("OTel instrumentors wired: FastAPI + SQLAlchemy")
