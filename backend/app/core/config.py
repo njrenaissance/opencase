@@ -58,6 +58,19 @@ class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_DB_")
 
 
+class ApiSettings(BaseSettings):
+    """HTTP server sub-config (OPENCASE_API_ prefix).
+
+    Controls the address and port uvicorn binds to inside the container.
+    Override via OPENCASE_API_HOST and OPENCASE_API_PORT environment variables.
+    """
+
+    host: str = "0.0.0.0"  # noqa: S104 — bind all interfaces inside container
+    port: int = 8000
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_API_")
+
+
 class Settings(BaseSettings):
     """Application settings with layered loading.
 
@@ -75,8 +88,9 @@ class Settings(BaseSettings):
     log_output: Literal["stdout", "stderr"] = "stdout"
     deployment_mode: str = "airgapped"
     otel: OtelSettings = OtelSettings()
-    auth: AuthSettings = AuthSettings()
-    db: DbSettings = DbSettings()
+    api: ApiSettings = ApiSettings()
+    auth: AuthSettings = AuthSettings()  # type: ignore[call-arg]
+    db: DbSettings = DbSettings()  # type: ignore[call-arg]
 
     model_config = SettingsConfigDict(
         env_prefix="OPENCASE_",

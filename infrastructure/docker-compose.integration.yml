@@ -1,0 +1,32 @@
+# Compose override for integration test runs.
+#
+# Applied automatically by pytest-docker (conftest.py).
+# Do NOT use this file for normal development — use docker-compose.yml only.
+#
+# Changes from base:
+#   - Points FastAPI at opencase_test database (created by postgres/init.sql)
+#   - Disables services not yet implemented (nextjs, workers, minio, ollama, qdrant, redis)
+#     so pytest-docker only starts postgres + fastapi
+#   - Tears down with -v so the test database is wiped between runs
+
+services:
+  fastapi:
+    environment:
+      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
+
+  # Services below are not yet implemented — exclude from integration test stack.
+  # They will be removed from this list as each feature is built.
+  nextjs:
+    profiles: [disabled]
+  celery-worker:
+    profiles: [disabled]
+  celery-beat:
+    profiles: [disabled]
+  minio:
+    profiles: [disabled]
+  ollama:
+    profiles: [disabled]
+  qdrant:
+    profiles: [disabled]
+  redis:
+    profiles: [disabled]

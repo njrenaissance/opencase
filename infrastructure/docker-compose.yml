@@ -1,6 +1,8 @@
 # Load environment from project root:
 #   docker compose -f infrastructure/docker-compose.yml --env-file .env up
 
+name: opencase
+
 services:
 
   # --- UI & Proxy -------------------------------------------
@@ -28,8 +30,17 @@ services:
       dockerfile: docker/Dockerfile
     expose:
       - "8000"
+    # Host port mapping for local development and integration tests.
+    # In production, remove this — FastAPI is never exposed on a public port;
+    # all external traffic routes through Next.js.
+    ports:
+      - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - OPENCASE_API_HOST=${OPENCASE_API_HOST:-0.0.0.0}
+      - OPENCASE_API_PORT=${OPENCASE_API_PORT:-8000}
+      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
+      - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
@@ -42,19 +53,10 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-changeme}
       - MINIO_BUCKET=opencase
       - MINIO_USE_SSL=false
-      - FASTAPI_SECRET_KEY=${FASTAPI_SECRET_KEY}
-      - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      qdrant:
-        condition: service_started
-      minio:
-        condition: service_healthy
-      ollama:
-        condition: service_started
+      # redis, qdrant, minio, ollama dependencies added as each feature is implemented
     networks:
       - opencase
     restart: unless-stopped
@@ -101,15 +103,16 @@ services:
 
   # --- Relational Database ----------------------------------
   postgres:
-    image: postgres:16-alpine
-    expose:
-      - "5432"
+    image: postgres:17-alpine
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-opencase}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
       - POSTGRES_DB=${POSTGRES_DB:-opencase}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opencase}"]
       interval: 10s

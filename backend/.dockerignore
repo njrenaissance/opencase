@@ -13,3 +13,4 @@ docs/
 .env
 .env.*
 docker/
+!docker/entrypoint.sh

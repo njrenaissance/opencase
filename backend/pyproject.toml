@@ -86,6 +86,7 @@ dev = [
     "httpx>=0.28",
     "factory-boy>=3.3",
     "hatch>=1.16.5",
+    "pytest-docker>=3.1",
     "pytest-playwright>=0.7.2",
     "python-dotenv>=1.0",
 ]
@@ -109,7 +110,7 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S603", "S607"]
+"tests/**" = ["S101", "S104", "S603", "S607"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -119,8 +120,9 @@ strict = true
 testpaths = ["tests"]
 bdd_features_base_dir = "tests/features/"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
 markers = [
-    "integration: tests that require a running server",
+    "integration: tests that require a running server or database",
 ]
 
 [tool.coverage.run]

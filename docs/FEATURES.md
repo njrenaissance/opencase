@@ -10,17 +10,14 @@
 | 0.4 | Observability (OpenTelemetry traces/spans, metrics) | Done |
 | 0.5 | Backend Dockerfile (run app for integration testing) | Done |
 | 0.6 | `.env.example` | Done |
-| 0.7a | CI: `format-lint.yml` (ruff) | Done |
-| 0.7b | CI: `unit-tests.yml` (pytest @unit) | Done |
-| 0.7c | CI: `integration-tests.yml` (pytest @integration) | Deferred |
-| 0.7d | CI: `ai-code-review.yml` (same as Signatrust_v4) | Done |
-| 0.7e | CI: `build-container.yml` (on spec/code change) | Done |
+| 0.7 | CI: GitHub Actions (format/lint, unit tests, integration tests, AI code review, container build) | Done |
+| 0.8 | Docker Compose — PostgreSQL service (volume, healthcheck, local dev + integration test target) | Done |
 
 ## Feature 1 — API
 
 | ID | Feature | Specs | Code | Docs |
 | --- | --- | --- | --- | --- |
-| 1.1 | Configuration + env vars (AuthSettings, DbSettings) | Done | Done | Pending |
+| 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Pending |
 | 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Pending |
 | 1.3 | Observability (auth spans/metrics, DB tracing) | Pending | Pending | Pending |
 | 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Pending | Pending | Pending |

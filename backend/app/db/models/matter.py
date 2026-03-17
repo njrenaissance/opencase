@@ -1,13 +1,20 @@
 """Matter model — one row per legal matter within a firm."""
 
+from __future__ import annotations
+
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.firm import Firm
+    from app.db.models.matter_access import MatterAccess
 
 
 class MatterStatus(enum.StrEnum):
@@ -42,7 +49,5 @@ class Matter(Base):
         nullable=False,
     )
 
-    firm: Mapped["Firm"] = relationship(back_populates="matters")  # noqa: F821
-    access_grants: Mapped[list["MatterAccess"]] = relationship(  # noqa: F821
-        back_populates="matter"
-    )
+    firm: Mapped[Firm] = relationship(back_populates="matters")
+    access_grants: Mapped[list[MatterAccess]] = relationship(back_populates="matter")
