@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -6,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
@@ -30,6 +33,8 @@ async def readiness_check(
         checks["postgres"] = "ok"
     except Exception:  # noqa: BLE001
         checks["postgres"] = "error"
+
+    logger.debug("Readiness check: %s", checks)
 
     # Additional checks (redis, qdrant, minio, ollama) added as services come online.
     all_ok = all(v == "ok" for v in checks.values())

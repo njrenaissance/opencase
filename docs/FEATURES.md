@@ -12,6 +12,7 @@
 | 0.6 | `.env.example` | Done |
 | 0.7 | CI: GitHub Actions (format/lint, unit tests, integration tests, AI code review, container build) | Done |
 | 0.8 | Docker Compose — PostgreSQL service (volume, healthcheck, local dev + integration test target) | Done |
+| 0.9 | Jaeger — distributed tracing collector (all-in-one container, OTLP ingest, UI, integration test support) | Pending |
 
 ## Feature 1 — API
 
@@ -19,7 +20,7 @@
 | --- | --- | --- | --- | --- |
 | 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Pending |
 | 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Pending |
-| 1.3 | Observability (auth spans/metrics, DB tracing) | Pending | Pending | Pending |
+| 1.3 | Observability (auth spans/metrics, DB tracing) | Done | Done | Pending |
 | 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Pending | Pending | Pending |
 | 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Pending | Pending | Pending |
 | 1.6 | Python REST client SDK (backend/sdk/) | Pending | Pending | Pending |
