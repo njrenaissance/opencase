@@ -22,6 +22,8 @@ BDD scenarios.*
 
 - [Settings Reference](SETTINGS.md) — all environment variables,
   defaults, and configuration classes
+- [Infrastructure Reference](INFRASTRUCTURE.md) — Docker Compose
+  services, ports, volumes, and integration test stack
 - [Entity Relationship Diagram](ERD.md) — database schema
   (Feature 1.2 tables; updated each feature)
 
