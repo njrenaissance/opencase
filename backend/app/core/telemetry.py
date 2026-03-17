@@ -194,8 +194,7 @@ def configure_instrumentation(app: "FastAPI", settings: Settings) -> None:
 
     FastAPIInstrumentor.instrument_app(app)
 
-    sa_instrumentor = SQLAlchemyInstrumentor()
-    if not sa_instrumentor.is_instrumented_by(SQLAlchemyInstrumentor):
-        sa_instrumentor.instrument(engine=engine)
+    # AsyncEngine wraps a sync engine; SQLAlchemyInstrumentor requires the sync one.
+    SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
 
     logger.debug("OTel instrumentors wired: FastAPI + SQLAlchemy")
