@@ -27,6 +27,11 @@ BDD scenarios.*
 - [Entity Relationship Diagram](ERD.md) — database schema
   (Feature 1.2 tables; updated each feature)
 
+### History
+
+- [Development Journal](HISTORY.md) — running log of the development
+  process, decisions, and lessons learned
+
 ### Legal Framework
 
 *Coming soon — jurisdiction-specific discovery rules,
