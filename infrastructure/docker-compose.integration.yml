@@ -13,9 +13,15 @@ services:
   fastapi:
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
+      - OPENCASE_OTEL_ENABLED=true
+      - OPENCASE_OTEL_EXPORTER=otlp
+      - OPENCASE_OTEL_ENDPOINT=http://jaeger:4318
+      - OPENCASE_OTEL_SERVICE_NAME=opencase-api
+      - OPENCASE_OTEL_SAMPLE_RATE=1.0
 
   # Services below are not yet implemented — exclude from integration test stack.
   # They will be removed from this list as each feature is built.
+  # jaeger runs with defaults from docker-compose.yml — do NOT disable it.
   nextjs:
     profiles: [disabled]
   celery-worker:
