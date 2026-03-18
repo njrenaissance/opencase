@@ -8,6 +8,7 @@ setup_logging(settings.log_level, settings.log_output)
 
 from fastapi import FastAPI  # noqa: E402
 
+from app.api.auth import router as auth_router  # noqa: E402
 from app.api.health import router as health_router  # noqa: E402
 from app.core.telemetry import configure_instrumentation, setup_telemetry  # noqa: E402
 
@@ -21,5 +22,6 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(auth_router)
 
 configure_instrumentation(app, settings)

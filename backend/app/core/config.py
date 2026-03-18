@@ -34,6 +34,7 @@ class AuthSettings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
     totp_issuer: str = "OpenCase"
+    totp_digest: Literal["sha1", "sha256", "sha512"] = "sha1"
     totp_window: int = 1
     bcrypt_rounds: int = 12
     login_lockout_attempts: int = 5

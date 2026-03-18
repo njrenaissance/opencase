@@ -42,8 +42,9 @@ DEFAULTS = {
         "access_token_expire_minutes": 15,
         "refresh_token_expire_days": 7,
         "totp_issuer": "OpenCase",
+        "totp_digest": "sha1",
         "totp_window": 1,
-        "bcrypt_rounds": 12,
+        "bcrypt_rounds": 4,
         "login_lockout_attempts": 5,
         "login_lockout_minutes": 15,
     },
@@ -161,7 +162,8 @@ def test_auth_defaults(monkeypatch):
     assert cfg.refresh_token_expire_days == 7
     assert cfg.totp_issuer == "OpenCase"
     assert cfg.totp_window == 1
-    assert cfg.bcrypt_rounds == 12
+    assert cfg.totp_digest == "sha1"
+    assert cfg.bcrypt_rounds == 4
     assert cfg.login_lockout_attempts == 5
     assert cfg.login_lockout_minutes == 15
 

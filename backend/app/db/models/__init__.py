@@ -3,6 +3,7 @@
 from app.db.models.firm import Firm
 from app.db.models.matter import Matter
 from app.db.models.matter_access import MatterAccess
+from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 
-__all__ = ["Firm", "Matter", "MatterAccess", "User"]
+__all__ = ["Firm", "Matter", "MatterAccess", "RefreshToken", "User"]

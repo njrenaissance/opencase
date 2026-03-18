@@ -1,3 +1,5 @@
+import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -11,7 +13,14 @@ load_dotenv(_ENV_TEST)
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy import create_engine, delete  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
 
+from app.core.auth import hash_password  # noqa: E402
+from app.core.config import settings  # noqa: E402
+from app.db.models.firm import Firm  # noqa: E402
+from app.db.models.refresh_token import RefreshToken  # noqa: E402
+from app.db.models.user import Role, User  # noqa: E402
 from app.main import app  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -130,3 +139,66 @@ def fastapi_service(docker_ip, docker_services):
         check=lambda: _api_ready(url),
     )
     return url
+
+
+# ---------------------------------------------------------------------------
+# seed_admin — integration test user fixture
+# ---------------------------------------------------------------------------
+
+_SEED_ADMIN_EMAIL = "admin@opencase.test"
+_SEED_ADMIN_PASSWORD = "integration-test-pw"  # noqa: S105
+
+
+def _sync_db_url() -> str:
+    """Convert async DSN to sync for direct DB access."""
+    url = settings.db.url
+    if "+asyncpg" in url:
+        url = url.replace("+asyncpg", "")
+    return url
+
+
+@pytest.fixture
+def seed_admin(postgres_service):
+    """Insert an admin user into the test DB, yield credentials, then clean up.
+
+    Connects directly to the test database (opencase_test) — never touches
+    the dev database.
+    """
+    engine = create_engine(_sync_db_url())
+    firm_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+
+    with Session(engine) as session:
+        session.add(Firm(id=firm_id, name="Test Firm"))
+        session.flush()
+        session.add(
+            User(
+                id=user_id,
+                firm_id=firm_id,
+                email=_SEED_ADMIN_EMAIL,
+                hashed_password=hash_password(_SEED_ADMIN_PASSWORD),
+                first_name="Admin",
+                last_name="Test",
+                role=Role.admin,
+                is_active=True,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
+        session.commit()
+
+    yield {
+        "user_id": user_id,
+        "firm_id": firm_id,
+        "email": _SEED_ADMIN_EMAIL,
+        "password": _SEED_ADMIN_PASSWORD,
+    }
+
+    # Teardown — remove all traces.
+    with Session(engine) as session:
+        session.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
+        session.execute(delete(User).where(User.id == user_id))
+        session.execute(delete(Firm).where(Firm.id == firm_id))
+        session.commit()
+
+    engine.dispose()
