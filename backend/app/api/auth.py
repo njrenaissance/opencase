@@ -32,7 +32,6 @@ from app.core.auth import (
     generate_totp_secret,
     get_current_user,
     get_totp_provisioning_uri,
-    hash_password,  # noqa: F401 — re-exported for bootstrap script
     verify_password,
     verify_totp,
 )
@@ -191,6 +190,12 @@ async def mfa_setup(
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> MfaSetupResponse:
     with tracer.start_as_current_span("auth.mfa_setup"):
+        if user.totp_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="MFA already enabled; disable first",
+            )
+
         secret = generate_totp_secret()
         encrypted = encrypt_totp_secret(secret)
         user.totp_secret = encrypted
