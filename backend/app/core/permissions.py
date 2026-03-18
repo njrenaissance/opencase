@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import get_current_user
 from app.core.metrics import access_denied
 from app.db import get_db
+from app.db.models.matter import Matter
 from app.db.models.matter_access import MatterAccess
 from app.db.models.user import Role, User
 
@@ -48,6 +49,46 @@ class PermissionFilter:
 
 
 # ---------------------------------------------------------------------------
+# _fetch_matter_access — private helper shared by build_qdrant_filter and
+# require_matter_access. Separated from FastAPI DI so callers can invoke it
+# directly without going through Depends().
+# ---------------------------------------------------------------------------
+
+
+async def _fetch_matter_access(
+    matter_id: uuid.UUID,
+    user: User,
+    db: AsyncSession,
+) -> MatterAccess:
+    """Look up the MatterAccess row with an explicit firm-scope join.
+
+    Validates that the matter belongs to the user's firm *and* that
+    the user has an access grant for it. Returns the ``MatterAccess``
+    row on success.
+
+    Raises:
+        HTTPException(404): If the matter is not in the user's firm or
+            the user has no access grant.
+    """
+    result = await db.execute(
+        select(MatterAccess)
+        .join(Matter, Matter.id == MatterAccess.matter_id)
+        .where(
+            MatterAccess.user_id == user.id,
+            MatterAccess.matter_id == matter_id,
+            Matter.firm_id == user.firm_id,
+        )
+    )
+    access_row = result.scalar_one_or_none()
+
+    if access_row is None:
+        access_denied.add(1, {"reason": "matter", "role": user.role.value})
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return access_row
+
+
+# ---------------------------------------------------------------------------
 # build_qdrant_filter() — called on every vector query
 # ---------------------------------------------------------------------------
 
@@ -69,6 +110,9 @@ async def build_qdrant_filter(
     Raises:
         HTTPException(404): If the user has no access to the matter.
     """
+    # OpenTelemetry: synchronous context manager around async body is the
+    # standard pattern for opentelemetry-api (Python). The SDK propagates
+    # the span correctly across await boundaries via contextvars.
     with tracer.start_as_current_span(
         "permissions.build_qdrant_filter",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
@@ -83,10 +127,8 @@ async def build_qdrant_filter(
                 excluded_classifications=frozenset(excluded),
             )
 
-        # Non-admin: verify MatterAccess row exists (delegates to
-        # require_matter_access to avoid duplicating the query).
-        # require_matter_access returns None only for admins (handled above).
-        access_row: MatterAccess = await require_matter_access(matter_id, user, db)  # type: ignore[assignment]
+        # Non-admin: verify MatterAccess row exists with firm-scope join.
+        access_row = await _fetch_matter_access(matter_id, user, db)
 
         # Jencks gating — excluded for all non-Admin until Feature 11.1
         # adds witness testimony tracking.
@@ -144,7 +186,7 @@ def require_role(
 
 
 # ---------------------------------------------------------------------------
-# require_matter_access — dependency for matter-scoped endpoints
+# require_matter_access — FastAPI dependency for matter-scoped endpoints
 # ---------------------------------------------------------------------------
 
 
@@ -155,31 +197,24 @@ async def require_matter_access(
 ) -> MatterAccess | None:
     """Verify the user has access to the given matter.
 
-    Returns the ``MatterAccess`` row (for downstream use of
-    ``view_work_product``), or ``None`` for Admin users who bypass
-    the check.
+    Thin FastAPI dependency wrapper around ``_fetch_matter_access``.
+
+    Returns:
+        ``MatterAccess`` for non-admin users (always — a missing row
+        raises 404, never returns ``None``).
+        ``None`` only for Admin users, who bypass the MatterAccess
+        check entirely (single-tenant, full-firm access).
 
     Raises:
-        HTTPException(404): If the user has no access to the matter.
+        HTTPException(404): If a non-admin user has no access.
     """
     with tracer.start_as_current_span(
         "permissions.check_matter_access",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
     ):
-        # Admin bypasses MatterAccess check.
+        # Admin bypasses MatterAccess check — single-tenant deployment
+        # means admin always belongs to the only firm.
         if user.role == Role.admin:
             return None
 
-        result = await db.execute(
-            select(MatterAccess).where(
-                MatterAccess.user_id == user.id,
-                MatterAccess.matter_id == matter_id,
-            )
-        )
-        access_row = result.scalar_one_or_none()
-
-        if access_row is None:
-            access_denied.add(1, {"reason": "matter", "role": user.role.value})
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-        return access_row
+        return await _fetch_matter_access(matter_id, user, db)
