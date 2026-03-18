@@ -12,10 +12,11 @@ COPY pyproject.toml uv.lock README.md ./
 # Install production dependencies only (no dev deps, no project yet)
 RUN uv sync --frozen --no-dev --no-install-project
 
-# Copy application source and migration scripts
+# Copy application source, migration scripts, and utility scripts
 COPY app/ app/
 COPY alembic/ alembic/
 COPY alembic.ini alembic.ini
+COPY scripts/ scripts/
 
 # Install the project itself (hatchling build)
 RUN uv sync --frozen --no-dev
@@ -35,6 +36,7 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/app /app/app
 COPY --from=builder /app/alembic /app/alembic
 COPY --from=builder /app/alembic.ini /app/alembic.ini
+COPY --from=builder /app/scripts /app/scripts
 
 # Copy startup script
 COPY docker/entrypoint.sh /app/entrypoint.sh

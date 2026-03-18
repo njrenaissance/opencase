@@ -28,17 +28,10 @@ services:
     build:
       context: ../backend
       dockerfile: docker/Dockerfile
-    command: >
-      sh -c "alembic upgrade head &&
-             python -m scripts.create_admin"
+    command: ["true"]
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
-      - OPENCASE_ADMIN_EMAIL=${OPENCASE_ADMIN_EMAIL}
-      - OPENCASE_ADMIN_PASSWORD=${OPENCASE_ADMIN_PASSWORD}
-      - OPENCASE_ADMIN_FIRST_NAME=${OPENCASE_ADMIN_FIRST_NAME:-Admin}
-      - OPENCASE_ADMIN_LAST_NAME=${OPENCASE_ADMIN_LAST_NAME:-User}
-      - OPENCASE_ADMIN_FIRM_NAME=${OPENCASE_ADMIN_FIRM_NAME:-Default Firm}
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,6 +74,12 @@ services:
       - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://jaeger:4318}
       - OPENCASE_OTEL_SERVICE_NAME=${OPENCASE_OTEL_SERVICE_NAME:-opencase-api}
       - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
+      # Admin seed (lifespan hook — runs once on startup, idempotent)
+      - OPENCASE_ADMIN_EMAIL=${OPENCASE_ADMIN_EMAIL:-}
+      - OPENCASE_ADMIN_PASSWORD=${OPENCASE_ADMIN_PASSWORD:-}
+      - OPENCASE_ADMIN_FIRST_NAME=${OPENCASE_ADMIN_FIRST_NAME:-Admin}
+      - OPENCASE_ADMIN_LAST_NAME=${OPENCASE_ADMIN_LAST_NAME:-User}
+      - OPENCASE_ADMIN_FIRM_NAME=${OPENCASE_ADMIN_FIRM_NAME:-Default Firm}
     depends_on:
       db-init:
         condition: service_completed_successfully
