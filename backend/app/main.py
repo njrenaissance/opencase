@@ -7,7 +7,6 @@ from app.core.logging import setup_logging
 setup_logging(settings.log_level, settings.log_output)
 
 import logging  # noqa: E402
-import os  # noqa: E402
 from collections.abc import AsyncIterator  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
@@ -25,20 +24,25 @@ setup_telemetry(settings)
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Run one-time startup jobs, then yield to serve requests."""
-    # Seed admin user if env vars are present. Idempotent — safe on every boot.
-    if os.environ.get("OPENCASE_ADMIN_EMAIL"):
+    # Seed admin user if configured. Idempotent — safe on every boot.
+    if settings.admin_email and settings.admin_password:
         from scripts.create_admin import _seed
 
         try:
             await _seed(
-                email=os.environ["OPENCASE_ADMIN_EMAIL"],
-                password=os.environ["OPENCASE_ADMIN_PASSWORD"],
-                first_name=os.environ.get("OPENCASE_ADMIN_FIRST_NAME", "Admin"),
-                last_name=os.environ.get("OPENCASE_ADMIN_LAST_NAME", "User"),
-                firm_name=os.environ.get("OPENCASE_ADMIN_FIRM_NAME", "Default Firm"),
+                email=settings.admin_email,
+                password=settings.admin_password,
+                first_name=settings.admin_first_name,
+                last_name=settings.admin_last_name,
+                firm_name=settings.admin_firm_name,
             )
         except Exception:
             logger.exception("Admin seed failed — continuing startup")
+    elif settings.admin_email and not settings.admin_password:
+        logger.error(
+            "OPENCASE_ADMIN_EMAIL is set but OPENCASE_ADMIN_PASSWORD is missing "
+            "— skipping admin seed"
+        )
     yield
 
 

@@ -93,16 +93,20 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()  # type: ignore[call-arg]
     db: DbSettings = DbSettings()  # type: ignore[call-arg]
 
+    # Admin seed — optional; when set, the lifespan hook creates the
+    # initial admin user on every startup (idempotent).
+    admin_email: str | None = None
+    admin_password: str | None = None
+    admin_first_name: str = "Admin"
+    admin_last_name: str = "User"
+    admin_firm_name: str = "Default Firm"
+
     model_config = SettingsConfigDict(
         env_prefix="OPENCASE_",
         env_file=".env",
         env_file_encoding="utf-8",
         json_file="config.json",
         json_file_encoding="utf-8",
-        # "ignore" lets FastAPI receive admin-seed env vars (OPENCASE_ADMIN_*)
-        # without validation errors. Trade-off: typos in OPENCASE_* vars are
-        # silently ignored rather than raising at startup.
-        extra="ignore",
     )
 
     @classmethod
