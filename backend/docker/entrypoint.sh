@@ -1,5 +1,7 @@
 #!/bin/sh
-# Run database migrations then start the API server.
+# Run database migrations then start the API server (default) or a custom
+# command supplied via docker-compose `command:`.
+#
 # Set SKIP_MIGRATIONS=true to skip migrations (e.g. when running the image
 # in isolation for smoke tests without a live database).
 #
@@ -10,6 +12,11 @@ set -e
 
 if [ "${SKIP_MIGRATIONS:-false}" != "true" ]; then
     alembic upgrade head
+fi
+
+# If compose supplies a command, run that instead of the default Uvicorn.
+if [ $# -gt 0 ]; then
+    exec "$@"
 fi
 
 exec uvicorn app.main:app \

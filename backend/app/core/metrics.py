@@ -33,3 +33,12 @@ active_sessions = meter.create_up_down_counter(
     "opencase.auth.active_sessions",
     description="Currently active sessions (access tokens issued minus logouts)",
 )
+
+# ---------------------------------------------------------------------------
+# RBAC (Feature 1.5)
+# ---------------------------------------------------------------------------
+
+access_denied = meter.create_counter(
+    "opencase.rbac.access_denied",
+    description="RBAC access denials",  # attrs: reason=(role|matter), role=<role>
+)

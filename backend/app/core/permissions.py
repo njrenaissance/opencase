@@ -1,0 +1,185 @@
+"""RBAC middleware — role enforcement and vector query access control.
+
+build_qdrant_filter() is the most security-critical function in the
+codebase. It is called on every vector query without exception, never
+bypassed, and never accepts client-supplied filter parameters.
+"""
+
+from __future__ import annotations
+
+import logging
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
+
+from fastapi import Depends, HTTPException, status
+from opentelemetry import trace
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.auth import get_current_user
+from app.core.metrics import access_denied
+from app.db import get_db
+from app.db.models.matter_access import MatterAccess
+from app.db.models.user import Role, User
+
+logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
+
+
+# ---------------------------------------------------------------------------
+# PermissionFilter — abstract filter returned by build_qdrant_filter()
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class PermissionFilter:
+    """Qdrant-agnostic access control filter.
+
+    Converted to ``qdrant_client.models.Filter`` in the RAG layer
+    (Feature 5). Keeping it abstract here makes it testable without
+    a Qdrant dependency.
+    """
+
+    firm_id: uuid.UUID
+    matter_id: uuid.UUID
+    excluded_classifications: frozenset[str]
+
+
+# ---------------------------------------------------------------------------
+# build_qdrant_filter() — called on every vector query
+# ---------------------------------------------------------------------------
+
+
+async def build_qdrant_filter(
+    user: User,
+    matter_id: uuid.UUID,
+    db: AsyncSession,
+) -> PermissionFilter:
+    """Build an access-control filter for a vector query.
+
+    This function is called on **every** vector query without exception.
+    It never accepts client-supplied filter parameters and is never
+    bypassed.
+
+    Returns a ``PermissionFilter`` describing what the user is allowed
+    to see for the given matter.
+
+    Raises:
+        HTTPException(404): If the user has no access to the matter.
+    """
+    with tracer.start_as_current_span(
+        "permissions.build_qdrant_filter",
+        attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
+    ):
+        excluded: set[str] = set()
+
+        # Admin: full access, no MatterAccess check required.
+        if user.role == Role.admin:
+            return PermissionFilter(
+                firm_id=user.firm_id,
+                matter_id=matter_id,
+                excluded_classifications=frozenset(excluded),
+            )
+
+        # Non-admin: verify MatterAccess row exists (delegates to
+        # require_matter_access to avoid duplicating the query).
+        # require_matter_access returns None only for admins (handled above).
+        access_row: MatterAccess = await require_matter_access(matter_id, user, db)  # type: ignore[assignment]
+
+        # Jencks gating — excluded for all non-Admin until Feature 11.1
+        # adds witness testimony tracking.
+        excluded.add("jencks")
+
+        # Work product gating.
+        if user.role == Role.investigator or (
+            user.role == Role.paralegal and not access_row.view_work_product
+        ):
+            excluded.add("work_product")
+        # Attorney and Paralegal-with-grant: work_product allowed.
+
+        return PermissionFilter(
+            firm_id=user.firm_id,
+            matter_id=matter_id,
+            excluded_classifications=frozenset(excluded),
+        )
+
+
+# ---------------------------------------------------------------------------
+# require_role — dependency factory for role-based endpoint gating
+# ---------------------------------------------------------------------------
+
+
+def require_role(
+    *roles: Role,
+) -> Callable[..., Any]:
+    """Return a FastAPI dependency that enforces role membership.
+
+    Usage::
+
+        @router.get("/admin-only")
+        async def admin_endpoint(
+            user: User = Depends(require_role(Role.admin)),
+        ):
+            ...
+    """
+
+    async def _check(
+        user: User = Depends(get_current_user),  # noqa: B008
+    ) -> User:
+        with tracer.start_as_current_span(
+            "permissions.check_role",
+            attributes={"user.role": user.role.value},
+        ):
+            if user.role not in roles:
+                access_denied.add(1, {"reason": "role", "role": user.role.value})
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions",
+                )
+            return user
+
+    return _check
+
+
+# ---------------------------------------------------------------------------
+# require_matter_access — dependency for matter-scoped endpoints
+# ---------------------------------------------------------------------------
+
+
+async def require_matter_access(
+    matter_id: uuid.UUID,
+    user: User = Depends(get_current_user),  # noqa: B008
+    db: AsyncSession = Depends(get_db),  # noqa: B008
+) -> MatterAccess | None:
+    """Verify the user has access to the given matter.
+
+    Returns the ``MatterAccess`` row (for downstream use of
+    ``view_work_product``), or ``None`` for Admin users who bypass
+    the check.
+
+    Raises:
+        HTTPException(404): If the user has no access to the matter.
+    """
+    with tracer.start_as_current_span(
+        "permissions.check_matter_access",
+        attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
+    ):
+        # Admin bypasses MatterAccess check.
+        if user.role == Role.admin:
+            return None
+
+        result = await db.execute(
+            select(MatterAccess).where(
+                MatterAccess.user_id == user.id,
+                MatterAccess.matter_id == matter_id,
+            )
+        )
+        access_row = result.scalar_one_or_none()
+
+        if access_row is None:
+            access_denied.add(1, {"reason": "matter", "role": user.role.value})
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        return access_row

@@ -99,6 +99,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         json_file="config.json",
         json_file_encoding="utf-8",
+        # "ignore" lets FastAPI receive admin-seed env vars (OPENCASE_ADMIN_*)
+        # without validation errors. Trade-off: typos in OPENCASE_* vars are
+        # silently ignored rather than raising at startup.
+        extra="ignore",
     )
 
     @classmethod
