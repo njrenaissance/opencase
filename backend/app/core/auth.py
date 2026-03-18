@@ -7,6 +7,7 @@ import hashlib
 import logging
 import os
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -96,7 +97,7 @@ def decrypt_totp_secret(ciphertext_b64: str) -> str:
 _DIGEST_MAP = {"sha1": hashlib.sha1, "sha256": hashlib.sha256, "sha512": hashlib.sha512}
 
 
-def _totp_digest():
+def _totp_digest() -> Callable[..., Any]:
     """Return the hash constructor for the configured TOTP digest."""
     return _DIGEST_MAP[settings.auth.totp_digest]
 
@@ -139,7 +140,8 @@ def _create_token(
     }
     key = settings.auth.secret_key
     alg = settings.auth.algorithm
-    return jwt.encode(payload, key, algorithm=alg)
+    encoded: str = jwt.encode(payload, key, algorithm=alg)
+    return encoded
 
 
 def create_access_token(user: User) -> str:
