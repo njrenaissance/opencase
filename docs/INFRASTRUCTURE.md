@@ -55,6 +55,25 @@ not directly reachable from outside the Docker network.
 
 ---
 
+### db-migrate
+
+Runs Alembic migrations then exits. This is a one-shot init container — it
+does not stay running.
+
+| Setting | Value |
+| --- | --- |
+| Build context | `../backend` |
+| Dockerfile | `docker/Dockerfile` |
+| Command | `["true"]` (entrypoint runs migrations, then `exec true` exits) |
+| Depends on | `postgres` (healthy) |
+| Restart | `no` |
+
+Admin user seeding was previously handled by this container. It has moved to
+the FastAPI lifespan hook (see `OPENCASE_ADMIN_*` env vars in
+[SETTINGS.md](SETTINGS.md)).
+
+---
+
 ### fastapi
 
 Python API server (uvicorn + FastAPI).
@@ -65,33 +84,37 @@ Python API server (uvicorn + FastAPI).
 | Dockerfile | `docker/Dockerfile` |
 | Public port | `8000` (dev/test only — remove in production) |
 | Internal port | `8000` |
-| Depends on | `postgres` (healthy) |
+| Depends on | `db-migrate` (completed), `postgres` (healthy) |
 
 The public port mapping (`8000:8000`) is present for local development and
 integration tests. In production it should be removed — all external traffic
 must route through Next.js.
 
+On startup the lifespan hook seeds the initial admin user if
+`OPENCASE_ADMIN_EMAIL` and `OPENCASE_ADMIN_PASSWORD` are set. The seed is
+idempotent and reuses the app's existing database connection pool.
+
 ---
 
-### jaeger
+### grafana (otel-lgtm)
 
-Jaeger all-in-one distributed tracing collector.
+Grafana otel-lgtm — all-in-one observability stack bundling an OTel Collector,
+Tempo (traces), Prometheus (metrics), Loki (logs), and Grafana (UI) in a
+single container. Receives all three OTLP signals.
 
 | Setting | Value |
 | --- | --- |
-| Image | `jaegertracing/all-in-one:latest` |
-| UI + REST query API | `16686` |
+| Image | `grafana/otel-lgtm:latest` |
+| Grafana UI | `3001` |
 | OTLP gRPC receiver | `4317` |
 | OTLP HTTP receiver | `4318` |
-| Healthcheck | `wget -qO- http://localhost:16686/` |
+| Volume | `grafana-data` |
+| Healthcheck | `wget -qO- http://localhost:3000/api/health` |
 
 Enabled by setting `OPENCASE_OTEL_ENABLED=true` and
-`OPENCASE_OTEL_EXPORTER=otlp` on the `fastapi` service. The UI is available
-at `http://localhost:16686`.
-
-Jaeger does not ingest OTLP metrics (`/v1/metrics` returns 404). Metric
-export errors in the FastAPI logs every 60 s are expected until an OTel
-Collector is added.
+`OPENCASE_OTEL_EXPORTER=otlp` on the `fastapi` service. The Grafana UI is
+available at `http://localhost:3001`. Pre-configured datasources for Tempo,
+Prometheus, and Loki are available out of the box.
 
 ---
 
@@ -221,6 +244,7 @@ Submits scheduled tasks on a cron-based schedule (cloud ingestion every
 | `ollama-models` | ollama | Downloaded LLM and embedding models |
 | `minio-data` | minio | Object store buckets and objects |
 | `celery-tmp` | celery-worker | Ephemeral temp files during ingestion |
+| `grafana-data` | grafana | Grafana dashboards, Tempo traces, Prometheus metrics, Loki logs |
 
 All volumes are named (managed by Docker). Deleting volumes wipes the
 corresponding data permanently.
@@ -232,11 +256,11 @@ corresponding data permanently.
 | Port | Service | Access |
 | --- | --- | --- |
 | `3000` | Next.js | Public — browser entry point |
+| `3001` | Grafana UI | Dev/test only — traces, metrics, logs |
 | `8000` | FastAPI | Dev/test only — remove in production |
 | `5432` | PostgreSQL | Dev/test only |
-| `16686` | Jaeger UI | Dev/test only |
-| `4317` | Jaeger OTLP gRPC | Internal (Docker network) |
-| `4318` | Jaeger OTLP HTTP | Internal (Docker network) |
+| `4317` | Grafana OTLP gRPC | Internal (Docker network) |
+| `4318` | Grafana OTLP HTTP | Internal (Docker network) |
 
 All other services (Qdrant, Redis, MinIO, Ollama, Celery) are internal
 only and not mapped to host ports.
@@ -254,7 +278,7 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 - `fastapi` has OTel enabled (`EXPORTER=otlp`, targeting `jaeger:4318`)
 - All unimplemented services are disabled via Docker Compose profiles:
   `nextjs`, `celery-worker`, `celery-beat`, `minio`, `ollama`, `qdrant`, `redis`
-- Active services: `postgres` + `fastapi` + `jaeger`
+- Active services: `postgres` + `fastapi` + `grafana`
 
 To run integration tests:
 

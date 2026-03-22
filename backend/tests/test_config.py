@@ -55,11 +55,13 @@ DEFAULTS = {
         "pool_pre_ping": True,
         "echo": False,
     },
-    "admin_email": _ENV_TEST.get("OPENCASE_ADMIN_EMAIL"),
-    "admin_password": _ENV_TEST.get("OPENCASE_ADMIN_PASSWORD"),
-    "admin_first_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRST_NAME", "Admin"),
-    "admin_last_name": _ENV_TEST.get("OPENCASE_ADMIN_LAST_NAME", "User"),
-    "admin_firm_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRM_NAME", "Default Firm"),
+    "admin": {
+        "email": _ENV_TEST.get("OPENCASE_ADMIN_EMAIL"),
+        "password": _ENV_TEST.get("OPENCASE_ADMIN_PASSWORD"),
+        "first_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRST_NAME", "Admin"),
+        "last_name": _ENV_TEST.get("OPENCASE_ADMIN_LAST_NAME", "User"),
+        "firm_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRM_NAME", "Default Firm"),
+    },
 }
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

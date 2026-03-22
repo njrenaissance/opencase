@@ -2,6 +2,10 @@
 
 All telemetry data stays on-premise. No data leaves the host.
 
+The OTLP backend is Grafana's otel-lgtm stack (OTel Collector + Tempo +
+Prometheus + Loki + Grafana UI) running as a single Docker container.
+All three OTel signals — traces, metrics, and logs — are collected.
+
 Usage — Traces and Spans
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,6 +47,14 @@ Use the module-level ``meter`` to create counters, histograms, etc.::
         description="Number of documents ingested",
     )
     doc_counter.add(1, {"matter_id": matter.id})
+
+Usage — Logs
+~~~~~~~~~~~~
+
+Application logs are exported to the OTLP backend via
+``OTLPLogExporter`` when ``exporter=otlp``. Python's standard
+``logging`` module is bridged automatically — no code changes
+needed beyond the existing ``logging.getLogger(__name__)`` pattern.
 """
 
 import logging
@@ -100,13 +112,7 @@ def _create_span_exporter(settings: Settings) -> SpanExporter:
 
 
 def _create_metric_exporter(settings: Settings) -> MetricExporter:
-    """Factory: return the configured metric exporter.
-
-    Note: Jaeger does not implement the OTLP metrics endpoint (/v1/metrics).
-    When exporter=otlp, OTLPMetricExporter will receive 404 responses and log
-    a warning on each export cycle — the application continues normally.
-    A future OTel Collector sidecar will replace Jaeger as the metrics sink.
-    """
+    """Factory: return the configured metric exporter."""
     if settings.otel.exporter == "otlp":
         from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
             OTLPMetricExporter,
@@ -121,8 +127,41 @@ def _create_metric_exporter(settings: Settings) -> MetricExporter:
     return ConsoleMetricExporter()
 
 
+def _setup_log_exporter(settings: Settings, resource: Resource) -> None:
+    """Wire the OTel log bridge so Python logging flows to the OTLP backend.
+
+    Only activates when ``exporter=otlp``. Console mode relies on the
+    existing ``logging.StreamHandler`` configured in ``logging.py``.
+    """
+    if settings.otel.exporter != "otlp":
+        return
+
+    from opentelemetry._logs import set_logger_provider
+    from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+        OTLPLogExporter,
+    )
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor
+
+    endpoint = f"{settings.otel.endpoint}/v1/logs"
+    logger.debug("Log exporter: otlp → %s", endpoint)
+
+    log_provider = LoggerProvider(resource=resource)
+    log_provider.add_log_record_processor(
+        SimpleLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
+    )
+    set_logger_provider(log_provider)
+
+    # Attach an OTel logging handler to the root logger so all app logs
+    # are forwarded to the OTLP backend alongside stdout.
+    otel_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
+    logging.getLogger().addHandler(otel_handler)
+
+    logger.debug("OTel log bridge wired")
+
+
 def setup_telemetry(settings: Settings) -> TracerProvider | None:
-    """Configure OpenTelemetry tracing and metrics.
+    """Configure OpenTelemetry tracing, metrics, and logging.
 
     Returns the TracerProvider if enabled, None otherwise.
     Idempotent: repeated calls return the cached provider.
@@ -170,14 +209,8 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
         _METRIC_EXPORT_INTERVAL_MS // 1000,
     )
 
-    if settings.otel.exporter == "otlp":
-        logger.warning(
-            "OTLP metrics exporter targets Jaeger (%s/v1/metrics) which does not "
-            "ingest metrics — export errors every %ds are expected until an OTel "
-            "Collector is added. Traces are unaffected.",
-            settings.otel.endpoint,
-            _METRIC_EXPORT_INTERVAL_MS // 1000,
-        )
+    # Logs
+    _setup_log_exporter(settings, resource)
 
     logger.info(
         "OpenTelemetry enabled: exporter=%s, service=%s",

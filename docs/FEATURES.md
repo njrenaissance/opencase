@@ -12,7 +12,7 @@
 | 0.6 | `.env.example` | Done |
 | 0.7 | CI: GitHub Actions (format/lint, unit tests, integration tests, AI code review, container build) | Done |
 | 0.8 | Docker Compose — PostgreSQL service (volume, healthcheck, local dev + integration test target) | Done |
-| 0.9 | Jaeger — distributed tracing collector (all-in-one container, OTLP ingest, UI, integration test support) | Done |
+| 0.9 | Grafana otel-lgtm — unified observability (traces, metrics, logs via OTLP, Grafana UI) | Done |
 
 ## Feature 1 — API
 

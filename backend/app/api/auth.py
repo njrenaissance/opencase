@@ -108,6 +108,8 @@ async def login(
         )
 
         if user is None:
+            domain = body.email.split("@")[-1] if "@" in body.email else "invalid"
+            logger.warning("Login failed: unknown email=***@%s", domain)
             login_attempts.add(1, {"result": "failure"})
             raise credentials_exc
 
@@ -127,6 +129,7 @@ async def login(
                 )
                 logger.warning("Account locked: user_id=%s", user.id)
             await db.commit()
+            logger.warning("Login failed: bad password user_id=%s", user.id)
             login_attempts.add(1, {"result": "failure"})
             raise credentials_exc
 

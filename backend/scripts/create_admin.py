@@ -52,56 +52,83 @@ async def _seed(  # noqa: PLR0913
     first_name: str,
     last_name: str,
     firm_name: str,
+    session: AsyncSession | None = None,
 ) -> None:
+    """Create the initial firm and admin user.
+
+    When called from the FastAPI lifespan hook, *session* is provided by the
+    caller (reusing the app's connection pool).  When called from the CLI
+    entry-point no session exists yet, so we create a throwaway engine.
+    """
+    if session is not None:
+        await _seed_with_session(
+            session, email, password, first_name, last_name, firm_name
+        )
+        return
+
+    # CLI path — standalone engine (no app pool available).
     engine = create_async_engine(settings.db.url)
-    async_session = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
+    try:
+        async_session = async_sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+        async with async_session() as sess:
+            await _seed_with_session(
+                sess, email, password, first_name, last_name, firm_name
+            )
+    finally:
+        await engine.dispose()
+
+
+async def _seed_with_session(  # noqa: PLR0913
+    session: AsyncSession,
+    email: str,
+    password: str,
+    first_name: str,
+    last_name: str,
+    firm_name: str,
+) -> None:
+    """Core seed logic operating on an existing session."""
+    # Verify the database is reachable.
+    await session.execute(text("SELECT 1"))
+
+    # Create firm if it doesn't exist.
+    result = await session.execute(select(Firm).where(Firm.name == firm_name))
+    firm = result.scalar_one_or_none()
+
+    if firm is None:
+        firm = Firm(id=uuid.uuid4(), name=firm_name)
+        session.add(firm)
+        await session.flush()
+        print(f"Created firm: {firm_name} (id={firm.id})")  # noqa: T201
+    else:
+        print(f"Firm already exists: {firm_name} (id={firm.id})")  # noqa: T201
+
+    # Check if the user already exists.
+    result = await session.execute(
+        select(User).where(User.email == email, User.firm_id == firm.id)
     )
+    existing = result.scalar_one_or_none()
 
-    async with async_session() as session:
-        # Verify the database is reachable.
-        await session.execute(text("SELECT 1"))
+    if existing is not None:
+        print(f"Admin user already exists: {email} (id={existing.id})")  # noqa: T201
+        return
 
-        # Create firm if it doesn't exist.
-        result = await session.execute(select(Firm).where(Firm.name == firm_name))
-        firm = result.scalar_one_or_none()
-
-        if firm is None:
-            firm = Firm(id=uuid.uuid4(), name=firm_name)
-            session.add(firm)
-            await session.flush()
-            print(f"Created firm: {firm_name} (id={firm.id})")  # noqa: T201
-        else:
-            print(f"Firm already exists: {firm_name} (id={firm.id})")  # noqa: T201
-
-        # Check if the user already exists.
-        result = await session.execute(
-            select(User).where(User.email == email, User.firm_id == firm.id)
-        )
-        existing = result.scalar_one_or_none()
-
-        if existing is not None:
-            print(f"Admin user already exists: {email} (id={existing.id})")  # noqa: T201
-            await engine.dispose()
-            return
-
-        user = User(
-            id=uuid.uuid4(),
-            firm_id=firm.id,
-            email=email,
-            hashed_password=hash_password(password),
-            first_name=first_name,
-            last_name=last_name,
-            role=Role.admin,
-            is_active=True,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        session.add(user)
-        await session.commit()
-        print(f"Created admin user: {email} (id={user.id})")  # noqa: T201
-
-    await engine.dispose()
+    user = User(
+        id=uuid.uuid4(),
+        firm_id=firm.id,
+        email=email,
+        hashed_password=hash_password(password),
+        first_name=first_name,
+        last_name=last_name,
+        role=Role.admin,
+        is_active=True,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    session.add(user)
+    await session.commit()
+    print(f"Created admin user: {email} (id={user.id})")  # noqa: T201
 
 
 def main() -> None:

@@ -47,6 +47,7 @@ graph LR
 | **Qdrant** | Vector store — single collection, permission-filtered | 6333 (internal) |
 | **Redis** | Task queue (Celery broker) + cache | 6379 (internal) |
 | **Celery + Beat** | Background workers — ingestion, deadlines, audit, legal hold | N/A |
+| **Grafana otel-lgtm** | Observability — traces (Tempo), metrics (Prometheus), logs (Loki), UI (Grafana) | 3001 |
 
 **FastAPI is never exposed on a public port.**
 Only Next.js can reach it from inside the Docker network.

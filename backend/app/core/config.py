@@ -72,6 +72,22 @@ class ApiSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_API_")
 
 
+class AdminSettings(BaseSettings):
+    """Admin seed sub-config (OPENCASE_ADMIN_ prefix).
+
+    When email and password are set, the FastAPI lifespan hook creates the
+    initial admin user on every startup (idempotent).
+    """
+
+    email: str | None = None
+    password: str | None = None
+    first_name: str = "Admin"
+    last_name: str = "User"
+    firm_name: str = "Default Firm"
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_ADMIN_")
+
+
 class Settings(BaseSettings):
     """Application settings with layered loading.
 
@@ -92,14 +108,7 @@ class Settings(BaseSettings):
     api: ApiSettings = ApiSettings()
     auth: AuthSettings = AuthSettings()  # type: ignore[call-arg]
     db: DbSettings = DbSettings()  # type: ignore[call-arg]
-
-    # Admin seed — optional; when set, the lifespan hook creates the
-    # initial admin user on every startup (idempotent).
-    admin_email: str | None = None
-    admin_password: str | None = None
-    admin_first_name: str = "Admin"
-    admin_last_name: str = "User"
-    admin_firm_name: str = "Default Firm"
+    admin: AdminSettings = AdminSettings()
 
     model_config = SettingsConfigDict(
         env_prefix="OPENCASE_",

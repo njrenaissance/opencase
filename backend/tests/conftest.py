@@ -82,7 +82,7 @@ def _api_ready(url: str) -> bool:
         return False
 
 
-def _jaeger_ready(host: str, port: int) -> bool:
+def _grafana_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
     except httpx.HTTPError:
@@ -115,14 +115,14 @@ def postgres_service(docker_ip, docker_services):
 
 
 @pytest.fixture(scope="session")
-def jaeger_service(docker_ip, docker_services):
-    """Wait for Jaeger to be ready and return the query API base URL."""
+def grafana_service(docker_ip, docker_services):
+    """Wait for Grafana (otel-lgtm) to be ready and return the base URL."""
     docker_services.wait_until_responsive(
         timeout=60.0,
         pause=0.5,
-        check=lambda: _jaeger_ready(docker_ip, 16686),
+        check=lambda: _grafana_ready(docker_ip, 3001),
     )
-    return f"http://{docker_ip}:16686"
+    return f"http://{docker_ip}:3001"
 
 
 @pytest.fixture(scope="session")

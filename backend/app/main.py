@@ -25,20 +25,25 @@ setup_telemetry(settings)
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Run one-time startup jobs, then yield to serve requests."""
     # Seed admin user if configured. Idempotent — safe on every boot.
-    if settings.admin_email and settings.admin_password:
+    # Uses the app's existing connection pool (AsyncSessionLocal) instead of
+    # creating a throwaway engine.
+    if settings.admin.email and settings.admin.password:
+        from app.db.session import AsyncSessionLocal
         from scripts.create_admin import _seed
 
         try:
-            await _seed(
-                email=settings.admin_email,
-                password=settings.admin_password,
-                first_name=settings.admin_first_name,
-                last_name=settings.admin_last_name,
-                firm_name=settings.admin_firm_name,
-            )
+            async with AsyncSessionLocal() as session:
+                await _seed(
+                    email=settings.admin.email,
+                    password=settings.admin.password,
+                    first_name=settings.admin.first_name,
+                    last_name=settings.admin.last_name,
+                    firm_name=settings.admin.firm_name,
+                    session=session,
+                )
         except Exception:
             logger.exception("Admin seed failed — continuing startup")
-    elif settings.admin_email and not settings.admin_password:
+    elif settings.admin.email and not settings.admin.password:
         logger.error(
             "OPENCASE_ADMIN_EMAIL is set but OPENCASE_ADMIN_PASSWORD is missing "
             "— skipping admin seed"

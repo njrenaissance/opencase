@@ -83,16 +83,17 @@ FastAPI is never exposed on a public port. All external traffic routes through N
 
 ## OtelSettings (`OPENCASE_OTEL_` prefix)
 
-OpenTelemetry distributed tracing and metrics. All telemetry stays on-premise.
+OpenTelemetry observability — traces, metrics, and logs. All telemetry stays
+on-premise.
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `OPENCASE_OTEL_ENABLED` | `false` | Enable OpenTelemetry instrumentation |
-| `OPENCASE_OTEL_EXPORTER` | `console` | Exporter backend: `console` (stdout) or `otlp` (Jaeger / OTel Collector) |
+| `OPENCASE_OTEL_EXPORTER` | `console` | Exporter backend: `console` (stdout) or `otlp` (Grafana otel-lgtm) |
 | `OPENCASE_OTEL_ENDPOINT` | `http://localhost:4318` | OTLP HTTP endpoint (used when `EXPORTER=otlp`) |
-| `OPENCASE_OTEL_SERVICE_NAME` | `opencase-api` | Service name tag on all spans and metrics |
+| `OPENCASE_OTEL_SERVICE_NAME` | `opencase-api` | Service name tag on all spans, metrics, and logs |
 | `OPENCASE_OTEL_SAMPLE_RATE` | `1.0` | Fraction of traces to sample (0.0–1.0) |
 
-When `EXPORTER=otlp`, the Jaeger UI is available at `http://localhost:16686`
-(default Docker Compose port). Jaeger does not ingest OTLP metrics —
-metric export errors every 60 s are expected until an OTel Collector is added.
+When `EXPORTER=otlp`, the Grafana UI is available at `http://localhost:3001`
+with pre-configured datasources for Tempo (traces), Prometheus (metrics), and
+Loki (logs).

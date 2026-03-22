@@ -23,6 +23,8 @@ BDD scenarios.*
 - [Authentication](AUTHENTICATION.md) — JWT login flow,
   TOTP MFA setup, token strategy, account lockout,
   admin bootstrap
+- [Observability](OBSERVABILITY.md) — OTel strategy,
+  traces/metrics/logs instrumentation, Grafana otel-lgtm
 
 ### Reference
 

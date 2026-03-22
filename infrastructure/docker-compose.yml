@@ -23,14 +23,18 @@ services:
       - opencase
     restart: unless-stopped
 
-  # --- Database Init (migrations + admin seed) ---------------
-  db-init:
+  # --- Database Migrations ------------------------------------
+  # Runs `alembic upgrade head` then exits. Admin seeding has moved
+  # to the FastAPI lifespan hook (OPENCASE_ADMIN_* env vars).
+  db-migrate:
     build:
       context: ../backend
       dockerfile: docker/Dockerfile
     command: ["true"]
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # AUTH_SECRET_KEY is required because importing app.core.config
+      # validates it, even though this container only runs migrations.
       - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
     depends_on:
       postgres:
@@ -54,6 +58,8 @@ services:
     environment:
       - OPENCASE_API_HOST=${OPENCASE_API_HOST:-0.0.0.0}
       - OPENCASE_API_PORT=${OPENCASE_API_PORT:-8000}
+      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
+      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
       - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
@@ -71,7 +77,7 @@ services:
       - MINIO_USE_SSL=false
       - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
       - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
-      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://jaeger:4318}
+      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
       - OPENCASE_OTEL_SERVICE_NAME=${OPENCASE_OTEL_SERVICE_NAME:-opencase-api}
       - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
       # Admin seed (lifespan hook — runs once on startup, idempotent)
@@ -81,24 +87,24 @@ services:
       - OPENCASE_ADMIN_LAST_NAME=${OPENCASE_ADMIN_LAST_NAME:-User}
       - OPENCASE_ADMIN_FIRM_NAME=${OPENCASE_ADMIN_FIRM_NAME:-Default Firm}
     depends_on:
-      db-init:
+      db-migrate:
         condition: service_completed_successfully
       # redis, qdrant, minio, ollama dependencies added as each feature is implemented
     networks:
       - opencase
     restart: unless-stopped
 
-  # --- Distributed Tracing Collector -----------------------
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
+  # --- Observability (traces + metrics + logs) -------------
+  grafana:
+    image: grafana/otel-lgtm:latest
     ports:
-      - "16686:16686"  # UI + REST query API
+      - "3001:3000"    # Grafana UI
       - "4317:4317"    # OTLP gRPC receiver
       - "4318:4318"    # OTLP HTTP receiver
+    volumes:
+      - grafana-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:16686/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -251,6 +257,7 @@ volumes:
   ollama-models:
   minio-data:
   celery-tmp:
+  grafana-data:
 
 networks:
   opencase:
