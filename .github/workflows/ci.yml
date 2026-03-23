@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
   pull-requests: write
 
 jobs:
@@ -23,12 +22,3 @@ jobs:
     name: Unit Tests
     needs: [lint]
     uses: ./.github/workflows/unit-tests.yml
-
-  build-container:
-    name: Build Container
-    needs: [unit-tests]
-    uses: ./.github/workflows/build-container.yml
-    permissions:
-      contents: read
-      packages: write
-    secrets: inherit
