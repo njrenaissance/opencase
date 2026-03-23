@@ -20,6 +20,8 @@ from sqlalchemy.orm import Session  # noqa: E402
 from app.core.auth import hash_password  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.db.models.firm import Firm  # noqa: E402
+from app.db.models.matter import Matter  # noqa: E402
+from app.db.models.matter_access import MatterAccess  # noqa: E402
 from app.db.models.refresh_token import RefreshToken  # noqa: E402
 from app.db.models.user import User  # noqa: E402
 from app.main import app  # noqa: E402
@@ -199,6 +201,135 @@ def seed_admin(postgres_service):
     with Session(engine) as session:
         session.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
         session.execute(delete(User).where(User.id == user_id))
+        session.execute(delete(Firm).where(Firm.id == firm_id))
+        session.commit()
+
+    engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# seed_demo — integration test fixture with two users, two matters, access grants
+# ---------------------------------------------------------------------------
+
+_DEMO_PASSWORD = "DemoPassword123!"  # noqa: S105
+
+
+@pytest.fixture
+def seed_demo(postgres_service):
+    """Seed a firm with two users, two matters, and access grants.
+
+    - User A (attorney): access to Matter A and Matter B
+    - User B (paralegal): access to Matter B only
+
+    Yields a dict with all IDs and credentials. Cleans up after the test.
+    """
+    engine = create_engine(_sync_db_url())
+    now = datetime.now(UTC)
+    firm_id = uuid.uuid4()
+    user_a_id = uuid.uuid4()
+    user_b_id = uuid.uuid4()
+    matter_a_id = uuid.uuid4()
+    matter_b_id = uuid.uuid4()
+
+    with Session(engine) as session:
+        session.add(Firm(id=firm_id, name="Demo Firm"))
+        session.flush()
+
+        session.add(
+            User(
+                id=user_a_id,
+                firm_id=firm_id,
+                email="virginia@demofirm.com",
+                hashed_password=hash_password(_DEMO_PASSWORD),
+                first_name="Virginia",
+                last_name="Cora",
+                role=Role.attorney,
+                is_active=True,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.add(
+            User(
+                id=user_b_id,
+                firm_id=firm_id,
+                email="jonathan@demofirm.com",
+                hashed_password=hash_password(_DEMO_PASSWORD),
+                first_name="Jonathan",
+                last_name="Phillips",
+                role=Role.paralegal,
+                is_active=True,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.flush()
+
+        session.add(
+            Matter(
+                id=matter_a_id,
+                firm_id=firm_id,
+                name="People v. Smith",
+                client_id=uuid.uuid4(),
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.add(
+            Matter(
+                id=matter_b_id,
+                firm_id=firm_id,
+                name="People v. Jones",
+                client_id=uuid.uuid4(),
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.flush()
+
+        # User A → both matters
+        session.add(
+            MatterAccess(user_id=user_a_id, matter_id=matter_a_id, assigned_at=now)
+        )
+        session.add(
+            MatterAccess(user_id=user_a_id, matter_id=matter_b_id, assigned_at=now)
+        )
+        # User B → Matter B only
+        session.add(
+            MatterAccess(user_id=user_b_id, matter_id=matter_b_id, assigned_at=now)
+        )
+        session.commit()
+
+    yield {
+        "firm_id": firm_id,
+        "user_a": {
+            "id": user_a_id,
+            "email": "virginia@demofirm.com",
+            "password": _DEMO_PASSWORD,
+            "role": "attorney",
+        },
+        "user_b": {
+            "id": user_b_id,
+            "email": "jonathan@demofirm.com",
+            "password": _DEMO_PASSWORD,
+            "role": "paralegal",
+        },
+        "matter_a": {"id": matter_a_id, "name": "People v. Smith"},
+        "matter_b": {"id": matter_b_id, "name": "People v. Jones"},
+    }
+
+    # Teardown
+    with Session(engine) as session:
+        session.execute(
+            delete(MatterAccess).where(
+                MatterAccess.matter_id.in_([matter_a_id, matter_b_id])
+            )
+        )
+        session.execute(
+            delete(RefreshToken).where(RefreshToken.user_id.in_([user_a_id, user_b_id]))
+        )
+        session.execute(delete(Matter).where(Matter.id.in_([matter_a_id, matter_b_id])))
+        session.execute(delete(User).where(User.id.in_([user_a_id, user_b_id])))
         session.execute(delete(Firm).where(Firm.id == firm_id))
         session.commit()
 

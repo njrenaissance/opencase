@@ -267,6 +267,38 @@ only and not mapped to host ports.
 
 ---
 
+## Seeding the Database
+
+### Admin Seed (automatic)
+
+The FastAPI lifespan hook automatically seeds an admin user on startup
+when `OPENCASE_ADMIN_EMAIL` and `OPENCASE_ADMIN_PASSWORD` are set.
+See [SETTINGS.md](SETTINGS.md) for the full list of `OPENCASE_ADMIN_*`
+variables.
+
+### Demo Seed (manual)
+
+The `seed_demo` script populates the database with sample data for
+development and testing:
+
+- **Cora Firm**
+- **Virginia Cora** (attorney) — access to both matters
+- **Jonathan Phillips** (paralegal) — access to Matter B only
+- **People v. Smith** (Matter A)
+- **People v. Jones** (Matter B)
+
+```bash
+# From the backend directory (requires the stack to be running)
+cd backend
+uv run python -m scripts.seed_demo
+```
+
+The script is idempotent — safe to run multiple times. It uses
+deterministic UUIDs so re-runs skip existing records. Password for
+both demo users: `DemoPassword123!`
+
+---
+
 ## Integration Test Stack
 
 `infrastructure/docker-compose.integration.yml` is a Compose override used
