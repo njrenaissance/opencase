@@ -1,2 +1,2 @@
 [tool.uv.workspace]
-members = ["backend", "shared", "sdk"]
+members = ["backend", "shared", "sdk", "cli"]

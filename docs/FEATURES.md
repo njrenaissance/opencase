@@ -24,7 +24,7 @@
 | 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Done | Done | Done |
 | 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Done | Done | Done |
 | 1.6 | Python REST client SDK + shared models (sdk/, shared/) | Done | Done | Done |
-| 1.7 | CLI (built on SDK) | Pending | Pending | Pending |
+| 1.7 | CLI (built on SDK) | Done | Done | Done |
 | 1.8 | Core business endpoints (matters, prompt stub, documents stub) | Pending | Pending | Pending |
 
 ## Feature 2 — Worker Queue

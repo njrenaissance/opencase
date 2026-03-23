@@ -68,3 +68,15 @@ jobs:
       - name: Run type checker — sdk
         working-directory: sdk
         run: uv run mypy opencase/
+
+      - name: Check formatting — cli
+        working-directory: cli
+        run: uv run ruff format --check .
+
+      - name: Run linter — cli
+        working-directory: cli
+        run: uv run ruff check .
+
+      - name: Run type checker — cli
+        working-directory: cli
+        run: uv run mypy opencase_cli/

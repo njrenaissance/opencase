@@ -4,10 +4,10 @@ repos:
     hooks:
       - id: ruff-format
         args: [--check]
-        files: ^(backend|shared|sdk)/
+        files: ^(backend|shared|sdk|cli)/
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        files: ^(backend|shared|sdk)/
+        files: ^(backend|shared|sdk|cli)/
 
   - repo: local
     hooks:
@@ -56,3 +56,18 @@ repos:
         language: system
         pass_filenames: false
         files: ^sdk/
+
+      - id: mypy-cli
+        name: mypy (cli)
+        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run mypy opencase_cli/'
+        language: system
+        pass_filenames: false
+        files: ^cli/
+        types: [python]
+
+      - id: pytest-cli
+        name: pytest (cli)
+        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run python -m pytest -x -q --cov=opencase_cli --cov-report=term-missing'
+        language: system
+        pass_filenames: false
+        files: ^cli/
