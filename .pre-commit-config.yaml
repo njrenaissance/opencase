@@ -11,6 +11,14 @@ repos:
 
   - repo: local
     hooks:
+      - id: mypy
+        name: mypy
+        entry: bash -c 'unset VIRTUAL_ENV && cd backend && uv run mypy --strict app/'
+        language: system
+        pass_filenames: false
+        files: ^backend/
+        types: [python]
+
       - id: pytest
         name: pytest
         entry: bash -c 'unset VIRTUAL_ENV && cd backend && uv run python -m pytest -m "not integration" -x -q --cov=app --cov-fail-under=70 --cov-report=term-missing'
