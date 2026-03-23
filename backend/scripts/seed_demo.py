@@ -120,12 +120,12 @@ async def _seed(session: AsyncSession) -> None:
     await session.flush()
 
     # -- Matter Access -------------------------------------------------------
-    # User A (Virginia) → Matter A + Matter B
-    # User B (David)    → Matter B only
+    # User A (Virginia) -> Matter A + Matter B
+    # User B (David)    -> Matter B only
     grants = [
-        (USER_A_ID, MATTER_A_ID, "Virginia → People v. Smith"),
-        (USER_A_ID, MATTER_B_ID, "Virginia → People v. Jones"),
-        (USER_B_ID, MATTER_B_ID, "Jonathan → People v. Jones"),
+        (USER_A_ID, MATTER_A_ID, "Virginia -> People v. Smith"),
+        (USER_A_ID, MATTER_B_ID, "Virginia -> People v. Jones"),
+        (USER_B_ID, MATTER_B_ID, "Jonathan -> People v. Jones"),
     ]
 
     for user_id, matter_id, label in grants:

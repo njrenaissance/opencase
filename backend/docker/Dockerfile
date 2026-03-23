@@ -6,20 +6,27 @@ WORKDIR /app
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency and build files first for layer caching
-COPY pyproject.toml uv.lock README.md ./
+# Copy workspace root files for uv workspace resolution
+COPY pyproject.toml uv.lock ./
 
-# Install production dependencies only (no dev deps, no project yet)
-RUN uv sync --frozen --no-dev --no-install-project
+# Copy shared package (workspace dependency)
+COPY shared/ shared/
 
-# Copy application source, migration scripts, and utility scripts
-COPY app/ app/
-COPY alembic/ alembic/
-COPY alembic.ini alembic.ini
-COPY scripts/ scripts/
+# Copy backend dependency files first for layer caching
+COPY backend/pyproject.toml backend/README.md backend/
 
-# Install the project itself (hatchling build)
-RUN uv sync --frozen --no-dev
+# Install production dependencies with shared built as a wheel (not editable)
+WORKDIR /app/backend
+RUN uv sync --frozen --no-dev --no-editable --no-install-project
+
+# Copy remaining backend source
+COPY backend/app/ app/
+COPY backend/alembic/ alembic/
+COPY backend/alembic.ini alembic.ini
+COPY backend/scripts/ scripts/
+
+# Install the backend project itself
+RUN uv sync --frozen --no-dev --no-editable
 
 
 # ---- Stage 2: Runtime ----
@@ -31,15 +38,15 @@ WORKDIR /app
 RUN groupadd --gid 1000 opencase \
     && useradd --uid 1000 --gid opencase --shell /bin/bash opencase
 
-# Copy virtual environment and application from builder
+# Copy virtual environment (shared is installed as a wheel, no source needed)
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/app /app/app
-COPY --from=builder /app/alembic /app/alembic
-COPY --from=builder /app/alembic.ini /app/alembic.ini
-COPY --from=builder /app/scripts /app/scripts
+COPY --from=builder /app/backend/app /app/app
+COPY --from=builder /app/backend/alembic /app/alembic
+COPY --from=builder /app/backend/alembic.ini /app/alembic.ini
+COPY --from=builder /app/backend/scripts /app/scripts
 
 # Copy startup script
-COPY docker/entrypoint.sh /app/entrypoint.sh
+COPY backend/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Put venv on PATH

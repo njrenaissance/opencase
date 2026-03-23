@@ -148,7 +148,7 @@ def fastapi_service(docker_ip, docker_services):
 # seed_admin — integration test user fixture
 # ---------------------------------------------------------------------------
 
-_SEED_ADMIN_EMAIL = "admin@opencase.test"
+_SEED_ADMIN_EMAIL = "admin@test.corafirm.com"
 _SEED_ADMIN_PASSWORD = "integration-test-pw"  # noqa: S105
 
 

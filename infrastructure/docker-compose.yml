@@ -28,8 +28,8 @@ services:
   # to the FastAPI lifespan hook (OPENCASE_ADMIN_* env vars).
   db-migrate:
     build:
-      context: ../backend
-      dockerfile: docker/Dockerfile
+      context: ..
+      dockerfile: backend/docker/Dockerfile
     command: ["true"]
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -46,8 +46,8 @@ services:
   # --- API Layer --------------------------------------------
   fastapi:
     build:
-      context: ../backend
-      dockerfile: docker/Dockerfile
+      context: ..
+      dockerfile: backend/docker/Dockerfile
     expose:
       - "8000"
     # Host port mapping for local development and integration tests.
@@ -104,7 +104,7 @@ services:
     volumes:
       - grafana-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
