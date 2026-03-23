@@ -16,6 +16,8 @@ classifiers = [
 ]
 
 dependencies = [
+    # Shared models
+    "opencase-shared",
     # API
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
@@ -92,6 +94,9 @@ dev = [
     "pytest-playwright>=0.7.2",
     "python-dotenv>=1.0",
 ]
+
+[tool.uv.sources]
+opencase-shared = { workspace = true }
 
 [tool.ruff]
 target-version = "py312"

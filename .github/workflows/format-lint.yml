@@ -12,10 +12,6 @@ jobs:
     name: Ruff Lint & Format
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,18 +26,45 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('backend/uv.lock') }}
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-uv-
 
       - name: Install dependencies
-        run: uv sync --frozen --group dev
+        run: uv sync --frozen
 
-      - name: Check formatting (ruff format)
+      - name: Check formatting — backend
+        working-directory: backend
         run: uv run ruff format --check .
 
-      - name: Run linter (ruff check)
+      - name: Run linter — backend
+        working-directory: backend
         run: uv run ruff check .
 
-      - name: Run type checker (mypy)
+      - name: Run type checker — backend
+        working-directory: backend
         run: uv run mypy app/
+
+      - name: Check formatting — shared
+        working-directory: shared
+        run: uv run ruff format --check .
+
+      - name: Run linter — shared
+        working-directory: shared
+        run: uv run ruff check .
+
+      - name: Run type checker — shared
+        working-directory: shared
+        run: uv run mypy shared/
+
+      - name: Check formatting — sdk
+        working-directory: sdk
+        run: uv run ruff format --check .
+
+      - name: Run linter — sdk
+        working-directory: sdk
+        run: uv run ruff check .
+
+      - name: Run type checker — sdk
+        working-directory: sdk
+        run: uv run mypy opencase/

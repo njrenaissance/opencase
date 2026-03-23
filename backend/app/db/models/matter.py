@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import enum
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from shared.models.enums import MatterStatus
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,12 +15,6 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.db.models.firm import Firm
     from app.db.models.matter_access import MatterAccess
-
-
-class MatterStatus(enum.StrEnum):
-    open = "open"
-    closed = "closed"
-    archived = "archived"
 
 
 class Matter(Base):

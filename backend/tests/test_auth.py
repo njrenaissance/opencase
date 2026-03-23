@@ -24,7 +24,7 @@ from app.core.auth import (
     verify_password,
     verify_totp,
 )
-from app.db.models.user import Role, User
+from tests.factories import make_user
 
 # ---------------------------------------------------------------------------
 # Password hashing
@@ -48,30 +48,8 @@ def test_verify_password_wrong() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_user(**overrides: object) -> User:
-    defaults: dict[str, object] = {
-        "id": uuid.uuid4(),
-        "firm_id": uuid.uuid4(),
-        "email": "test@example.com",
-        "hashed_password": "x",
-        "first_name": "Test",
-        "last_name": "User",
-        "role": Role.attorney,
-        "is_active": True,
-        "totp_enabled": False,
-        "totp_secret": None,
-        "failed_login_attempts": 0,
-        "locked_until": None,
-        "totp_verified_at": None,
-        "created_at": datetime.now(UTC),
-        "updated_at": datetime.now(UTC),
-    }
-    defaults.update(overrides)
-    return User(**defaults)
-
-
 def test_create_access_token_claims() -> None:
-    user = _make_user()
+    user = make_user()
     token = create_access_token(user)
     payload = decode_token(token, expected_type="access")
     assert payload["sub"] == str(user.id)
@@ -98,7 +76,7 @@ def test_create_mfa_token_type() -> None:
 
 
 def test_decode_token_wrong_type_raises() -> None:
-    user = _make_user()
+    user = make_user()
     token = create_access_token(user)
     with pytest.raises(HTTPException) as exc_info:
         decode_token(token, expected_type="refresh")
@@ -175,7 +153,7 @@ def test_derive_totp_key_deterministic() -> None:
 
 @pytest.mark.asyncio
 async def test_get_current_user_valid() -> None:
-    user = _make_user()
+    user = make_user()
     token = create_access_token(user)
 
     mock_result = MagicMock()
@@ -189,7 +167,7 @@ async def test_get_current_user_valid() -> None:
 
 @pytest.mark.asyncio
 async def test_get_current_user_inactive_raises() -> None:
-    user = _make_user(is_active=False)
+    user = make_user(is_active=False)
     token = create_access_token(user)
 
     mock_result = MagicMock()

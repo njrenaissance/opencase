@@ -8,13 +8,9 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from opentelemetry import trace
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.api.schemas.auth import (
+from shared.models.auth import (
     LoginRequest,
     LogoutRequest,
-    MessageResponse,
     MfaConfirmRequest,
     MfaRequiredResponse,
     MfaSetupResponse,
@@ -23,6 +19,10 @@ from app.api.schemas.auth import (
     RefreshRequest,
     TokenResponse,
 )
+from shared.models.base import MessageResponse
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.auth import (
     create_access_token,
     create_mfa_token,

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
+from shared.models.enums import Role
 
 from app.core.permissions import (
     PermissionFilter,
@@ -17,7 +18,7 @@ from app.core.permissions import (
     require_role,
 )
 from app.db.models.matter_access import MatterAccess
-from app.db.models.user import Role, User
+from tests.factories import make_user
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -25,28 +26,6 @@ from app.db.models.user import Role, User
 
 _FIRM_ID = uuid.uuid4()
 _MATTER_ID = uuid.uuid4()
-
-
-def _make_user(role: Role = Role.attorney, **overrides: object) -> User:
-    defaults: dict[str, object] = {
-        "id": uuid.uuid4(),
-        "firm_id": _FIRM_ID,
-        "email": "test@example.com",
-        "hashed_password": "x",
-        "first_name": "Test",
-        "last_name": "User",
-        "role": role,
-        "is_active": True,
-        "totp_enabled": False,
-        "totp_secret": None,
-        "totp_verified_at": None,
-        "failed_login_attempts": 0,
-        "locked_until": None,
-        "created_at": datetime.now(UTC),
-        "updated_at": datetime.now(UTC),
-    }
-    defaults.update(overrides)
-    return User(**defaults)
 
 
 def _make_access(
@@ -77,7 +56,7 @@ def _mock_db(return_value: object = None) -> AsyncMock:
 
 @pytest.mark.asyncio
 async def test_admin_no_exclusions() -> None:
-    user = _make_user(Role.admin)
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     db = _mock_db()  # should not be called
 
     result = await build_qdrant_filter(user, _MATTER_ID, db)
@@ -90,7 +69,7 @@ async def test_admin_no_exclusions() -> None:
 
 @pytest.mark.asyncio
 async def test_attorney_excludes_jencks() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     access = _make_access(user.id)
     db = _mock_db(access)
 
@@ -101,7 +80,7 @@ async def test_attorney_excludes_jencks() -> None:
 
 @pytest.mark.asyncio
 async def test_paralegal_with_work_product_excludes_jencks() -> None:
-    user = _make_user(Role.paralegal)
+    user = make_user(role=Role.paralegal, firm_id=_FIRM_ID)
     access = _make_access(user.id, view_work_product=True)
     db = _mock_db(access)
 
@@ -112,7 +91,7 @@ async def test_paralegal_with_work_product_excludes_jencks() -> None:
 
 @pytest.mark.asyncio
 async def test_paralegal_without_work_product_excludes_both() -> None:
-    user = _make_user(Role.paralegal)
+    user = make_user(role=Role.paralegal, firm_id=_FIRM_ID)
     access = _make_access(user.id, view_work_product=False)
     db = _mock_db(access)
 
@@ -123,7 +102,7 @@ async def test_paralegal_without_work_product_excludes_both() -> None:
 
 @pytest.mark.asyncio
 async def test_investigator_excludes_work_product_and_jencks() -> None:
-    user = _make_user(Role.investigator)
+    user = make_user(role=Role.investigator, firm_id=_FIRM_ID)
     access = _make_access(user.id)
     db = _mock_db(access)
 
@@ -134,7 +113,7 @@ async def test_investigator_excludes_work_product_and_jencks() -> None:
 
 @pytest.mark.asyncio
 async def test_unassigned_user_raises_404() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     db = _mock_db(None)  # no access row
 
     with pytest.raises(HTTPException) as exc_info:
@@ -145,7 +124,7 @@ async def test_unassigned_user_raises_404() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_bypasses_matter_access_check() -> None:
-    user = _make_user(Role.admin)
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     db = _mock_db()
 
     result = await build_qdrant_filter(user, _MATTER_ID, db)
@@ -157,7 +136,7 @@ async def test_admin_bypasses_matter_access_check() -> None:
 @pytest.mark.asyncio
 async def test_firm_id_always_set() -> None:
     for role in Role:
-        user = _make_user(role)
+        user = make_user(role=role, firm_id=_FIRM_ID)
         access = _make_access(user.id)
         db = _mock_db(access)
         result = await build_qdrant_filter(user, _MATTER_ID, db)
@@ -173,7 +152,7 @@ async def test_cross_firm_matter_returns_404() -> None:
     check would reject it.
     """
     other_firm_matter = uuid.uuid4()
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     db = _mock_db(None)  # join returns no row — firm mismatch
 
     with pytest.raises(HTTPException) as exc_info:
@@ -189,7 +168,7 @@ async def test_cross_firm_matter_returns_404() -> None:
 
 @pytest.mark.asyncio
 async def test_fetch_returns_access_row() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     access = _make_access(user.id)
     db = _mock_db(access)
 
@@ -200,7 +179,7 @@ async def test_fetch_returns_access_row() -> None:
 
 @pytest.mark.asyncio
 async def test_fetch_raises_404_when_no_row() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     db = _mock_db(None)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -216,7 +195,7 @@ async def test_fetch_raises_404_when_no_row() -> None:
 
 @pytest.mark.asyncio
 async def test_allowed_role_passes() -> None:
-    user = _make_user(Role.admin)
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     dep = require_role(Role.admin)
     result = await dep(user=user)
     assert result is user
@@ -224,7 +203,7 @@ async def test_allowed_role_passes() -> None:
 
 @pytest.mark.asyncio
 async def test_disallowed_role_raises_403() -> None:
-    user = _make_user(Role.investigator)
+    user = make_user(role=Role.investigator, firm_id=_FIRM_ID)
     dep = require_role(Role.admin)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -235,7 +214,7 @@ async def test_disallowed_role_raises_403() -> None:
 
 @pytest.mark.asyncio
 async def test_multiple_roles_allowed() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     dep = require_role(Role.admin, Role.attorney)
     result = await dep(user=user)
     assert result is user
@@ -248,7 +227,7 @@ async def test_multiple_roles_allowed() -> None:
 
 @pytest.mark.asyncio
 async def test_matter_access_admin_bypasses() -> None:
-    user = _make_user(Role.admin)
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     db = _mock_db()
 
     result = await require_matter_access(matter_id=_MATTER_ID, user=user, db=db)
@@ -259,7 +238,7 @@ async def test_matter_access_admin_bypasses() -> None:
 
 @pytest.mark.asyncio
 async def test_matter_access_assigned_user_passes() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     access = _make_access(user.id)
     db = _mock_db(access)
 
@@ -270,7 +249,7 @@ async def test_matter_access_assigned_user_passes() -> None:
 
 @pytest.mark.asyncio
 async def test_matter_access_unassigned_raises_404() -> None:
-    user = _make_user(Role.attorney)
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
     db = _mock_db(None)
 
     with pytest.raises(HTTPException) as exc_info:
@@ -281,7 +260,7 @@ async def test_matter_access_unassigned_raises_404() -> None:
 
 @pytest.mark.asyncio
 async def test_matter_access_returns_row() -> None:
-    user = _make_user(Role.paralegal)
+    user = make_user(role=Role.paralegal, firm_id=_FIRM_ID)
     access = _make_access(user.id, view_work_product=True)
     db = _mock_db(access)
 

@@ -33,6 +33,7 @@ import sys
 import uuid
 from datetime import UTC, datetime
 
+from shared.models.enums import Role
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -43,7 +44,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.auth import hash_password
 from app.core.config import settings
 from app.db.models.firm import Firm
-from app.db.models.user import Role, User
+from app.db.models.user import User
 
 
 async def _seed(  # noqa: PLR0913

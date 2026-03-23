@@ -13,6 +13,7 @@ load_dotenv(_ENV_TEST)
 
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from shared.models.enums import Role  # noqa: E402
 from sqlalchemy import create_engine, delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
@@ -20,7 +21,7 @@ from app.core.auth import hash_password  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.db.models.firm import Firm  # noqa: E402
 from app.db.models.refresh_token import RefreshToken  # noqa: E402
-from app.db.models.user import Role, User  # noqa: E402
+from app.db.models.user import User  # noqa: E402
 from app.main import app  # noqa: E402
 
 # ---------------------------------------------------------------------------

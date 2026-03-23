@@ -11,6 +11,7 @@ import uuid
 
 import pytest
 import pytest_asyncio
+from shared.models.enums import MatterStatus
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -18,8 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import settings
 from app.db.base import Base
 from app.db.models import Firm, Matter, MatterAccess, User
-from app.db.models.matter import MatterStatus
-from app.db.models.user import Role
+from tests.factories import make_firm, make_matter, make_user
 
 # All tests share the session-scoped async engine fixture, so they must run
 # in the same event loop — loop_scope="session" ensures that.
@@ -53,36 +53,35 @@ async def session(engine):
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Fixtures (use shared factories from conftest.py)
 # ---------------------------------------------------------------------------
 
 
-def make_firm(**kwargs) -> Firm:
-    return Firm(id=uuid.uuid4(), name="Test Firm", **kwargs)
+@pytest_asyncio.fixture
+async def firm(session) -> Firm:
+    """A flushed Firm row available for tests that need one."""
+    f = make_firm()
+    session.add(f)
+    await session.flush()
+    return f
 
 
-def make_user(firm_id: uuid.UUID, **kwargs) -> User:
-    return User(
-        id=uuid.uuid4(),
-        firm_id=firm_id,
-        email=kwargs.pop("email", f"{uuid.uuid4()}@example.com"),
-        hashed_password="hashed-in-test",  # noqa: S106
-        first_name="Jane",
-        last_name="Doe",
-        role=Role.attorney,
-        **kwargs,
-    )
+@pytest_asyncio.fixture
+async def user(firm, session) -> User:
+    """A flushed User row belonging to the firm fixture."""
+    u = make_user(firm_id=firm.id)
+    session.add(u)
+    await session.flush()
+    return u
 
 
-def make_matter(firm_id: uuid.UUID, **kwargs) -> Matter:
-    return Matter(
-        id=uuid.uuid4(),
-        firm_id=firm_id,
-        name="Test Matter",
-        client_id=uuid.uuid4(),
-        status=MatterStatus.open,
-        **kwargs,
-    )
+@pytest_asyncio.fixture
+async def matter(firm, session) -> Matter:
+    """A flushed Matter row belonging to the firm fixture."""
+    m = make_matter(firm_id=firm.id)
+    session.add(m)
+    await session.flush()
+    return m
 
 
 # ---------------------------------------------------------------------------
@@ -90,10 +89,7 @@ def make_matter(firm_id: uuid.UUID, **kwargs) -> Matter:
 # ---------------------------------------------------------------------------
 
 
-async def test_firm_insert(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
+async def test_firm_insert(firm, session):
     result = await session.get(Firm, firm.id)
     assert result is not None
     assert result.name == "Test Firm"
@@ -104,58 +100,42 @@ async def test_firm_insert(session):
 # ---------------------------------------------------------------------------
 
 
-async def test_user_insert(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    user = make_user(firm.id)
-    session.add(user)
-    await session.flush()
-
+async def test_user_insert(user, session):
     result = await session.get(User, user.id)
     assert result.email == user.email
-    assert result.first_name == "Jane"
-    assert result.last_name == "Doe"
+    assert result.first_name == "Test"
+    assert result.last_name == "User"
 
 
 async def test_user_invalid_firm_fk_raises(session):
-    user = make_user(uuid.uuid4())  # non-existent firm_id
+    user = make_user(firm_id=uuid.uuid4())  # non-existent firm_id
     session.add(user)
     with pytest.raises(IntegrityError):
         await session.flush()
 
 
-async def test_user_duplicate_email_same_firm_raises(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
+async def test_user_duplicate_email_same_firm_raises(firm, session):
     email = "duplicate@example.com"
-    session.add(make_user(firm.id, email=email))
-    session.add(make_user(firm.id, email=email))
+    session.add(make_user(firm_id=firm.id, email=email))
+    session.add(make_user(firm_id=firm.id, email=email))
     with pytest.raises(IntegrityError):
         await session.flush()
 
 
 async def test_user_same_email_different_firms_allowed(session):
     firm_a = make_firm()
-    firm_b = Firm(id=uuid.uuid4(), name="Firm B")
+    firm_b = make_firm(name="Firm B")
     session.add_all([firm_a, firm_b])
     await session.flush()
 
     email = "shared@example.com"
-    session.add(make_user(firm_a.id, email=email))
-    session.add(make_user(firm_b.id, email=email))
+    session.add(make_user(firm_id=firm_a.id, email=email))
+    session.add(make_user(firm_id=firm_b.id, email=email))
     await session.flush()  # must not raise
 
 
-async def test_user_cascade_delete_with_firm(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    user = make_user(firm.id)
+async def test_user_cascade_delete_with_firm(firm, session):
+    user = make_user(firm_id=firm.id)
     session.add(user)
     await session.flush()
 
@@ -172,22 +152,14 @@ async def test_user_cascade_delete_with_firm(session):
 # ---------------------------------------------------------------------------
 
 
-async def test_matter_insert(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    matter = make_matter(firm.id)
-    session.add(matter)
-    await session.flush()
-
+async def test_matter_insert(matter, session):
     result = await session.get(Matter, matter.id)
     assert result.status == MatterStatus.open
     assert result.legal_hold is False
 
 
 async def test_matter_invalid_firm_fk_raises(session):
-    matter = make_matter(uuid.uuid4())
+    matter = make_matter(firm_id=uuid.uuid4())
     session.add(matter)
     with pytest.raises(IntegrityError):
         await session.flush()
@@ -198,16 +170,7 @@ async def test_matter_invalid_firm_fk_raises(session):
 # ---------------------------------------------------------------------------
 
 
-async def test_matter_access_insert(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    user = make_user(firm.id)
-    matter = make_matter(firm.id)
-    session.add_all([user, matter])
-    await session.flush()
-
+async def test_matter_access_insert(user, matter, session):
     access = MatterAccess(user_id=user.id, matter_id=matter.id)
     session.add(access)
     await session.flush()
@@ -217,32 +180,14 @@ async def test_matter_access_insert(session):
     assert result.view_work_product is False
 
 
-async def test_matter_access_duplicate_pk_raises(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    user = make_user(firm.id)
-    matter = make_matter(firm.id)
-    session.add_all([user, matter])
-    await session.flush()
-
+async def test_matter_access_duplicate_pk_raises(user, matter, session):
     session.add(MatterAccess(user_id=user.id, matter_id=matter.id))
     session.add(MatterAccess(user_id=user.id, matter_id=matter.id))
     with pytest.raises(IntegrityError):
         await session.flush()
 
 
-async def test_matter_access_cascade_delete_with_user(session):
-    firm = make_firm()
-    session.add(firm)
-    await session.flush()
-
-    user = make_user(firm.id)
-    matter = make_matter(firm.id)
-    session.add_all([user, matter])
-    await session.flush()
-
+async def test_matter_access_cascade_delete_with_user(user, matter, session):
     session.add(MatterAccess(user_id=user.id, matter_id=matter.id))
     await session.flush()
 

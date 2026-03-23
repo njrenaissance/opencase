@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import enum
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from shared.models.enums import Role
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -24,13 +24,6 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.db.models.firm import Firm
     from app.db.models.matter_access import MatterAccess
-
-
-class Role(enum.StrEnum):
-    admin = "admin"
-    attorney = "attorney"
-    paralegal = "paralegal"
-    investigator = "investigator"
 
 
 class User(Base):

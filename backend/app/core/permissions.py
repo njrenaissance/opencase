@@ -15,6 +15,7 @@ from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from opentelemetry import trace
+from shared.models.enums import Role
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +24,7 @@ from app.core.metrics import access_denied
 from app.db import get_db
 from app.db.models.matter import Matter
 from app.db.models.matter_access import MatterAccess
-from app.db.models.user import Role, User
+from app.db.models.user import User
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)

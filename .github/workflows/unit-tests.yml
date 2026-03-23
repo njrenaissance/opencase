@@ -12,10 +12,6 @@ jobs:
     name: Unit Tests & Coverage
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,20 +26,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('backend/uv.lock') }}
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-uv-
 
       - name: Install dependencies
-        run: uv sync --frozen --group dev
+        run: uv sync --frozen
 
-      - name: Run unit tests with coverage
+      - name: Run backend unit tests with coverage
+        working-directory: backend
         run: |
           uv run pytest -m "not integration" \
             --cov=app \
             --cov-report=term-missing \
             --cov-report=json:coverage.json \
             -v
+
+      - name: Run SDK unit tests
+        working-directory: sdk
+        run: uv run pytest -v
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -55,6 +56,7 @@ jobs:
 
       - name: Coverage summary
         if: always()
+        working-directory: backend
         run: |
           echo "## Unit Test Coverage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"

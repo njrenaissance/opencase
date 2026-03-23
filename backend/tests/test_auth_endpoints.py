@@ -21,37 +21,15 @@ from app.core.auth import (
 )
 from app.db import get_db
 from app.db.models.refresh_token import RefreshToken
-from app.db.models.user import Role, User
+from app.db.models.user import User
 from app.main import app
+from tests.factories import make_user
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
-_FIRM_ID = uuid.uuid4()
 _PASSWORD = "test-password-123"  # noqa: S105 — test-only
-
-
-def _make_user(**overrides: object) -> User:
-    defaults: dict[str, object] = {
-        "id": uuid.uuid4(),
-        "firm_id": _FIRM_ID,
-        "email": "attorney@corafirm.com",
-        "hashed_password": hash_password(_PASSWORD),
-        "first_name": "Virginia",
-        "last_name": "Cora",
-        "role": Role.attorney,
-        "is_active": True,
-        "totp_enabled": False,
-        "totp_secret": None,
-        "totp_verified_at": None,
-        "failed_login_attempts": 0,
-        "locked_until": None,
-        "created_at": datetime.now(UTC),
-        "updated_at": datetime.now(UTC),
-    }
-    defaults.update(overrides)
-    return User(**defaults)
 
 
 class FakeSession:
@@ -103,14 +81,17 @@ def _override_db(user: User | None = None, refresh_token: RefreshToken | None = 
 
 @pytest.fixture
 def user_no_mfa() -> User:
-    return _make_user()
+    return make_user(
+        hashed_password=hash_password(_PASSWORD),
+    )
 
 
 @pytest.fixture
 def user_with_mfa() -> User:
     secret = generate_totp_secret()
     encrypted = encrypt_totp_secret(secret)
-    return _make_user(
+    return make_user(
+        hashed_password=hash_password(_PASSWORD),
         totp_enabled=True,
         totp_secret=encrypted,
         totp_verified_at=datetime.now(UTC),

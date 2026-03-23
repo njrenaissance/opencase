@@ -21,9 +21,9 @@
 | 1.1 | Configuration + env vars (ApiSettings, AuthSettings, DbSettings) | Done | Done | Done |
 | 1.2 | Database foundation (User, Firm, Matter models + Alembic) | Done | Done | Done |
 | 1.3 | Observability (auth spans/metrics, DB tracing) | Done | Done | Done |
-| 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Pending | Pending | Pending |
-| 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Pending | Pending | Pending |
-| 1.6 | Python REST client SDK (backend/sdk/) | Pending | Pending | Pending |
+| 1.4 | Authentication (JWT, TOTP MFA, login/logout/refresh) | Done | Done | Done |
+| 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Done | Done | Done |
+| 1.6 | Python REST client SDK + shared models (sdk/, shared/) | Done | Done | Done |
 | 1.7 | CLI (built on SDK) | Pending | Pending | Pending |
 | 1.8 | Core business endpoints (matters, prompt stub, documents stub) | Pending | Pending | Pending |
 
