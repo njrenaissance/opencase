@@ -170,3 +170,12 @@
 | 12.4 | Hold audit trail (all hold/release actions logged to audit chain) | Pending | Pending | Pending |
 | 12.5 | Configuration + env vars (HoldSettings) | Pending | Pending | Pending |
 | 12.6 | Observability (hold enforcement spans/metrics) | Pending | Pending | Pending |
+
+## Release Engineering (post-RC)
+
+| ID | Feature | Status |
+| --- | --- | --- |
+| R.1 | `backend/app/__version__.py` as single source of truth | Pending |
+| R.2 | Container image tagged with version (not just git SHA) | Pending |
+| R.3 | GitHub release workflow (tag → build → push to GHCR) | Pending |
+| R.4 | Operationalized update process (upgrade path for deployed firms) | Pending |
