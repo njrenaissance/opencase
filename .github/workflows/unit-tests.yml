@@ -42,6 +42,10 @@ jobs:
             --cov-report=json:coverage.json \
             -v
 
+      - name: Run shared unit tests
+        working-directory: shared
+        run: uv run pytest -v
+
       - name: Run SDK unit tests with coverage
         working-directory: sdk
         run: |

@@ -26,8 +26,8 @@ async def verify_in_firm[T: (Matter, User)](
     """
     result = await db.execute(
         select(model_class).where(
-            model_class.id == model_id,  # type: ignore[attr-defined]
-            model_class.firm_id == firm_id,  # type: ignore[attr-defined]
+            model_class.id == model_id,
+            model_class.firm_id == firm_id,
         )
     )
     obj = result.scalar_one_or_none()
