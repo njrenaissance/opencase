@@ -31,15 +31,15 @@
 
 | ID | Feature | Specs | Code | Docs |
 | --- | --- | --- | --- | --- |
-| 2.1 | Redis broker container | Pending | Pending | Pending |
-| 2.2 | Celery app + task definitions (app/workers/) | Pending | Pending | Pending |
-| 2.3 | Celery worker container + Dockerfile | Pending | Pending | Pending |
-| 2.4 | Celery Beat scheduler container | Pending | Pending | Pending |
-| 2.5 | API integration (Celery client, task.delay() submission) | Pending | Pending | Pending |
-| 2.6 | Task status API endpoint (read-only — query task progress/result by task ID for API-triggered tasks) | Pending | Pending | Pending |
-| 2.7 | Observability (Flower container + OTel Celery instrumentation) | Pending | Pending | Pending |
-| 2.8 | Task result persistence (separate Postgres instance, task lifecycle table for audit) | Pending | Pending | Pending |
-| 2.9 | Configuration + env vars (CelerySettings, RedisSettings, FlowerSettings) | Pending | Pending | Pending |
+| 2.1 | Configuration + env vars (CelerySettings, RedisSettings, FlowerSettings) | Pending | Pending | Pending |
+| 2.2 | Redis broker container | Pending | Pending | Pending |
+| 2.3 | Celery app + task definitions (app/workers/) | Pending | Pending | Pending |
+| 2.4 | Task result persistence (separate Postgres instance, task lifecycle table for audit) | Pending | Pending | Pending |
+| 2.5 | Celery worker container + Dockerfile | Pending | Pending | Pending |
+| 2.6 | Celery Beat scheduler container | Pending | Pending | Pending |
+| 2.7 | API integration (Celery client, task.delay() submission) | Pending | Pending | Pending |
+| 2.8 | Task status API endpoint (read-only — query task progress/result by task ID for API-triggered tasks) | Pending | Pending | Pending |
+| 2.9 | Observability (Flower container + OTel Celery instrumentation) | Pending | Pending | Pending |
 
 ## Feature 3 — S3 Storage
 
