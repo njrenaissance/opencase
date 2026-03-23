@@ -19,7 +19,12 @@ def login(
     ] = None,
     password: Annotated[
         str | None,
-        typer.Option("--password", "-p", help="Account password.", hide_input=True),
+        typer.Option(
+            "--password",
+            "-p",
+            help="Account password (prefer interactive prompt to avoid shell history).",
+            hide_input=True,
+        ),
     ] = None,
     totp_code: Annotated[
         str | None,
@@ -59,13 +64,15 @@ def logout(
 ) -> None:
     """Log out and clear stored tokens."""
     client = get_client(base_url, timeout, authenticated=True)
-    with handle_errors(), client:
-        client.logout()
+    try:
+        with handle_errors(), client:
+            client.logout()
+    finally:
         clear_tokens()
-        if json_output:
-            print_json({"logged_out": True})
-        else:
-            print_success("Logged out.")
+    if json_output:
+        print_json({"logged_out": True})
+    else:
+        print_success("Logged out.")
 
 
 def whoami(
