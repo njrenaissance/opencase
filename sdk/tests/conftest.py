@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import time
 from collections.abc import Callable
 
 import httpx
@@ -37,4 +38,12 @@ def build_client(handler: Handler) -> OpenCaseClient:
     """Create an OpenCaseClient backed by a mock transport."""
     client = OpenCaseClient(base_url="http://test")
     client._http = mock_http(handler)  # noqa: SLF001
+    return client
+
+
+def build_authenticated_client(handler: Handler) -> OpenCaseClient:
+    """Create an OpenCaseClient with pre-stored auth tokens."""
+    client = build_client(handler)
+    token = make_jwt(exp=time.time() + 3600)
+    client._auth.store_tokens(token, "refresh")  # noqa: SLF001
     return client

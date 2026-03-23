@@ -12,7 +12,19 @@ from shared.models.auth import (
     TokenResponse,
 )
 from shared.models.base import MessageResponse
+from shared.models.firm import FirmResponse
 from shared.models.health import HealthResponse, ReadinessResponse
+from shared.models.matter import (
+    MatterResponse,
+    MatterSummary,
+)
+from shared.models.matter_access import (
+    MatterAccessResponse,
+)
+from shared.models.user import (
+    UserResponse,
+    UserSummary,
+)
 
 from opencase._auth import AuthManager
 from opencase.exceptions import (
@@ -132,6 +144,104 @@ class OpenCaseClient:
         token = refresh_token or self._auth.refresh_token
         resp = self._request("POST", "/auth/logout", json={"refresh_token": token})
         self._auth.clear()
+        return MessageResponse.model_validate(resp.json())
+
+    # -- firms ---------------------------------------------------------------
+
+    def get_firm(self) -> FirmResponse:
+        resp = self._request("GET", "/firms/me")
+        return FirmResponse.model_validate(resp.json())
+
+    # -- users ---------------------------------------------------------------
+
+    def get_current_user(self) -> UserResponse:
+        resp = self._request("GET", "/users/me")
+        return UserResponse.model_validate(resp.json())
+
+    def list_users(self) -> list[UserSummary]:
+        resp = self._request("GET", "/users/")
+        return [UserSummary.model_validate(item) for item in resp.json()]
+
+    def get_user(self, user_id: str) -> UserResponse:
+        resp = self._request("GET", f"/users/{user_id}")
+        return UserResponse.model_validate(resp.json())
+
+    def create_user(
+        self,
+        *,
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        role: str,
+        title: str | None = None,
+        middle_initial: str | None = None,
+    ) -> UserResponse:
+        payload: dict[str, Any] = {
+            "email": email,
+            "password": password,
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": role,
+        }
+        if title is not None:
+            payload["title"] = title
+        if middle_initial is not None:
+            payload["middle_initial"] = middle_initial
+        resp = self._request("POST", "/users/", json=payload)
+        return UserResponse.model_validate(resp.json())
+
+    def update_user(self, user_id: str, **kwargs: Any) -> UserResponse:
+        resp = self._request("PATCH", f"/users/{user_id}", json=kwargs)
+        return UserResponse.model_validate(resp.json())
+
+    # -- matters -------------------------------------------------------------
+
+    def list_matters(self) -> list[MatterSummary]:
+        resp = self._request("GET", "/matters/")
+        return [MatterSummary.model_validate(item) for item in resp.json()]
+
+    def get_matter(self, matter_id: str) -> MatterResponse:
+        resp = self._request("GET", f"/matters/{matter_id}")
+        return MatterResponse.model_validate(resp.json())
+
+    def create_matter(
+        self,
+        *,
+        name: str,
+        client_id: str,
+    ) -> MatterResponse:
+        resp = self._request(
+            "POST", "/matters/", json={"name": name, "client_id": client_id}
+        )
+        return MatterResponse.model_validate(resp.json())
+
+    def update_matter(self, matter_id: str, **kwargs: Any) -> MatterResponse:
+        resp = self._request("PATCH", f"/matters/{matter_id}", json=kwargs)
+        return MatterResponse.model_validate(resp.json())
+
+    # -- matter access -------------------------------------------------------
+
+    def list_matter_access(self, matter_id: str) -> list[MatterAccessResponse]:
+        resp = self._request("GET", f"/matters/{matter_id}/access")
+        return [MatterAccessResponse.model_validate(item) for item in resp.json()]
+
+    def grant_matter_access(
+        self,
+        matter_id: str,
+        *,
+        user_id: str,
+        view_work_product: bool = False,
+    ) -> MatterAccessResponse:
+        resp = self._request(
+            "POST",
+            f"/matters/{matter_id}/access",
+            json={"user_id": user_id, "view_work_product": view_work_product},
+        )
+        return MatterAccessResponse.model_validate(resp.json())
+
+    def revoke_matter_access(self, matter_id: str, user_id: str) -> MessageResponse:
+        resp = self._request("DELETE", f"/matters/{matter_id}/access/{user_id}")
         return MessageResponse.model_validate(resp.json())
 
     # -- internal transport --------------------------------------------------

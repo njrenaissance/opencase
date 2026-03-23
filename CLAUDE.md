@@ -251,6 +251,28 @@ definitions live in matching subdirectories under
 
 ---
 
+## Code Style
+
+- **DRY principle**: If extracting shared code reduces
+  administrative overhead (fewer places to update when
+  something changes), do it. Prefer shared helpers,
+  context managers, and base utilities over copy-paste.
+
+## Test Style
+
+- Use parametrized tests when testing the same outcome
+  across different fields or inputs. Do not write
+  separate test functions that only differ by which
+  field has a bad value. In Python use
+  `@pytest.mark.parametrize`; in TypeScript use
+  `it.each` (vitest).
+- Use fixtures and shared helpers (in `conftest.py`) to
+  reduce boilerplate. Repeated setup/teardown logic
+  should be extracted into context managers or fixtures
+  rather than duplicated in every test function.
+
+---
+
 ## Key Legal Compliance References
 
 | Rule | Relevance |

@@ -9,6 +9,7 @@ from shared.models.enums import MatterStatus, Role
 
 from app.db.models.firm import Firm
 from app.db.models.matter import Matter
+from app.db.models.matter_access import MatterAccess
 from app.db.models.user import User
 
 
@@ -50,6 +51,20 @@ def make_matter(**kwargs: object) -> Matter:
         "name": "Test Matter",
         "client_id": uuid.uuid4(),
         "status": MatterStatus.open,
+        "legal_hold": False,
+        "created_at": datetime.now(UTC),
+        "updated_at": datetime.now(UTC),
     }
     defaults.update(kwargs)
     return Matter(**defaults)
+
+
+def make_matter_access(**kwargs: object) -> MatterAccess:
+    defaults: dict[str, object] = {
+        "user_id": uuid.uuid4(),
+        "matter_id": uuid.uuid4(),
+        "view_work_product": False,
+        "assigned_at": datetime.now(UTC),
+    }
+    defaults.update(kwargs)
+    return MatterAccess(**defaults)

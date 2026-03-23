@@ -42,3 +42,37 @@ access_denied = meter.create_counter(
     "opencase.rbac.access_denied",
     description="RBAC access denials",  # attrs: reason=(role|matter), role=<role>
 )
+
+# ---------------------------------------------------------------------------
+# Entity management (Feature 14)
+# ---------------------------------------------------------------------------
+
+users_created = meter.create_counter(
+    "opencase.users.created",
+    description="Users created",
+)
+
+users_updated = meter.create_counter(
+    "opencase.users.updated",
+    description="Users updated",
+)
+
+matters_created = meter.create_counter(
+    "opencase.matters.created",
+    description="Matters created",
+)
+
+matters_updated = meter.create_counter(
+    "opencase.matters.updated",
+    description="Matters updated",
+)
+
+matter_access_granted = meter.create_counter(
+    "opencase.matter_access.granted",
+    description="Matter access grants",
+)
+
+matter_access_revoked = meter.create_counter(
+    "opencase.matter_access.revoked",
+    description="Matter access revocations",
+)
