@@ -76,3 +76,21 @@ matter_access_revoked = meter.create_counter(
     "opencase.matter_access.revoked",
     description="Matter access revocations",
 )
+
+# ---------------------------------------------------------------------------
+# Documents (Feature 1.8)
+# ---------------------------------------------------------------------------
+
+documents_created = meter.create_counter(
+    "opencase.documents.created",
+    description="Documents created",
+)
+
+# ---------------------------------------------------------------------------
+# Prompts (Feature 1.8)
+# ---------------------------------------------------------------------------
+
+prompts_created = meter.create_counter(
+    "opencase.prompts.created",
+    description="Prompts submitted",
+)

@@ -52,10 +52,44 @@ erDiagram
         timestamptz assigned_at
     }
 
+    documents {
+        uuid id PK
+        uuid firm_id FK
+        uuid matter_id FK
+        string filename
+        string file_hash "SHA-256 hex digest — dedup key"
+        string content_type
+        int size_bytes
+        enum source "government_production | defense | court | work_product"
+        enum classification "brady | giglio | jencks | rule16 | work_product | inculpatory | unclassified"
+        string bates_number "nullable"
+        bool legal_hold
+        uuid uploaded_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    prompts {
+        uuid id PK
+        uuid firm_id FK
+        uuid matter_id FK
+        text query
+        text response "nullable — stub for now"
+        uuid created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
     firms ||--o{ users : "has"
     firms ||--o{ matters : "owns"
+    firms ||--o{ documents : "scoped to"
+    firms ||--o{ prompts : "scoped to"
     users ||--o{ matter_access : "access controlled via"
     matters ||--o{ matter_access : "access controlled via"
+    matters ||--o{ documents : "contains"
+    matters ||--o{ prompts : "queried within"
+    users ||--o{ documents : "uploaded by"
+    users ||--o{ prompts : "created by"
 ```
 
 ## Key Constraints
@@ -68,6 +102,13 @@ erDiagram
 | `matter_access` | Composite PK `(user_id, matter_id)` | One access row per user/matter pair |
 | `matter_access` | `fk_matter_access_user_id_users` | Cascades on user delete |
 | `matter_access` | `fk_matter_access_matter_id_matters` | Cascades on matter delete |
+| `documents` | `uq_documents_matter_id_file_hash` | Same file (by SHA-256) within same matter is rejected |
+| `documents` | `fk_documents_firm_id_firms` | Cascades on firm delete |
+| `documents` | `fk_documents_matter_id_matters` | Cascades on matter delete |
+| `documents` | `fk_documents_uploaded_by_users` | Cascades on user delete |
+| `prompts` | `fk_prompts_firm_id_firms` | Cascades on firm delete |
+| `prompts` | `fk_prompts_matter_id_matters` | Cascades on matter delete |
+| `prompts` | `fk_prompts_created_by_users` | Cascades on user delete |
 
 ## Notes
 

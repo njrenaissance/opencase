@@ -25,7 +25,7 @@
 | 1.5 | RBAC middleware (role enforcement, `build_qdrant_filter()`) | Done | Done | Done |
 | 1.6 | Python REST client SDK + shared models (sdk/, shared/) | Done | Done | Done |
 | 1.7 | CLI (built on SDK) | Done | Done | Done |
-| 1.8 | Core business endpoints (matters, prompt stub, documents stub) | Pending | Pending | Pending |
+| 1.8 | Core business endpoints (matters, prompt stub, documents stub) | Done | Done | Done |
 
 ## Feature 2 — Worker Queue
 

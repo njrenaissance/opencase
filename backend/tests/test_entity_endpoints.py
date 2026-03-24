@@ -1,25 +1,18 @@
 """Unit tests for firm, user, matter, and matter_access API endpoints.
 
-Uses AsyncClient + in-memory overrides following the pattern in
-test_auth_endpoints.py.
+Uses AsyncClient + in-memory overrides via shared FakeSession / api_client
+from conftest.py.
 """
 
 from __future__ import annotations
 
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator
-from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 from shared.models.enums import Role
 
-from app.core.auth import create_access_token, get_current_user
-from app.db import get_db
-from app.db.models.user import User
-from app.main import app
+from tests.conftest import FakeSession, api_client, auth_header
 from tests.factories import make_firm, make_matter, make_matter_access, make_user
 
 # ---------------------------------------------------------------------------
@@ -28,81 +21,6 @@ from tests.factories import make_firm, make_matter, make_matter_access, make_use
 
 _FIRM_ID = uuid.uuid4()
 _NOW = datetime.now(UTC)
-
-
-class FakeSession:
-    """Async session stand-in with configurable query results."""
-
-    def __init__(self) -> None:
-        self._results: list[object] = []
-        self._call_idx = 0
-        self.committed = False
-        self._added: list[object] = []
-        self._deleted: list[object] = []
-
-    def add_result(self, obj: object) -> None:
-        self._results.append(obj)
-
-    def add_results_list(self, objs: list[object]) -> None:
-        self._results.append(objs)
-
-    async def execute(self, stmt: object) -> MagicMock:
-        result = MagicMock()
-        if self._call_idx < len(self._results):
-            val = self._results[self._call_idx]
-            self._call_idx += 1
-            if isinstance(val, list):
-                result.scalars.return_value.all.return_value = val
-                result.scalar_one_or_none.return_value = val[0] if val else None
-            else:
-                result.scalar_one_or_none.return_value = val
-                result.scalars.return_value.all.return_value = (
-                    [val] if val is not None else []
-                )
-        else:
-            result.scalar_one_or_none.return_value = None
-            result.scalars.return_value.all.return_value = []
-        return result
-
-    def add(self, obj: object) -> None:
-        self._added.append(obj)
-
-    async def delete(self, obj: object) -> None:
-        self._deleted.append(obj)
-
-    async def commit(self) -> None:
-        self.committed = True
-
-    async def rollback(self) -> None:
-        pass
-
-    async def refresh(self, obj: object) -> None:
-        pass
-
-
-@asynccontextmanager
-async def api_client(user: User, fake: FakeSession) -> AsyncIterator[AsyncClient]:
-    """Set up dependency overrides and yield an authenticated AsyncClient."""
-
-    async def _get_db() -> AsyncGenerator[FakeSession, None]:
-        yield fake
-
-    async def _get_current_user() -> User:
-        return user
-
-    app.dependency_overrides[get_db] = _get_db
-    app.dependency_overrides[get_current_user] = _get_current_user
-    try:
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://test") as ac:
-            yield ac
-    finally:
-        app.dependency_overrides.clear()
-
-
-def _auth_header(user: User) -> dict[str, str]:
-    token = create_access_token(user)
-    return {"Authorization": f"Bearer {token}"}
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +36,7 @@ class TestGetFirm:
         fake = FakeSession()
         fake.add_result(firm)
         async with api_client(user, fake) as ac:
-            resp = await ac.get("/firms/me", headers=_auth_header(user))
+            resp = await ac.get("/firms/me", headers=auth_header(user))
         assert resp.status_code == 200
         data = resp.json()
         assert data["name"] == "Cora Firm"
@@ -135,7 +53,7 @@ class TestGetCurrentUser:
         user = make_user(firm_id=_FIRM_ID, role=Role.admin)
         fake = FakeSession()
         async with api_client(user, fake) as ac:
-            resp = await ac.get("/users/me", headers=_auth_header(user))
+            resp = await ac.get("/users/me", headers=auth_header(user))
         assert resp.status_code == 200
         data = resp.json()
         assert data["email"] == user.email
@@ -157,7 +75,7 @@ class TestListUsers:
         fake = FakeSession()
         fake.add_results_list([user, other])
         async with api_client(user, fake) as ac:
-            resp = await ac.get("/users/", headers=_auth_header(user))
+            resp = await ac.get("/users/", headers=auth_header(user))
         assert resp.status_code == 200
         assert len(resp.json()) == 2  # noqa: PLR2004
 
@@ -166,7 +84,7 @@ class TestListUsers:
         user = make_user(firm_id=_FIRM_ID, role=Role.investigator)
         fake = FakeSession()
         async with api_client(user, fake) as ac:
-            resp = await ac.get("/users/", headers=_auth_header(user))
+            resp = await ac.get("/users/", headers=auth_header(user))
         assert resp.status_code == 403
 
 
@@ -183,7 +101,7 @@ class TestGetUser:
         fake = FakeSession()
         fake.add_result(target)
         async with api_client(user, fake) as ac:
-            resp = await ac.get(f"/users/{target.id}", headers=_auth_header(user))
+            resp = await ac.get(f"/users/{target.id}", headers=auth_header(user))
         assert resp.status_code == 200
         assert resp.json()["id"] == str(target.id)
 
@@ -193,7 +111,7 @@ class TestGetUser:
         fake = FakeSession()
         fake.add_result(None)  # not found in firm
         async with api_client(user, fake) as ac:
-            resp = await ac.get(f"/users/{uuid.uuid4()}", headers=_auth_header(user))
+            resp = await ac.get(f"/users/{uuid.uuid4()}", headers=auth_header(user))
         assert resp.status_code == 404
 
 
@@ -217,7 +135,7 @@ class TestCreateUser:
                     "last_name": "User",
                     "role": "paralegal",
                 },
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 201
 
@@ -235,7 +153,7 @@ class TestCreateUser:
                     "last_name": "User",
                     "role": "paralegal",
                 },
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 403
 
@@ -256,7 +174,7 @@ class TestUpdateUser:
             resp = await ac.patch(
                 f"/users/{target.id}",
                 json={"first_name": "Updated"},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 200
 
@@ -269,7 +187,7 @@ class TestUpdateUser:
             resp = await ac.patch(
                 f"/users/{user.id}",
                 json={"is_active": False},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 400
         assert "Cannot deactivate your own account" in resp.json()["detail"]
@@ -283,7 +201,7 @@ class TestUpdateUser:
             resp = await ac.patch(
                 f"/users/{uuid.uuid4()}",
                 json={"first_name": "Updated"},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 404
 
@@ -302,7 +220,7 @@ class TestListMatters:
         fake = FakeSession()
         fake.add_results_list([m1, m2])
         async with api_client(user, fake) as ac:
-            resp = await ac.get("/matters/", headers=_auth_header(user))
+            resp = await ac.get("/matters/", headers=auth_header(user))
         assert resp.status_code == 200
         assert len(resp.json()) == 2  # noqa: PLR2004
 
@@ -320,7 +238,7 @@ class TestGetMatter:
         fake = FakeSession()
         fake.add_result(matter)
         async with api_client(user, fake) as ac:
-            resp = await ac.get(f"/matters/{matter.id}", headers=_auth_header(user))
+            resp = await ac.get(f"/matters/{matter.id}", headers=auth_header(user))
         assert resp.status_code == 200
         assert resp.json()["name"] == matter.name
 
@@ -330,7 +248,7 @@ class TestGetMatter:
         fake = FakeSession()
         fake.add_result(None)
         async with api_client(user, fake) as ac:
-            resp = await ac.get(f"/matters/{uuid.uuid4()}", headers=_auth_header(user))
+            resp = await ac.get(f"/matters/{uuid.uuid4()}", headers=auth_header(user))
         assert resp.status_code == 404
 
 
@@ -348,7 +266,7 @@ class TestCreateMatter:
             resp = await ac.post(
                 "/matters/",
                 json={"name": "People v. Smith", "client_id": str(uuid.uuid4())},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 201
 
@@ -360,7 +278,7 @@ class TestCreateMatter:
             resp = await ac.post(
                 "/matters/",
                 json={"name": "Test", "client_id": str(uuid.uuid4())},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 403
 
@@ -381,7 +299,7 @@ class TestUpdateMatter:
             resp = await ac.patch(
                 f"/matters/{matter.id}",
                 json={"status": "closed"},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 200
 
@@ -402,7 +320,7 @@ class TestListMatterAccess:
         fake.add_results_list([access])  # list query
         async with api_client(user, fake) as ac:
             resp = await ac.get(
-                f"/matters/{matter.id}/access", headers=_auth_header(user)
+                f"/matters/{matter.id}/access", headers=auth_header(user)
             )
         assert resp.status_code == 200
         assert len(resp.json()) == 1
@@ -413,7 +331,7 @@ class TestListMatterAccess:
         fake = FakeSession()
         async with api_client(user, fake) as ac:
             resp = await ac.get(
-                f"/matters/{uuid.uuid4()}/access", headers=_auth_header(user)
+                f"/matters/{uuid.uuid4()}/access", headers=auth_header(user)
             )
         assert resp.status_code == 403
 
@@ -436,7 +354,7 @@ class TestGrantMatterAccess:
             resp = await ac.post(
                 f"/matters/{matter.id}/access",
                 json={"user_id": str(target.id), "view_work_product": False},
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 201
 
@@ -459,7 +377,7 @@ class TestRevokeMatterAccess:
         async with api_client(user, fake) as ac:
             resp = await ac.delete(
                 f"/matters/{matter.id}/access/{target.id}",
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 200
         assert resp.json()["detail"] == "Access revoked"
@@ -474,6 +392,6 @@ class TestRevokeMatterAccess:
         async with api_client(user, fake) as ac:
             resp = await ac.delete(
                 f"/matters/{matter.id}/access/{uuid.uuid4()}",
-                headers=_auth_header(user),
+                headers=auth_header(user),
             )
         assert resp.status_code == 404

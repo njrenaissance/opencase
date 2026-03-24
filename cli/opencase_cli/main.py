@@ -9,7 +9,16 @@ import typer
 from rich.table import Table
 
 import opencase_cli
-from opencase_cli.commands import auth, firms, health, matters, mfa, users
+from opencase_cli.commands import (
+    auth,
+    documents,
+    firms,
+    health,
+    matters,
+    mfa,
+    prompts,
+    users,
+)
 from opencase_cli.config import CLIConfig, config_path, load_config, save_config
 from opencase_cli.output import console, print_json, print_success
 
@@ -29,6 +38,8 @@ app.command()(auth.whoami)
 app.add_typer(mfa.app, name="mfa")
 app.add_typer(users.app, name="user")
 app.add_typer(matters.app, name="matter")
+app.add_typer(documents.app, name="document")
+app.add_typer(prompts.app, name="prompt")
 app.add_typer(firms.app, name="firm")
 
 

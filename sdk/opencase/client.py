@@ -12,6 +12,10 @@ from shared.models.auth import (
     TokenResponse,
 )
 from shared.models.base import MessageResponse
+from shared.models.document import (
+    DocumentResponse,
+    DocumentSummary,
+)
 from shared.models.firm import FirmResponse
 from shared.models.health import HealthResponse, ReadinessResponse
 from shared.models.matter import (
@@ -20,6 +24,10 @@ from shared.models.matter import (
 )
 from shared.models.matter_access import (
     MatterAccessResponse,
+)
+from shared.models.prompt import (
+    PromptResponse,
+    PromptSummary,
 )
 from shared.models.user import (
     UserResponse,
@@ -243,6 +251,58 @@ class OpenCaseClient:
     def revoke_matter_access(self, matter_id: str, user_id: str) -> MessageResponse:
         resp = self._request("DELETE", f"/matters/{matter_id}/access/{user_id}")
         return MessageResponse.model_validate(resp.json())
+
+    # -- documents -----------------------------------------------------------
+
+    def list_documents(self) -> list[DocumentSummary]:
+        resp = self._request("GET", "/documents/")
+        return [DocumentSummary.model_validate(item) for item in resp.json()]
+
+    def get_document(self, document_id: str) -> DocumentResponse:
+        resp = self._request("GET", f"/documents/{document_id}")
+        return DocumentResponse.model_validate(resp.json())
+
+    def upload_document(
+        self,
+        *,
+        matter_id: str,
+        filename: str,
+        content_type: str,
+        size_bytes: int,
+        file_hash: str,
+        source: str = "defense",
+        classification: str = "unclassified",
+        bates_number: str | None = None,
+    ) -> DocumentResponse:
+        payload: dict[str, Any] = {
+            "matter_id": matter_id,
+            "filename": filename,
+            "content_type": content_type,
+            "size_bytes": size_bytes,
+            "file_hash": file_hash,
+            "source": source,
+            "classification": classification,
+        }
+        if bates_number is not None:
+            payload["bates_number"] = bates_number
+        resp = self._request("POST", "/documents/", json=payload)
+        return DocumentResponse.model_validate(resp.json())
+
+    # -- prompts -------------------------------------------------------------
+
+    def list_prompts(self) -> list[PromptSummary]:
+        resp = self._request("GET", "/prompts/")
+        return [PromptSummary.model_validate(item) for item in resp.json()]
+
+    def get_prompt(self, prompt_id: str) -> PromptResponse:
+        resp = self._request("GET", f"/prompts/{prompt_id}")
+        return PromptResponse.model_validate(resp.json())
+
+    def submit_prompt(self, *, matter_id: str, query: str) -> PromptResponse:
+        resp = self._request(
+            "POST", "/prompts/", json={"matter_id": matter_id, "query": query}
+        )
+        return PromptResponse.model_validate(resp.json())
 
     # -- internal transport --------------------------------------------------
 

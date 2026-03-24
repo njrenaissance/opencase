@@ -12,7 +12,12 @@ from shared.models.auth import (
     TokenResponse,
 )
 from shared.models.base import MessageResponse
-from shared.models.enums import MatterStatus, Role
+from shared.models.document import (
+    CreateDocumentRequest,
+    DocumentResponse,
+    DocumentSummary,
+)
+from shared.models.enums import Classification, DocumentSource, MatterStatus, Role
 from shared.models.firm import FirmResponse
 from shared.models.health import HealthResponse, ReadinessResponse, ServiceChecks
 from shared.models.matter import (
@@ -26,6 +31,7 @@ from shared.models.matter_access import (
     MatterAccessResponse,
     RevokeAccessRequest,
 )
+from shared.models.prompt import CreatePromptRequest, PromptResponse, PromptSummary
 from shared.models.user import (
     CreateUserRequest,
     UpdateUserRequest,
@@ -34,8 +40,14 @@ from shared.models.user import (
 )
 
 __all__ = [
+    "Classification",
+    "CreateDocumentRequest",
     "CreateMatterRequest",
+    "CreatePromptRequest",
     "CreateUserRequest",
+    "DocumentResponse",
+    "DocumentSource",
+    "DocumentSummary",
     "FirmResponse",
     "GrantAccessRequest",
     "HealthResponse",
@@ -51,6 +63,8 @@ __all__ = [
     "MfaSetupResponse",
     "MfaStatusResponse",
     "MfaVerifyRequest",
+    "PromptResponse",
+    "PromptSummary",
     "ReadinessResponse",
     "RefreshRequest",
     "RevokeAccessRequest",

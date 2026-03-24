@@ -13,10 +13,12 @@ from contextlib import asynccontextmanager  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 
 from app.api.auth import router as auth_router  # noqa: E402
+from app.api.documents import router as documents_router  # noqa: E402
 from app.api.firms import router as firms_router  # noqa: E402
 from app.api.health import router as health_router  # noqa: E402
 from app.api.matter_access import router as matter_access_router  # noqa: E402
 from app.api.matters import router as matters_router  # noqa: E402
+from app.api.prompts import router as prompts_router  # noqa: E402
 from app.api.users import router as users_router  # noqa: E402
 from app.core.telemetry import configure_instrumentation, setup_telemetry  # noqa: E402
 
@@ -69,5 +71,7 @@ app.include_router(firms_router)
 app.include_router(users_router)
 app.include_router(matters_router)
 app.include_router(matter_access_router)
+app.include_router(documents_router)
+app.include_router(prompts_router)
 
 configure_instrumentation(app, settings)

@@ -94,6 +94,34 @@ opencase matter access-grant <matter-id> --user-id <uuid> --view-work-product
 opencase matter access-revoke <matter-id> --user-id <uuid>
 ```
 
+### Documents (stub)
+
+```bash
+opencase document list
+opencase document get <document-id>
+opencase document upload --matter-id <uuid> --filename evidence.pdf \
+  --content-type application/pdf --size-bytes 1024 \
+  --file-hash <sha256-hex>
+opencase document upload --matter-id <uuid> --filename report.pdf \
+  --content-type application/pdf --size-bytes 2048 \
+  --file-hash <sha256-hex> --source government_production \
+  --classification brady --bates-number GOV-001
+```
+
+All document endpoints return stub responses. Real upload
+(MinIO storage, SHA-256 computation) will be added in Feature 6.
+
+### Prompts (stub)
+
+```bash
+opencase prompt list
+opencase prompt get <prompt-id>
+opencase prompt submit --matter-id <uuid> "What Brady material exists?"
+```
+
+All prompt endpoints return stub responses. RAG integration
+will be added in Feature 9.
+
 ### Firm
 
 ```bash

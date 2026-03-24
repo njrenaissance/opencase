@@ -11,14 +11,23 @@ from dotenv import load_dotenv
 _ENV_TEST = Path(__file__).parent.parent / ".env.test"
 load_dotenv(_ENV_TEST)
 
+from collections.abc import AsyncGenerator, AsyncIterator  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402
+
 import pytest  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from shared.models.enums import Role  # noqa: E402
 from sqlalchemy import create_engine, delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from app.core.auth import hash_password  # noqa: E402
+from app.core.auth import (  # noqa: E402
+    create_access_token,
+    get_current_user,
+    hash_password,
+)
 from app.core.config import settings  # noqa: E402
+from app.db import get_db  # noqa: E402
 from app.db.models.firm import Firm  # noqa: E402
 from app.db.models.matter import Matter  # noqa: E402
 from app.db.models.matter_access import MatterAccess  # noqa: E402
@@ -44,6 +53,91 @@ async def client() -> AsyncClient:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+# ---------------------------------------------------------------------------
+# FakeSession — in-memory async session stand-in for unit tests
+# ---------------------------------------------------------------------------
+
+
+class FakeSession:
+    """Async session stand-in with configurable query results.
+
+    Queue results with ``add_result()`` (single) or ``add_results_list()``
+    (list).  Each call to ``execute()`` pops the next queued result.
+    """
+
+    def __init__(self) -> None:
+        self._results: list[object] = []
+        self._call_idx = 0
+        self.committed = False
+        self._added: list[object] = []
+        self._deleted: list[object] = []
+
+    def add_result(self, obj: object) -> None:
+        self._results.append(obj)
+
+    def add_results_list(self, objs: list[object]) -> None:
+        self._results.append(objs)
+
+    async def execute(self, stmt: object) -> MagicMock:
+        result = MagicMock()
+        if self._call_idx < len(self._results):
+            val = self._results[self._call_idx]
+            self._call_idx += 1
+            if isinstance(val, list):
+                result.scalars.return_value.all.return_value = val
+                result.scalar_one_or_none.return_value = val[0] if val else None
+            else:
+                result.scalar_one_or_none.return_value = val
+                result.scalars.return_value.all.return_value = (
+                    [val] if val is not None else []
+                )
+        else:
+            result.scalar_one_or_none.return_value = None
+            result.scalars.return_value.all.return_value = []
+        return result
+
+    def add(self, obj: object) -> None:
+        self._added.append(obj)
+
+    async def delete(self, obj: object) -> None:
+        self._deleted.append(obj)
+
+    async def commit(self) -> None:
+        self.committed = True
+
+    async def rollback(self) -> None:
+        pass
+
+    async def refresh(self, obj: object) -> None:
+        pass
+
+
+@asynccontextmanager
+async def api_client(user: User, fake: FakeSession) -> AsyncIterator[AsyncClient]:
+    """Set up dependency overrides and yield an authenticated AsyncClient."""
+
+    async def _get_db() -> AsyncGenerator[FakeSession, None]:
+        yield fake
+
+    async def _get_current_user() -> User:
+        return user
+
+    app.dependency_overrides[get_db] = _get_db
+    app.dependency_overrides[get_current_user] = _get_current_user
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            yield ac
+    finally:
+        app.dependency_overrides.clear()
+
+
+def auth_header(user: User) -> dict[str, str]:
+    """Return an Authorization header dict for the given user."""
+    token = create_access_token(user)
+    return {"Authorization": f"Bearer {token}"}
 
 
 # ---------------------------------------------------------------------------
