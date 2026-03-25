@@ -33,7 +33,11 @@ async def check_postgres(db: AsyncSession) -> str:
 
 async def check_redis() -> str:
     try:
-        r = aioredis.from_url(settings.redis.url, socket_timeout=2)  # type: ignore[no-untyped-call]
+        r = aioredis.from_url(  # type: ignore[no-untyped-call]
+            settings.redis.url,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
         try:
             await r.ping()
         finally:

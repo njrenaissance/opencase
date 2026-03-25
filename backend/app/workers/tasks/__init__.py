@@ -1,3 +1,8 @@
-"""Celery task modules — imported by autodiscover_tasks."""
+"""Celery task modules.
+
+autodiscover_tasks(["app.workers"]) imports this package. Since individual
+task modules live in separate files (ping.py, etc.), they must be imported
+here so their @shared_task decorators run and register with Celery.
+"""
 
 from app.workers.tasks.ping import ping  # noqa: F401

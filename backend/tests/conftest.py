@@ -184,7 +184,10 @@ def _redis_ready(host: str, port: int) -> bool:
 
     try:
         r = redis_lib.Redis(host=host, port=port, socket_timeout=1)
-        return r.ping()
+        try:
+            return r.ping()
+        finally:
+            r.close()
     except Exception:  # noqa: BLE001
         return False
 
