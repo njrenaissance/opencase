@@ -45,7 +45,7 @@
 | --- | --- | --- | --- | --- |
 | 3.1 | MinIO container setup + default bucket | Pending | Pending | Pending |
 | 3.2 | API integration (boto3/minio-py, app/storage/) | Pending | Pending | Pending |
-| 3.3 | Configuration + env vars (S3Settings) | Pending | Pending | Pending |
+| 3.3 | Configuration + env vars (S3Settings) | Done | Done | Done |
 | 3.4 | Observability (S3 operation spans/metrics) | Pending | Pending | Pending |
 
 ## Feature 4 — Document Extraction

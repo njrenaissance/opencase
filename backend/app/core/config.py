@@ -150,12 +150,35 @@ class FlowerSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_FLOWER_")
 
 
+class S3Settings(BaseSettings):
+    """S3-compatible object storage sub-config (OPENCASE_S3_ prefix).
+
+    Targets MinIO running inside the Docker network. The computed ``url``
+    property assembles http(s)://endpoint for SDK clients.
+    """
+
+    endpoint: str = "minio:9000"
+    access_key: str = Field(..., min_length=1)
+    secret_key: str = Field(..., min_length=1)
+    bucket: str = "opencase"
+    use_ssl: bool = False
+    region: str = "us-east-1"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def url(self) -> str:
+        scheme = "https" if self.use_ssl else "http"
+        return f"{scheme}://{self.endpoint}"
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_S3_")
+
+
 # ---------------------------------------------------------------------------
 # Secret redaction
 # ---------------------------------------------------------------------------
 
 _SECRET_SUBSTRINGS = ("password", "secret")
-_SECRET_EXACT = frozenset({"basic_auth"})
+_SECRET_EXACT = frozenset({"basic_auth", "access_key"})
 _URL_FIELDS = frozenset({"broker_url", "result_backend", "url"})
 
 
@@ -218,6 +241,7 @@ class Settings(BaseSettings):
     redis: RedisSettings = Field(default_factory=RedisSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
     flower: FlowerSettings = Field(default_factory=FlowerSettings)
+    s3: S3Settings = Field(default_factory=S3Settings)  # type: ignore[arg-type]
 
     @model_validator(mode="after")
     def _derive_celery_broker_url(self) -> "Settings":

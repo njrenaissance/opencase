@@ -142,6 +142,29 @@ Loki (logs).
 
 ---
 
+## S3Settings (`OPENCASE_S3_` prefix)
+
+S3-compatible object storage (MinIO). Individual fields are preferred over a
+monolithic URL so each component is independently overridable. A computed `url`
+property assembles the full endpoint URL at runtime.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_S3_ENDPOINT` | `minio:9000` | MinIO API endpoint (host:port) |
+| `OPENCASE_S3_ACCESS_KEY` | **required** | MinIO access key (also the root user) |
+| `OPENCASE_S3_SECRET_KEY` | **required** | MinIO secret key (also the root password) |
+| `OPENCASE_S3_BUCKET` | `opencase` | Default bucket for document storage |
+| `OPENCASE_S3_USE_SSL` | `false` | Use HTTPS for MinIO connections |
+| `OPENCASE_S3_REGION` | `us-east-1` | AWS region (MinIO default, required by boto3) |
+
+`OPENCASE_S3_ACCESS_KEY` and `OPENCASE_S3_SECRET_KEY` are required — the
+application will not start without them.
+
+The computed `url` property (e.g. `http://minio:9000`) is available in Python
+as `settings.s3.url` but is not set via an environment variable.
+
+---
+
 ## RedisSettings (`OPENCASE_REDIS_` prefix)
 
 Redis connection settings. Individual fields are preferred over a monolithic URL
