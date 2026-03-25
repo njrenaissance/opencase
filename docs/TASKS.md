@@ -10,11 +10,11 @@ embedding, deadline monitoring) do not block API responses.
 ## Architecture
 
 ```text
-FastAPI  ──task.delay()──▶  Redis (broker)  ──▶  Celery Worker
-                                                      │
-                                                      ▼
-                                                 PostgreSQL
-                                              (opencase_tasks)
+FastAPI  ──TaskBroker.submit()──▶  Redis (broker)  ──▶  Celery Worker
+  │                                                          │
+  ▼                                                          ▼
+PostgreSQL (main)                                       PostgreSQL
+(task_submissions)                                   (opencase_tasks)
 ```
 
 | Component | Role |
@@ -26,14 +26,15 @@ FastAPI  ──task.delay()──▶  Redis (broker)  ──▶  Celery Worker
 
 ### How a task runs
 
-1. API code calls `task_name.delay(args)` — this serializes the call as
-   JSON and pushes it onto a Redis queue.
+1. API code calls `TaskBroker.submit()` — this serializes the call as
+   JSON and pushes it onto a Redis queue. A `task_submissions` row is
+   recorded in the main database for firm-scoped tracking.
 2. The Celery worker pulls the message, deserializes it, and calls the
    Python function.
 3. On completion (or failure), the result is written to the
    `opencase_tasks` database. The caller can poll the result by task ID.
-4. The original API endpoint can return immediately with the task ID,
-   then the client polls a status endpoint (Feature 2.6).
+4. The original API endpoint returns immediately with the task ID.
+   The client polls `GET /tasks/{task_id}` to check progress.
 
 ### Celery Beat (scheduler)
 
@@ -80,7 +81,64 @@ bound to whichever app finalizes first.
 
 ---
 
-## Task Registry
+## API Endpoints
+
+Task management is exposed via REST endpoints on `/tasks/`. All
+endpoints are firm-scoped — users only see tasks submitted by their
+firm.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/tasks/` | Admin, Attorney | Submit a registered task |
+| `GET` | `/tasks/` | Any authenticated | List tasks (filters: status, task_name, date range) |
+| `GET` | `/tasks/{task_id}` | Any authenticated | Full detail + live Celery status |
+| `PUT` | `/tasks/{task_id}` | Admin | Update (scaffold — no updatable fields yet) |
+| `DELETE` | `/tasks/{task_id}` | Admin | Cancel a pending/running task |
+
+`GET /tasks/{task_id}` enriches the response with live state from the
+Celery result backend and denormalizes the status back to the
+`task_submissions` table.
+
+---
+
+## TaskBroker
+
+[`app/workers/broker.py`](../backend/app/workers/broker.py) provides a
+thin abstraction over Celery so the API layer is decoupled from Celery
+internals. This allows the background job backend to be swapped in the
+future without touching the API router.
+
+| Method | Signature | Purpose |
+| --- | --- | --- |
+| `submit` | `(celery_task_name, args, kwargs) → str` | Send task to broker, return task ID |
+| `get_status` | `(task_id) → TaskStatusResult` | Query result backend for live state |
+| `revoke` | `(task_id, *, terminate=False) → None` | Cancel a pending or running task |
+
+`get_task_broker()` is the FastAPI dependency that returns the
+singleton `TaskBroker` instance.
+
+---
+
+## Task Registry (Whitelist)
+
+[`app/workers/registry.py`](../backend/app/workers/registry.py)
+defines `TASK_REGISTRY` — a dict mapping user-facing task names to
+Celery task names. **Only tasks listed here can be submitted via the
+API.** This is a security boundary: arbitrary Celery task names cannot
+be invoked by API callers.
+
+```python
+TASK_REGISTRY: dict[str, str] = {
+    "ping": "opencase.ping",
+}
+```
+
+To make a new task submittable via the API, add an entry here in
+addition to creating the task module (see "Adding a New Task" below).
+
+---
+
+## Registered Tasks
 
 ### `opencase.ping`
 
@@ -140,13 +198,14 @@ Tasks will be added as features are built:
 3. Use an explicit `name=` parameter. This decouples the task identity
    from the module path, so refactoring does not break in-flight tasks.
 
-4. Call from the API:
+4. Add the task to `TASK_REGISTRY` in `app/workers/registry.py` so it
+   can be submitted via the API:
 
     ```python
-    from app.workers.tasks.my_task import my_task
-
-    result = my_task.delay("some_arg")
-    # result.id is the task ID for status polling
+    TASK_REGISTRY: dict[str, str] = {
+        "ping": "opencase.ping",
+        "my_task": "opencase.my_task",
+    }
     ```
 
 5. Add unit tests in `backend/tests/test_workers.py` to verify the task

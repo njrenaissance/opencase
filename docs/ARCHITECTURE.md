@@ -68,6 +68,7 @@ backend/
 │   │   ├── auth.py
 │   │   ├── matters.py
 │   │   ├── documents.py
+│   │   ├── tasks.py
 │   │   ├── chatbot.py
 │   │   ├── brady.py
 │   │   └── admin.py
@@ -85,11 +86,11 @@ backend/
 │   │   ├── parser.py         # Tika/Tesseract
 │   │   ├── chunker.py
 │   │   └── deduplicator.py   # SHA-256 dedup
-│   ├── workers/        # Celery tasks
-│   │   ├── cloud_ingest.py
-│   │   ├── deadline.py
-│   │   ├── audit_check.py
-│   │   └── legal_hold.py
+│   ├── workers/        # Celery app + task infrastructure
+│   │   ├── broker.py         # TaskBroker abstraction
+│   │   ├── registry.py       # TASK_REGISTRY whitelist
+│   │   └── tasks/
+│   │       └── ping.py       # Health-check task
 │   └── db/             # Database layer
 │       ├── models.py
 │       └── session.py
@@ -142,6 +143,25 @@ flowchart TD
     I -->|vectors + permission payload| J[Record in PostgreSQL]
     J -->|metadata + audit log entry| K[Done]
 ```
+
+## Data Flow: Task Submission
+
+```mermaid
+flowchart TD
+    A[Client — CLI / SDK / API call] --> B[POST /tasks/]
+    B --> C{task_name in TASK_REGISTRY?}
+    C -->|no| D[400 Bad Request]
+    C -->|yes| E[TaskBroker.submit]
+    E -->|send_task| F[Redis broker]
+    E --> G[Record in task_submissions table]
+    F --> H[Celery Worker executes task]
+    H --> I[Result → opencase_tasks DB]
+    G --> J[Client polls GET /tasks/task_id]
+    J -->|live enrichment| I
+    J --> K[Response with status + result]
+```
+
+---
 
 ## Document Storage
 

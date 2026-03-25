@@ -1,10 +1,10 @@
 # OpenCase — Entity Relationship Diagram
 
-Covers the tables introduced in Feature 1.2. Tables from later features
-(documents, audit_log, witnesses, disclosure_checklist, etc.) will be added
+Covers tables through Feature 2.6. Tables from later features
+(audit_log, witnesses, disclosure_checklist, etc.) will be added
 as each feature lands.
 
-## Feature 1 — Core Schema
+## Core + Worker Queue Schema
 
 ```mermaid
 erDiagram
@@ -80,6 +80,17 @@ erDiagram
         timestamptz updated_at
     }
 
+    task_submissions {
+        string id PK "Celery task ID"
+        uuid firm_id FK
+        uuid user_id FK
+        string task_name "registered name — e.g. ping"
+        text args_json "JSON array of positional args"
+        text kwargs_json "JSON object of keyword args"
+        string status "TaskState enum — pending | started | success | failure | revoked | retry"
+        timestamptz submitted_at
+    }
+
     firms ||--o{ users : "has"
     firms ||--o{ matters : "owns"
     firms ||--o{ documents : "scoped to"
@@ -90,6 +101,8 @@ erDiagram
     matters ||--o{ prompts : "queried within"
     users ||--o{ documents : "uploaded by"
     users ||--o{ prompts : "created by"
+    firms ||--o{ task_submissions : "scoped to"
+    users ||--o{ task_submissions : "submitted by"
 ```
 
 ## Key Constraints
@@ -109,6 +122,10 @@ erDiagram
 | `prompts` | `fk_prompts_firm_id_firms` | Cascades on firm delete |
 | `prompts` | `fk_prompts_matter_id_matters` | Cascades on matter delete |
 | `prompts` | `fk_prompts_created_by_users` | Cascades on user delete |
+| `task_submissions` | `fk_task_submissions_firm_id_firms` | Cascades on firm delete |
+| `task_submissions` | `fk_task_submissions_user_id_users` | Cascades on user delete |
+| `task_submissions` | `ix_task_submissions_firm_id` | Index on `firm_id` for firm-scoped queries |
+| `task_submissions` | `ix_task_submissions_task_name` | Index on `task_name` for filtering |
 
 ## Notes
 
@@ -126,3 +143,7 @@ erDiagram
   permission model, not operator-configurable data.
 - `client_id` is a UUID reference to a client record. The clients table will be
   introduced in a later feature; for now it is stored as a bare UUID.
+- `task_submissions.id` is the Celery task ID (a string, not a UUID). The
+  primary key is assigned by Celery at submission time.
+- `task_submissions.status` is denormalized from the Celery result backend and
+  updated on read via `GET /tasks/{task_id}`.
