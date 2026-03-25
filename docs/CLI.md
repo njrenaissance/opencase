@@ -94,6 +94,23 @@ opencase matter access-grant <matter-id> --user-id <uuid> --view-work-product
 opencase matter access-revoke <matter-id> --user-id <uuid>
 ```
 
+### Tasks
+
+```bash
+opencase task list                          # list all tasks for current firm
+opencase task list --status pending         # filter by state
+opencase task list --task-name ping         # filter by registered task name
+opencase task get <task-id>                 # full task detail + live Celery status
+opencase task submit --task-name ping       # submit a registered task
+opencase task cancel <task-id>              # revoke a pending/running task
+```
+
+Task submission requires Admin or Attorney role. Cancel and update
+require Admin. List and get are available to any authenticated user.
+
+Only tasks registered in `TASK_REGISTRY` can be submitted via the
+API. Currently registered: `ping`.
+
 ### Documents (stub)
 
 ```bash
