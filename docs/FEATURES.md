@@ -37,7 +37,7 @@
 | 2.4 | Task result persistence (opencase_tasks DB on shared Postgres, Celery DB backend) | Done | Done | Done |
 | 2.5 | API integration (Celery client, task.delay() submission) | Done | Done | Done |
 | 2.6 | Task status API endpoint (read-only — query task progress/result by task ID for API-triggered tasks) | Done | Done | Done |
-| 2.7 | Observability (Flower container + OTel Celery instrumentation) | Pending | Pending | Pending |
+| 2.7 | Observability (Flower container + OTel Celery instrumentation) | Done | Done | Done |
 
 ## Feature 3 — S3 Storage
 

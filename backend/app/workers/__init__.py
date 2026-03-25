@@ -7,6 +7,7 @@ Task modules are auto-discovered from ``app.workers.tasks``.
 from celery import Celery  # type: ignore[import-untyped]
 
 from app.core.config import settings
+from app.core.telemetry import configure_celery_instrumentation, setup_telemetry
 
 celery_app = Celery("opencase")
 
@@ -24,3 +25,9 @@ conf["task_time_limit"] = conf.pop("task_hard_time_limit", conf.get("task_time_l
 celery_app.conf.update(**conf)
 
 celery_app.autodiscover_tasks(["app.workers"])
+
+# --- Observability (Feature 2.7) ---
+# Initialise OTel providers and wire the CeleryInstrumentor so worker and
+# beat processes emit traces, metrics, and logs to the OTLP backend.
+setup_telemetry(settings)
+configure_celery_instrumentation(settings)

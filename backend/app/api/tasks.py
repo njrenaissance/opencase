@@ -22,7 +22,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
-from app.core.metrics import tasks_cancelled, tasks_submitted
 from app.core.permissions import require_role
 from app.db import get_db
 from app.db.models.task_submission import TaskSubmission
@@ -121,7 +120,6 @@ async def submit_task(
             await db.rollback()
             await asyncio.to_thread(broker.revoke, task_id, terminate=True)
             raise
-        tasks_submitted.add(1)
         return TaskSubmitResponse(task_id=task_id)
 
 
@@ -273,5 +271,4 @@ async def cancel_task(
 
         sub.status = TaskState.revoked
         await db.commit()
-        tasks_cancelled.add(1)
         return MessageResponse(detail="Task revoked")

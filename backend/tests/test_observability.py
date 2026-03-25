@@ -76,3 +76,29 @@ def test_ready_sqlalchemy_span_in_tempo(
     assert traces, (
         "No traces found in Tempo — SQLAlchemy instrumentation may not be wired"
     )
+
+
+def test_worker_span_in_tempo(
+    redis_service: tuple[str, int],
+    postgres_service: tuple[str, int],  # noqa: ARG001 — ensures Postgres is up for result backend
+    grafana_service: str,
+) -> None:
+    """Celery worker emits OTel spans that arrive in Tempo.
+
+    Submits a ping task directly to the worker, waits for it to complete,
+    then queries Tempo for traces from the ``opencase-worker`` service.
+    """
+    from celery import Celery
+
+    from app.core.config import settings
+
+    host, port = redis_service
+    app = Celery(
+        broker=f"redis://{host}:{port}/0",
+        backend=settings.celery.result_backend,
+    )
+    result = app.send_task("opencase.ping")
+    assert result.get(timeout=15) == "pong"
+
+    traces = _wait_for_traces(grafana_service, "opencase-worker", timeout=30.0)
+    assert traces, "No traces found in Tempo for opencase-worker"

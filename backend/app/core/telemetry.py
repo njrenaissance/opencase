@@ -220,6 +220,24 @@ def setup_telemetry(settings: Settings) -> TracerProvider | None:
     return provider
 
 
+def configure_celery_instrumentation(settings: Settings) -> None:
+    """Wire the OTel CeleryInstrumentor for worker and beat processes.
+
+    Called from ``app.workers.__init__`` after ``setup_telemetry()``.
+    Separate from :func:`configure_instrumentation` because that function
+    requires a FastAPI app and imports ``app.db.session`` — neither of which
+    exists in worker context.
+    """
+    if not settings.otel.enabled:
+        logger.debug("OTel disabled — skipping Celery instrumentation")
+        return
+
+    from opentelemetry.instrumentation.celery import CeleryInstrumentor
+
+    CeleryInstrumentor().instrument()
+    logger.debug("OTel instrumentor wired: Celery")
+
+
 def configure_instrumentation(app: "FastAPI", settings: Settings) -> None:
     """Wire OTel instrumentors for FastAPI and SQLAlchemy.
 

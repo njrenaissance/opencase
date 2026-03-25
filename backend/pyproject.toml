@@ -39,6 +39,7 @@ dependencies = [
     "langchain-ollama>=0.3",
     # Background jobs
     "celery[redis]>=5.4",
+    "flower>=2.0",
     "psycopg2-binary>=2.9",
     # Document parsing
     "python-multipart>=0.0.18",
@@ -47,6 +48,7 @@ dependencies = [
     "opentelemetry-api>=1.29",
     "opentelemetry-sdk>=1.29",
     "opentelemetry-instrumentation-fastapi>=0.50b0",
+    "opentelemetry-instrumentation-celery>=0.50b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.50b0",
     "opentelemetry-exporter-otlp-proto-http>=1.29",
 ]

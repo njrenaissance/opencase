@@ -237,6 +237,23 @@ Submits scheduled tasks on a cron-based schedule (cloud ingestion every
 15 min, deadline monitor every hour, audit chain validator nightly).
 Migrations are skipped (`SKIP_MIGRATIONS=true`).
 
+### flower
+
+Flower — Celery monitoring web UI for real-time task and worker visibility.
+
+| Setting | Value |
+| --- | --- |
+| Build context | `..` (repo root) |
+| Dockerfile | `backend/docker/Dockerfile` |
+| Command | `celery -A app.workers flower --port=5555 --url_prefix=/flower` |
+| Public port | `${OPENCASE_FLOWER_PORT:-5555}:5555` |
+| Depends on | `redis` (healthy) |
+
+Provides a dashboard showing queue depth, worker status, active/completed
+tasks, and task details. Basic auth is configurable via
+`OPENCASE_FLOWER_BASIC_AUTH` (format: `user:password`). OTel is disabled
+for Flower — it is a monitoring UI, not a task producer.
+
 ---
 
 ## Volumes
@@ -264,6 +281,7 @@ corresponding data permanently.
 | `3001` | Grafana UI | Dev/test only — traces, metrics, logs |
 | `8000` | FastAPI | Dev/test only — remove in production |
 | `5432` | PostgreSQL | Dev/test only |
+| `5555` | Flower | Dev/test only — Celery monitoring UI |
 | `4317` | Grafana OTLP gRPC | Internal (Docker network) |
 | `4318` | Grafana OTLP HTTP | Internal (Docker network) |
 
@@ -315,8 +333,8 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 - `fastapi` has OTel enabled (`EXPORTER=otlp`, targeting `grafana:4318`)
 - `redis` exposes port `6379` to the host for test access
 - `celery-worker` result backend points at `opencase_tasks_test`
-- All unimplemented services are disabled via Docker Compose profiles:
-  `nextjs`, `minio`, `ollama`, `qdrant`
+- All unneeded services are disabled via Docker Compose profiles:
+  `nextjs`, `minio`, `ollama`, `qdrant`, `flower`
 - Active services: `postgres` + `redis` + `fastapi` + `celery-worker`
   \+ `celery-beat` + `grafana`
 

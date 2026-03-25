@@ -108,3 +108,8 @@ tasks_cancelled = meter.create_counter(
     "opencase.tasks.cancelled",
     description="Tasks cancelled via API",
 )
+
+tasks_status_queried = meter.create_counter(
+    "opencase.tasks.status_queried",
+    description="Task status queries via broker",
+)

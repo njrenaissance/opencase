@@ -7,7 +7,8 @@ All observability data stays on-premise. No telemetry leaves the host.
 ## Strategy
 
 OpenCase uses **OpenTelemetry** (OTel) to collect all three signals — traces,
-metrics, and logs — from the FastAPI backend. The OTLP backend is
+metrics, and logs — from the FastAPI backend, Celery worker, and Celery Beat
+processes. The OTLP backend is
 **Grafana otel-lgtm**, a single Docker container that bundles:
 
 | Component | Signal | Purpose |
@@ -35,6 +36,7 @@ RAG pipeline stages.
 
 - FastAPI HTTP requests → `GET /path`, `POST /path` spans
 - SQLAlchemy queries → `SELECT`, `INSERT`, `UPDATE`, `DELETE` spans
+- Celery tasks → `run`, `apply_async`, `delay` spans (worker + beat)
 
 **Manual instrumentation** (via `opentelemetry.trace`):
 
@@ -55,6 +57,9 @@ Current manually instrumented spans:
 | `permissions.build_qdrant_filter` | `core/permissions.py` | Vector query access control |
 | `permissions.check_role` | `core/permissions.py` | Role enforcement on endpoints |
 | `permissions.check_matter_access` | `core/permissions.py` | Matter-level access verification |
+| `broker.submit` | `workers/broker.py` | Task submission (`messaging.destination.name`, `messaging.message.id`) |
+| `broker.get_status` | `workers/broker.py` | Task status query (`messaging.message.id`, `messaging.operation.name`) |
+| `broker.revoke` | `workers/broker.py` | Task cancellation (`messaging.message.id`, `messaging.operation.terminate`) |
 
 ### Metrics
 
@@ -70,6 +75,9 @@ All metric instruments are defined in `backend/app/core/metrics.py`:
 | `opencase.auth.token_refresh_attempts` | Counter | Token refresh attempts |
 | `opencase.auth.active_sessions` | UpDownCounter | Active sessions (issued minus logouts) |
 | `opencase.rbac.access_denied` | Counter | RBAC denials by reason (role/matter) and role |
+| `opencase.tasks.submitted` | Counter | Tasks submitted (API + broker level) |
+| `opencase.tasks.cancelled` | Counter | Tasks cancelled |
+| `opencase.tasks.status_queried` | Counter | Task status queries via broker |
 
 New features should add their metrics to `metrics.py` following the
 `opencase.<domain>.<metric_name>` naming convention.
@@ -105,13 +113,13 @@ See [SETTINGS.md](SETTINGS.md) for the full settings reference.
 ## Architecture
 
 ```text
-FastAPI (app)
-  ├── traces  ──→ OTLP HTTP /v1/traces  ──→ OTel Collector ──→ Tempo
-  ├── metrics ──→ OTLP HTTP /v1/metrics ──→ OTel Collector ──→ Prometheus
-  └── logs    ──→ OTLP HTTP /v1/logs    ──→ OTel Collector ──→ Loki
-                                                                  │
-                                                             Grafana UI
-                                                           localhost:3001
+FastAPI (opencase-api)        ─┐
+Celery Worker (opencase-worker) ├── traces  ──→ OTLP HTTP ──→ OTel Collector ──→ Tempo
+Celery Beat (opencase-beat)   ─┘  metrics ──→ OTLP HTTP ──→ OTel Collector ──→ Prometheus
+                                  logs    ──→ OTLP HTTP ──→ OTel Collector ──→ Loki
+                                                                                  │
+                                                                             Grafana UI
+                                                                           localhost:3001
 ```
 
 The `grafana/otel-lgtm` image runs all five components (Collector, Tempo,

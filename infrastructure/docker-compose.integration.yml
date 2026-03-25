@@ -53,3 +53,5 @@ services:
     profiles: [disabled]
   qdrant:
     profiles: [disabled]
+  flower:
+    profiles: [disabled]

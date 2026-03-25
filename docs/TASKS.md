@@ -117,6 +117,11 @@ future without touching the API router.
 `get_task_broker()` is the FastAPI dependency that returns the
 singleton `TaskBroker` instance.
 
+Each method emits an OTel span (`broker.submit`, `broker.get_status`,
+`broker.revoke`) and records metrics (`opencase.tasks.submitted`,
+`opencase.tasks.status_queried`, `opencase.tasks.cancelled`). See
+[OBSERVABILITY.md](OBSERVABILITY.md) for the full span and metric tables.
+
 ---
 
 ## Task Registry (Whitelist)
@@ -244,9 +249,14 @@ environment variables.
 | --- | --- | --- |
 | `celery-worker` | `celery -A app.workers worker -l info` | postgres, redis, minio |
 | `celery-beat` | `celery -A app.workers beat -l info --schedule /tmp/celery/celerybeat-schedule` | redis, postgres |
+| `flower` | `celery -A app.workers flower --port=5555 --url_prefix=/flower` | redis |
 
-Both containers set `SKIP_MIGRATIONS=true` — only the `db-migrate`
+All three containers set `SKIP_MIGRATIONS=true` — only the `db-migrate`
 container and FastAPI run Alembic migrations.
+
+Flower provides a web UI at `http://localhost:5555/flower` showing queue
+depth, worker status, and task details. Basic auth is configurable via
+`OPENCASE_FLOWER_BASIC_AUTH`.
 
 See [INFRASTRUCTURE.md](INFRASTRUCTURE.md) for ports, volumes, and
 health checks. See [SETTINGS.md](SETTINGS.md) for `OPENCASE_CELERY_*`

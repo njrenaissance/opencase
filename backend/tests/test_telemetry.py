@@ -84,3 +84,31 @@ def test_sets_global_tracer_provider():
     telemetry.setup_telemetry(_make_settings(enabled=True))
     provider = trace.get_tracer_provider()
     assert isinstance(provider, TracerProvider)
+
+
+# ---------------------------------------------------------------------------
+# configure_celery_instrumentation (Feature 2.7)
+# ---------------------------------------------------------------------------
+
+
+def test_celery_instrumentation_skipped_when_disabled():
+    """No error when OTel is disabled — CeleryInstrumentor is never imported."""
+    telemetry.configure_celery_instrumentation(_make_settings(enabled=False))
+
+
+def test_celery_instrumentation_calls_instrumentor(monkeypatch):
+    """CeleryInstrumentor().instrument() is called when OTel is enabled."""
+    telemetry.setup_telemetry(_make_settings(enabled=True))
+
+    called = {"instrument": False}
+
+    class _FakeInstrumentor:
+        def instrument(self):
+            called["instrument"] = True
+
+    monkeypatch.setattr(
+        "opentelemetry.instrumentation.celery.CeleryInstrumentor",
+        _FakeInstrumentor,
+    )
+    telemetry.configure_celery_instrumentation(_make_settings(enabled=True))
+    assert called["instrument"]

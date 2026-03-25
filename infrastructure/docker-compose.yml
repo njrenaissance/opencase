@@ -279,6 +279,36 @@ services:
       - opencase
     restart: unless-stopped
 
+  # --- Monitoring --------------------------------------------
+  flower:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+    command: celery -A app.workers flower --port=5555 --url_prefix=/flower
+    ports:
+      - "${OPENCASE_FLOWER_PORT:-5555}:5555"
+    environment:
+      - SKIP_MIGRATIONS=true
+      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
+      # Required by app.core.config validation even though Flower only
+      # uses broker_url and result_backend.
+      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
+      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
+      - OPENCASE_FLOWER_PORT=5555
+      - OPENCASE_FLOWER_BASIC_AUTH=${OPENCASE_FLOWER_BASIC_AUTH:-}
+      - OPENCASE_FLOWER_URL_PREFIX=/flower
+      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
+      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
+      # Flower is a monitoring UI — no task telemetry to emit.
+      - OPENCASE_OTEL_ENABLED=false
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - opencase
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   qdrant-data:
