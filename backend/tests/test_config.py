@@ -20,6 +20,7 @@ from app.core.config import (
     DbSettings,
     FlowerSettings,
     RedisSettings,
+    S3Settings,
     Settings,
     redact_settings,
 )
@@ -102,6 +103,15 @@ DEFAULTS = {
         "port": 5555,
         "basic_auth": None,
         "url_prefix": "/flower",
+    },
+    "s3": {
+        "endpoint": _ENV_TEST["OPENCASE_S3_ENDPOINT"],
+        "access_key": _ENV_TEST["OPENCASE_S3_ACCESS_KEY"],
+        "secret_key": _ENV_TEST["OPENCASE_S3_SECRET_KEY"],
+        "bucket": _ENV_TEST.get("OPENCASE_S3_BUCKET", "opencase"),
+        "use_ssl": False,
+        "region": _ENV_TEST.get("OPENCASE_S3_REGION", "us-east-1"),
+        "url": f"http://{_ENV_TEST['OPENCASE_S3_ENDPOINT']}",
     },
 }
 
@@ -405,6 +415,57 @@ def test_flower_prefix_isolation(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# S3Settings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_s3_defaults():
+    cfg = S3Settings()
+    assert cfg.endpoint == "minio:9000"
+    assert cfg.access_key == "opencase"
+    assert cfg.secret_key == "changeme"  # noqa: S105
+    assert cfg.bucket == "opencase"
+    assert cfg.use_ssl is False
+    assert cfg.region == "us-east-1"
+
+
+def test_s3_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_S3_BUCKET", "custom-bucket")
+    cfg = S3Settings()
+    assert cfg.bucket == "custom-bucket"
+
+
+def test_s3_prefix_isolation(monkeypatch):
+    # OPENCASE_ENDPOINT (wrong prefix) must not override OPENCASE_S3_ENDPOINT
+    monkeypatch.setenv("OPENCASE_ENDPOINT", "wrong")
+    cfg = S3Settings()
+    assert cfg.endpoint != "wrong"
+
+
+def test_s3_missing_access_key_raises(monkeypatch):
+    monkeypatch.delenv("OPENCASE_S3_ACCESS_KEY", raising=False)
+    with pytest.raises(ValidationError):
+        S3Settings()
+
+
+def test_s3_missing_secret_key_raises(monkeypatch):
+    monkeypatch.delenv("OPENCASE_S3_SECRET_KEY", raising=False)
+    with pytest.raises(ValidationError):
+        S3Settings()
+
+
+def test_s3_url_http():
+    cfg = S3Settings()
+    assert cfg.url == "http://minio:9000"
+
+
+def test_s3_url_https(monkeypatch):
+    monkeypatch.setenv("OPENCASE_S3_USE_SSL", "true")
+    cfg = S3Settings()
+    assert cfg.url == "https://minio:9000"
+
+
+# ---------------------------------------------------------------------------
 # redact_settings
 # ---------------------------------------------------------------------------
 
@@ -423,6 +484,12 @@ def test_redact_settings_masks_secrets():
             "result_backend": "db+postgresql+psycopg2://u:p@host/db",
             "timezone": "UTC",
         },
+        "s3": {
+            "access_key": "AKIAIOSFODNN7EXAMPLE",
+            "secret_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+            "endpoint": "minio:9000",
+            "bucket": "opencase",
+        },
     }
     redacted = redact_settings(data)
     assert redacted["auth"]["secret_key"] == _REDACTED
@@ -439,6 +506,11 @@ def test_redact_settings_masks_secrets():
         redacted["celery"]["result_backend"] == "db+postgresql+psycopg2://u:***@host/db"
     )
     assert redacted["celery"]["timezone"] == "UTC"
+    # S3 credentials are redacted
+    assert redacted["s3"]["access_key"] == _REDACTED
+    assert redacted["s3"]["secret_key"] == _REDACTED
+    assert redacted["s3"]["endpoint"] == "minio:9000"
+    assert redacted["s3"]["bucket"] == "opencase"
 
 
 def test_redact_settings_url_without_password():

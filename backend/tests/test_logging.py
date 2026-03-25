@@ -70,6 +70,8 @@ def _clear_opencase_env(monkeypatch):
     # Required fields that have no defaults:
     monkeypatch.setenv("OPENCASE_AUTH_SECRET_KEY", "test")
     monkeypatch.setenv("OPENCASE_DB_URL", "postgresql+asyncpg://u:p@h/db")
+    monkeypatch.setenv("OPENCASE_S3_ACCESS_KEY", "test")
+    monkeypatch.setenv("OPENCASE_S3_SECRET_KEY", "test")
 
 
 def test_log_level_config_default(monkeypatch):
