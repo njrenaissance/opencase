@@ -25,8 +25,8 @@ COPY backend/alembic/ alembic/
 COPY backend/alembic.ini alembic.ini
 COPY backend/scripts/ scripts/
 
-# Install the backend project itself
-RUN uv sync --frozen --no-dev --no-editable
+# Install the backend project itself (with monitoring extra for Flower)
+RUN uv sync --frozen --no-dev --no-editable --extra monitoring
 
 
 # ---- Stage 2: Runtime ----

@@ -39,7 +39,6 @@ dependencies = [
     "langchain-ollama>=0.3",
     # Background jobs
     "celery[redis]>=5.4",
-    "flower>=2.0",
     "psycopg2-binary>=2.9",
     # Document parsing
     "python-multipart>=0.0.18",
@@ -54,6 +53,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+monitoring = ["flower>=2.0"]
 dev = ["ruff>=0.9", "mypy>=1.14", "types-python-jose>=3.3", "pre-commit>=4.1"]
 test = [
     "pytest>=8.3",

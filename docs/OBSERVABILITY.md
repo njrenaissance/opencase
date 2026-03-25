@@ -59,7 +59,7 @@ Current manually instrumented spans:
 | `permissions.check_matter_access` | `core/permissions.py` | Matter-level access verification |
 | `broker.submit` | `workers/broker.py` | Task submission (`messaging.destination.name`, `messaging.message.id`) |
 | `broker.get_status` | `workers/broker.py` | Task status query (`messaging.message.id`, `messaging.operation.name`) |
-| `broker.revoke` | `workers/broker.py` | Task cancellation (`messaging.message.id`, `messaging.operation.terminate`) |
+| `broker.revoke` | `workers/broker.py` | Task cancellation (`messaging.message.id`, `celery.revoke.terminate`) |
 
 ### Metrics
 

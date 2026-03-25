@@ -234,8 +234,10 @@ def configure_celery_instrumentation(settings: Settings) -> None:
 
     from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
-    CeleryInstrumentor().instrument()
-    logger.debug("OTel instrumentor wired: Celery")
+    instrumentor = CeleryInstrumentor()
+    if not instrumentor.is_instrumented_by_opentelemetry:
+        instrumentor.instrument()
+        logger.debug("OTel instrumentor wired: Celery")
 
 
 def configure_instrumentation(app: "FastAPI", settings: Settings) -> None:

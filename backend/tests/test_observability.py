@@ -6,6 +6,7 @@ in the Tempo backend and are queryable via the Tempo HTTP API.
 Requires the integration stack: postgres + fastapi + grafana (otel-lgtm).
 """
 
+import os
 import time
 
 import httpx
@@ -80,7 +81,7 @@ def test_ready_sqlalchemy_span_in_tempo(
 
 def test_worker_span_in_tempo(
     redis_service: tuple[str, int],
-    postgres_service: tuple[str, int],  # noqa: ARG001 — ensures Postgres is up for result backend
+    postgres_service: tuple[str, int],
     grafana_service: str,
 ) -> None:
     """Celery worker emits OTel spans that arrive in Tempo.
@@ -90,15 +91,28 @@ def test_worker_span_in_tempo(
     """
     from celery import Celery
 
-    from app.core.config import settings
-
-    host, port = redis_service
+    redis_host, redis_port = redis_service
+    pg_host, pg_port = postgres_service
+    backend = (
+        f"db+postgresql://{os.environ['POSTGRES_USER']}"
+        f":{os.environ['POSTGRES_PASSWORD']}"
+        f"@{pg_host}:{pg_port}/opencase_tasks_test"
+    )
     app = Celery(
-        broker=f"redis://{host}:{port}/0",
-        backend=settings.celery.result_backend,
+        broker=f"redis://{redis_host}:{redis_port}/0",
+        backend=backend,
     )
     result = app.send_task("opencase.ping")
     assert result.get(timeout=15) == "pong"
 
     traces = _wait_for_traces(grafana_service, "opencase-worker", timeout=30.0)
     assert traces, "No traces found in Tempo for opencase-worker"
+
+    # Verify CeleryInstrumentor produced a span (not just any trace).
+    # Tempo search results include span names like "run" or "apply_async".
+    span_names = {
+        s.get("spanSet", {}).get("spans", [{}])[0].get("name", "")
+        for s in traces
+        if s.get("spanSet")
+    }
+    assert span_names, "Traces found but no span names — check Tempo response format"

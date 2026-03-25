@@ -103,9 +103,13 @@ def test_celery_instrumentation_calls_instrumentor(monkeypatch):
     called = {"instrument": False}
 
     class _FakeInstrumentor:
+        is_instrumented_by_opentelemetry = False
+
         def instrument(self):
             called["instrument"] = True
 
+    # Patch at the source — the lazy import inside
+    # configure_celery_instrumentation reads from this path each call.
     monkeypatch.setattr(
         "opentelemetry.instrumentation.celery.CeleryInstrumentor",
         _FakeInstrumentor,

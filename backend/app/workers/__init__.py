@@ -5,9 +5,9 @@ Task modules are auto-discovered from ``app.workers.tasks``.
 """
 
 from celery import Celery  # type: ignore[import-untyped]
+from celery.signals import beat_init, worker_init  # type: ignore[import-untyped]
 
 from app.core.config import settings
-from app.core.telemetry import configure_celery_instrumentation, setup_telemetry
 
 celery_app = Celery("opencase")
 
@@ -26,8 +26,24 @@ celery_app.conf.update(**conf)
 
 celery_app.autodiscover_tasks(["app.workers"])
 
+
 # --- Observability (Feature 2.7) ---
-# Initialise OTel providers and wire the CeleryInstrumentor so worker and
-# beat processes emit traces, metrics, and logs to the OTLP backend.
-setup_telemetry(settings)
-configure_celery_instrumentation(settings)
+# Initialise OTel providers and wire the CeleryInstrumentor when a worker
+# or beat process actually starts — not at module import time.  This avoids
+# polluting global OTel state when tests merely import celery_app.
+
+
+@worker_init.connect  # type: ignore[untyped-decorator]
+def _on_worker_init(**_kwargs: object) -> None:
+    from app.core.telemetry import configure_celery_instrumentation, setup_telemetry
+
+    setup_telemetry(settings)
+    configure_celery_instrumentation(settings)
+
+
+@beat_init.connect  # type: ignore[untyped-decorator]
+def _on_beat_init(**_kwargs: object) -> None:
+    from app.core.telemetry import configure_celery_instrumentation, setup_telemetry
+
+    setup_telemetry(settings)
+    configure_celery_instrumentation(settings)

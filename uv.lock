@@ -1955,7 +1955,6 @@ dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "cryptography" },
     { name = "fastapi" },
-    { name = "flower" },
     { name = "langchain" },
     { name = "langchain-community" },
     { name = "langchain-ollama" },
@@ -1984,6 +1983,9 @@ dev = [
     { name = "pre-commit" },
     { name = "ruff" },
     { name = "types-python-jose" },
+]
+monitoring = [
+    { name = "flower" },
 ]
 test = [
     { name = "factory-boy" },
@@ -2022,7 +2024,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=44" },
     { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "flower", specifier = ">=2.0" },
+    { name = "flower", marker = "extra == 'monitoring'", specifier = ">=2.0" },
     { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28" },
     { name = "langchain", specifier = ">=0.3" },
     { name = "langchain-community", specifier = ">=0.3" },
@@ -2054,7 +2056,7 @@ requires-dist = [
     { name = "types-python-jose", marker = "extra == 'dev'", specifier = ">=3.3" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
-provides-extras = ["dev", "test"]
+provides-extras = ["monitoring", "dev", "test"]
 
 [package.metadata.requires-dev]
 dev = [
