@@ -62,10 +62,18 @@ def test_quiets_noisy_loggers():
     assert logging.getLogger("httpcore").level == logging.WARNING
 
 
-def test_log_level_config_default(monkeypatch):
+def _clear_opencase_env(monkeypatch):
+    """Strip all OPENCASE_ env vars, then re-set required ones."""
     for key in list(os.environ):
         if key.startswith("OPENCASE_"):
             monkeypatch.delenv(key, raising=False)
+    # Required fields that have no defaults:
+    monkeypatch.setenv("OPENCASE_AUTH_SECRET_KEY", "test")
+    monkeypatch.setenv("OPENCASE_DB_URL", "postgresql+asyncpg://u:p@h/db")
+
+
+def test_log_level_config_default(monkeypatch):
+    _clear_opencase_env(monkeypatch)
     from app.core.config import Settings
 
     cfg = Settings()
@@ -73,9 +81,7 @@ def test_log_level_config_default(monkeypatch):
 
 
 def test_log_level_config_from_env(monkeypatch):
-    for key in list(os.environ):
-        if key.startswith("OPENCASE_"):
-            monkeypatch.delenv(key, raising=False)
+    _clear_opencase_env(monkeypatch)
     monkeypatch.setenv("OPENCASE_LOG_LEVEL", "DEBUG")
     from app.core.config import Settings
 

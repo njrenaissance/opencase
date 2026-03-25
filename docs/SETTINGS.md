@@ -29,6 +29,19 @@ Top-level application settings.
 
 ---
 
+## ApiSettings (`OPENCASE_API_` prefix)
+
+HTTP server binding (uvicorn inside the container).
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_API_HOST` | `0.0.0.0` | Interface uvicorn binds to inside the container |
+| `OPENCASE_API_PORT` | `8000` | Port uvicorn listens on inside the container |
+
+FastAPI is never exposed on a public port. All external traffic routes through Next.js.
+
+---
+
 ## AuthSettings (`OPENCASE_AUTH_` prefix)
 
 JWT authentication, TOTP MFA, and account lockout policy.
@@ -50,6 +63,36 @@ start without it.
 
 ---
 
+## CelerySettings (`OPENCASE_CELERY_` prefix)
+
+Celery task queue configuration.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_CELERY_BROKER_URL` | `redis://redis:6379/0` | Message broker URL |
+| `OPENCASE_CELERY_RESULT_BACKEND` | *none* | Task result backend DSN (see below) |
+| `OPENCASE_CELERY_TASK_SERIALIZER` | `json` | Task serialization format |
+| `OPENCASE_CELERY_ACCEPT_CONTENT` | `["json"]` | Accepted content types (JSON array) |
+| `OPENCASE_CELERY_TIMEZONE` | `UTC` | Timezone for scheduled tasks |
+| `OPENCASE_CELERY_WORKER_CONCURRENCY` | `2` | Concurrent worker processes |
+| `OPENCASE_CELERY_TASK_SOFT_TIME_LIMIT` | `300` | Soft time limit per task (seconds) |
+| `OPENCASE_CELERY_TASK_HARD_TIME_LIMIT` | `600` | Hard time limit per task (seconds) |
+| `OPENCASE_CELERY_TASK_ACKS_LATE` | `true` | Acknowledge after completion (crash-safe) |
+| `OPENCASE_CELERY_WORKER_PREFETCH_MULTIPLIER` | `1` | Tasks prefetched per worker (1 = fair) |
+
+`OPENCASE_CELERY_RESULT_BACKEND` stores task results in the
+`opencase_tasks` database on the shared Postgres instance. Uses the
+synchronous `psycopg2` driver (not `asyncpg`):
+
+```text
+db+postgresql://user:pass@postgres:5432/opencase_tasks
+```
+
+Celery auto-creates the `celery_taskmeta` and `celery_tasksetmeta`
+tables on first use — no Alembic migration needed.
+
+---
+
 ## DbSettings (`OPENCASE_DB_` prefix)
 
 PostgreSQL connection and connection-pool settings.
@@ -68,16 +111,15 @@ In Docker Compose this value is assembled automatically from `POSTGRES_USER`,
 
 ---
 
-## ApiSettings (`OPENCASE_API_` prefix)
+## FlowerSettings (`OPENCASE_FLOWER_` prefix)
 
-HTTP server binding (uvicorn inside the container).
+Flower monitoring UI for Celery.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENCASE_API_HOST` | `0.0.0.0` | Interface uvicorn binds to inside the container |
-| `OPENCASE_API_PORT` | `8000` | Port uvicorn listens on inside the container |
-
-FastAPI is never exposed on a public port. All external traffic routes through Next.js.
+| `OPENCASE_FLOWER_PORT` | `5555` | Flower web UI port |
+| `OPENCASE_FLOWER_BASIC_AUTH` | *none* | Basic auth credentials (`user:password`, optional) |
+| `OPENCASE_FLOWER_URL_PREFIX` | `/flower` | URL prefix for reverse proxy |
 
 ---
 
@@ -117,38 +159,3 @@ assembles them into a connection string at runtime.
 
 The computed `url` property (e.g. `redis://redis:6379/0`) is available in
 Python as `settings.redis.url` but is not set via an environment variable.
-
----
-
-## CelerySettings (`OPENCASE_CELERY_` prefix)
-
-Celery task queue configuration.
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `OPENCASE_CELERY_BROKER_URL` | `redis://redis:6379/0` | Message broker URL |
-| `OPENCASE_CELERY_RESULT_BACKEND` | *none* | Task result backend DSN (set when tasks DB is provisioned) |
-| `OPENCASE_CELERY_TASK_SERIALIZER` | `json` | Task serialization format |
-| `OPENCASE_CELERY_ACCEPT_CONTENT` | `["json"]` | Accepted content types (JSON array) |
-| `OPENCASE_CELERY_TIMEZONE` | `UTC` | Timezone for scheduled tasks |
-| `OPENCASE_CELERY_WORKER_CONCURRENCY` | `2` | Concurrent worker processes |
-| `OPENCASE_CELERY_TASK_SOFT_TIME_LIMIT` | `300` | Soft time limit per task (seconds) |
-| `OPENCASE_CELERY_TASK_HARD_TIME_LIMIT` | `600` | Hard time limit per task (seconds) |
-| `OPENCASE_CELERY_TASK_ACKS_LATE` | `true` | Acknowledge after completion (crash-safe) |
-| `OPENCASE_CELERY_WORKER_PREFETCH_MULTIPLIER` | `1` | Tasks prefetched per worker (1 = fair) |
-
-`OPENCASE_CELERY_RESULT_BACKEND` is optional until the tasks database is
-provisioned (Feature 2.4). When set, use a synchronous psycopg2 DSN:
-`db+postgresql+psycopg2://user:pass@tasks-db:5432/celery`.
-
----
-
-## FlowerSettings (`OPENCASE_FLOWER_` prefix)
-
-Flower monitoring UI for Celery.
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `OPENCASE_FLOWER_PORT` | `5555` | Flower web UI port |
-| `OPENCASE_FLOWER_BASIC_AUTH` | *none* | Basic auth credentials (`user:password`, optional) |
-| `OPENCASE_FLOWER_URL_PREFIX` | `/flower` | URL prefix for reverse proxy |

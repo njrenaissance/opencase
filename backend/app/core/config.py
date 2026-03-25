@@ -2,7 +2,7 @@ from importlib.metadata import version
 from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, model_validator
 from pydantic_settings import (
     BaseSettings,
     JsonConfigSettingsSource,
@@ -117,16 +117,16 @@ class RedisSettings(BaseSettings):
 class CelerySettings(BaseSettings):
     """Celery sub-config (OPENCASE_CELERY_ prefix).
 
-    broker_url defaults to the Docker-internal Redis address and must be
-    kept in sync with RedisSettings (host, port, db, password, ssl).
-    When overriding RedisSettings fields, update broker_url to match or
-    set OPENCASE_CELERY_BROKER_URL explicitly.
+    When ``broker_url`` is not set via ``OPENCASE_CELERY_BROKER_URL``,
+    it is derived from ``RedisSettings.url`` by the parent ``Settings``
+    model validator — so changing ``OPENCASE_REDIS_*`` fields automatically
+    updates the broker address.
 
     result_backend is None until the tasks database is provisioned
     (Feature 2.4).
     """
 
-    broker_url: str = "redis://redis:6379/0"
+    broker_url: str | None = None
     result_backend: str | None = None
     task_serializer: str = "json"
     accept_content: list[str] = Field(default_factory=lambda: ["json"])
@@ -210,14 +210,21 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     log_output: Literal["stdout", "stderr"] = "stdout"
     deployment_mode: str = "airgapped"
-    otel: OtelSettings = OtelSettings()
-    api: ApiSettings = ApiSettings()
-    auth: AuthSettings = AuthSettings()  # type: ignore[call-arg]
-    db: DbSettings = DbSettings()  # type: ignore[call-arg]
-    admin: AdminSettings = AdminSettings()
-    redis: RedisSettings = RedisSettings()
-    celery: CelerySettings = CelerySettings()
-    flower: FlowerSettings = FlowerSettings()
+    otel: OtelSettings = Field(default_factory=OtelSettings)
+    api: ApiSettings = Field(default_factory=ApiSettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)  # type: ignore[arg-type]
+    db: DbSettings = Field(default_factory=DbSettings)  # type: ignore[arg-type]
+    admin: AdminSettings = Field(default_factory=AdminSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    celery: CelerySettings = Field(default_factory=CelerySettings)
+    flower: FlowerSettings = Field(default_factory=FlowerSettings)
+
+    @model_validator(mode="after")
+    def _derive_celery_broker_url(self) -> "Settings":
+        """Default broker_url to redis.url when not explicitly set."""
+        if self.celery.broker_url is None:
+            self.celery.broker_url = self.redis.url
+        return self
 
     model_config = SettingsConfigDict(
         env_prefix="OPENCASE_",

@@ -52,6 +52,9 @@ RUN chmod +x /app/entrypoint.sh
 # Put venv on PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Create celery schedule directory (used by celery-beat --schedule flag)
+RUN mkdir -p /tmp/celery && chown opencase:opencase /tmp/celery
+
 # Switch to non-root user
 USER opencase
 

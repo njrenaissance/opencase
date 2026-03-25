@@ -81,10 +81,14 @@ DEFAULTS = {
         "url": f"redis://{_ENV_TEST.get('OPENCASE_REDIS_HOST', 'redis')}:6379/0",
     },
     "celery": {
-        "broker_url": _ENV_TEST.get(
-            "OPENCASE_CELERY_BROKER_URL", "redis://redis:6379/0"
+        # broker_url is not in .env.test — derived from RedisSettings
+        # by the Settings model validator.
+        "broker_url": (
+            f"redis://{_ENV_TEST.get('OPENCASE_REDIS_HOST', 'redis')}"
+            f":{_ENV_TEST.get('OPENCASE_REDIS_PORT', '6379')}"
+            f"/{_ENV_TEST.get('OPENCASE_REDIS_DB', '0')}"
         ),
-        "result_backend": None,
+        "result_backend": _ENV_TEST.get("OPENCASE_CELERY_RESULT_BACKEND"),
         "task_serializer": "json",
         "accept_content": ["json"],
         "timezone": "UTC",
@@ -317,8 +321,10 @@ def test_redis_prefix_isolation(monkeypatch):
 
 def test_celery_defaults():
     cfg = CelerySettings()
-    assert cfg.broker_url == "redis://localhost:6379/0"  # from .env.test
-    assert cfg.result_backend is None
+    # broker_url is None at CelerySettings level; the Settings
+    # model validator derives it from RedisSettings.
+    assert cfg.broker_url is None
+    assert cfg.result_backend == _ENV_TEST.get("OPENCASE_CELERY_RESULT_BACKEND")
     assert cfg.task_serializer == "json"
     assert cfg.accept_content == ["json"]
     assert cfg.timezone == "UTC"
@@ -347,6 +353,24 @@ def test_celery_prefix_isolation(monkeypatch):
     monkeypatch.setenv("OPENCASE_BROKER_URL", "wrong")
     cfg = CelerySettings()
     assert cfg.broker_url != "wrong"
+
+
+def test_celery_broker_url_derived_from_redis(monkeypatch):
+    """Settings derives broker_url from RedisSettings."""
+    monkeypatch.delenv("OPENCASE_CELERY_BROKER_URL", raising=False)
+    monkeypatch.setenv("OPENCASE_REDIS_HOST", "custom-redis")
+    monkeypatch.setenv("OPENCASE_REDIS_PORT", "6380")
+    monkeypatch.setenv("OPENCASE_REDIS_DB", "2")
+    cfg = Settings()
+    assert cfg.celery.broker_url == "redis://custom-redis:6380/2"
+
+
+def test_celery_broker_url_explicit_overrides_redis(monkeypatch):
+    """Explicit OPENCASE_CELERY_BROKER_URL takes precedence over RedisSettings."""
+    monkeypatch.setenv("OPENCASE_CELERY_BROKER_URL", "redis://explicit:6379/5")
+    monkeypatch.setenv("OPENCASE_REDIS_HOST", "custom-redis")
+    cfg = Settings()
+    assert cfg.celery.broker_url == "redis://explicit:6379/5"
 
 
 # ---------------------------------------------------------------------------

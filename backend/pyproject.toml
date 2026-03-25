@@ -39,6 +39,7 @@ dependencies = [
     "langchain-ollama>=0.3",
     # Background jobs
     "celery[redis]>=5.4",
+    "psycopg2-binary>=2.9",
     # Document parsing
     "python-multipart>=0.0.18",
     # Hashing / crypto

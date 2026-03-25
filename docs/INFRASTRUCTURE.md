@@ -12,7 +12,7 @@ Documents the Docker Compose setup in `infrastructure/`. See
 | --- | --- |
 | `infrastructure/docker-compose.yml` | Full development stack |
 | `infrastructure/docker-compose.integration.yml` | Override for integration test runs |
-| `infrastructure/postgres/init.sql` | Creates `opencase_test` DB on first startup |
+| `infrastructure/postgres/init.sql` | Creates `opencase_tasks`, `opencase_test`, and `opencase_tasks_test` DBs on first startup |
 
 ---
 
@@ -80,11 +80,11 @@ Python API server (uvicorn + FastAPI).
 
 | Setting | Value |
 | --- | --- |
-| Build context | `../backend` |
-| Dockerfile | `docker/Dockerfile` |
+| Build context | `..` (repo root) |
+| Dockerfile | `backend/docker/Dockerfile` |
 | Public port | `8000` (dev/test only — remove in production) |
 | Internal port | `8000` |
-| Depends on | `db-migrate` (completed), `postgres` (healthy) |
+| Depends on | `db-migrate` (completed), `redis` (healthy) |
 
 The public port mapping (`8000:8000`) is present for local development and
 integration tests. In production it should be removed — all external traffic
@@ -130,9 +130,10 @@ PostgreSQL 17 relational database.
 | Init script | `infrastructure/postgres/init.sql` |
 | Healthcheck | `pg_isready -U <user>` |
 
-The init script runs once on first container startup and creates the
-`opencase_test` database used by integration tests alongside the default
-`opencase` database.
+The init script runs once on first container startup and creates three
+additional databases alongside the default `opencase` database:
+`opencase_tasks` (Celery result backend), `opencase_test` (integration
+tests), and `opencase_tasks_test` (integration test result backend).
 
 ---
 
@@ -207,14 +208,16 @@ Celery background task worker.
 
 | Setting | Value |
 | --- | --- |
-| Build context | `../backend` |
-| Dockerfile | `Dockerfile` |
+| Build context | `..` (repo root) |
+| Dockerfile | `backend/docker/Dockerfile` |
 | Command | `celery -A app.workers worker -l info` |
 | Volume | `celery-tmp` (ephemeral temp files) |
 | Depends on | `postgres` (healthy), `redis` (healthy), `minio` (healthy) |
 
 Processes background tasks: document ingestion, embeddings, deadline
-monitoring, audit chain validation, legal hold enforcement.
+monitoring, audit chain validation, legal hold enforcement. Migrations
+are skipped (`SKIP_MIGRATIONS=true`). See [TASKS.md](TASKS.md) for the
+task registry and Celery architecture.
 
 ---
 
@@ -224,13 +227,15 @@ Celery periodic task scheduler.
 
 | Setting | Value |
 | --- | --- |
-| Build context | `../backend` |
-| Dockerfile | `Dockerfile` |
-| Command | `celery -A app.workers beat -l info` |
+| Build context | `..` (repo root) |
+| Dockerfile | `backend/docker/Dockerfile` |
+| Command | `celery -A app.workers beat -l info --schedule /tmp/celery/celerybeat-schedule` |
+| Volume | `celery-tmp` (schedule file persistence) |
 | Depends on | `redis` (healthy) |
 
 Submits scheduled tasks on a cron-based schedule (cloud ingestion every
 15 min, deadline monitor every hour, audit chain validator nightly).
+Migrations are skipped (`SKIP_MIGRATIONS=true`).
 
 ---
 
@@ -307,10 +312,13 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 **Changes from base stack:**
 
 - `fastapi` points at `opencase_test` database (created by `init.sql`)
-- `fastapi` has OTel enabled (`EXPORTER=otlp`, targeting `jaeger:4318`)
+- `fastapi` has OTel enabled (`EXPORTER=otlp`, targeting `grafana:4318`)
+- `redis` exposes port `6379` to the host for test access
+- `celery-worker` result backend points at `opencase_tasks_test`
 - All unimplemented services are disabled via Docker Compose profiles:
-  `nextjs`, `celery-worker`, `celery-beat`, `minio`, `ollama`, `qdrant`, `redis`
-- Active services: `postgres` + `fastapi` + `grafana`
+  `nextjs`, `minio`, `ollama`, `qdrant`
+- Active services: `postgres` + `redis` + `fastapi` + `celery-worker`
+  \+ `celery-beat` + `grafana`
 
 To run integration tests:
 

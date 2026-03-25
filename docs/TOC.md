@@ -25,6 +25,8 @@ BDD scenarios.*
   admin bootstrap
 - [Observability](OBSERVABILITY.md) — OTel strategy,
   traces/metrics/logs instrumentation, Grafana otel-lgtm
+- [Background Tasks](TASKS.md) — Celery architecture, task
+  registry, adding new tasks, result backend
 
 ### Reference
 

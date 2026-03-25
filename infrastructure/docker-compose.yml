@@ -89,7 +89,9 @@ services:
     depends_on:
       db-migrate:
         condition: service_completed_successfully
-      # redis, qdrant, minio, ollama dependencies added as each feature is implemented
+      redis:
+        condition: service_healthy
+      # qdrant, minio, ollama dependencies added as each feature is implemented
     networks:
       - opencase
     restart: unless-stopped
@@ -203,12 +205,18 @@ services:
   # --- Background Workers -----------------------------------
   celery-worker:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/docker/Dockerfile
     command: celery -A app.workers worker -l info
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
+      - SKIP_MIGRATIONS=true
+      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
+      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
+      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
+      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
+      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
+      - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - OLLAMA_HOST=http://ollama:11434
@@ -218,19 +226,22 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-changeme}
       - MINIO_BUCKET=opencase
       - MINIO_USE_SSL=false
-      - DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
       # Cloud ingestion (internet mode only)
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      # Observability
+      - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
+      - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
+      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
+      - OPENCASE_OTEL_SERVICE_NAME=opencase-worker
+      - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
     volumes:
       - celery-tmp:/tmp/celery
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
+      postgres:
         condition: service_healthy
     networks:
       - opencase
@@ -238,13 +249,31 @@ services:
 
   celery-beat:
     build:
-      context: ../backend
-      dockerfile: Dockerfile
-    command: celery -A app.workers beat -l info
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+    command: celery -A app.workers beat -l info --schedule /tmp/celery/celerybeat-schedule
     environment:
-      - REDIS_URL=redis://redis:6379/0
+      - SKIP_MIGRATIONS=true
+      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
+      # OPENCASE_DB_URL is required because importing app.core.config
+      # validates it, even though Beat only uses broker_url and result_backend.
+      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
+      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
+      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
+      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
+      # Observability
+      - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
+      - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
+      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
+      - OPENCASE_OTEL_SERVICE_NAME=opencase-beat
+      - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
+    volumes:
+      - celery-tmp:/tmp/celery
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - opencase

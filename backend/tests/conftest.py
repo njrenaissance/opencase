@@ -179,6 +179,16 @@ def _api_ready(url: str) -> bool:
         return False
 
 
+def _redis_ready(host: str, port: int) -> bool:
+    import redis as redis_lib
+
+    try:
+        r = redis_lib.Redis(host=host, port=port, socket_timeout=1)
+        return r.ping()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _grafana_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
@@ -209,6 +219,17 @@ def postgres_service(docker_ip, docker_services):
         check=lambda: _pg_ready(docker_ip, 5432),
     )
     return docker_ip, 5432
+
+
+@pytest.fixture(scope="session")
+def redis_service(docker_ip, docker_services):
+    """Ensure Redis is up and return (host, port)."""
+    docker_services.wait_until_responsive(
+        timeout=30.0,
+        pause=0.5,
+        check=lambda: _redis_ready(docker_ip, 6379),
+    )
+    return docker_ip, 6379
 
 
 @pytest.fixture(scope="session")
