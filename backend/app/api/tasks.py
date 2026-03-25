@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -105,7 +105,6 @@ async def submit_task(
             broker.submit, celery_name, body.args, body.kwargs
         )
 
-        now = datetime.now(UTC)
         sub = TaskSubmission(
             id=task_id,
             firm_id=user.firm_id,
@@ -114,7 +113,6 @@ async def submit_task(
             args_json=json.dumps(body.args),
             kwargs_json=json.dumps(body.kwargs),
             status=TaskState.pending,
-            submitted_at=now,
         )
         db.add(sub)
         try:
@@ -138,6 +136,8 @@ async def list_tasks(
     task_name: str | None = Query(None),
     submitted_after: datetime | None = Query(None),  # noqa: B008
     submitted_before: datetime | None = Query(None),  # noqa: B008
+    limit: int = Query(100, ge=1, le=1000),  # noqa: B008
+    offset: int = Query(0, ge=0),  # noqa: B008
     user: User = Depends(get_current_user),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> list[TaskSummary]:
@@ -157,6 +157,7 @@ async def list_tasks(
             stmt = stmt.where(TaskSubmission.submitted_at <= submitted_before)
 
         stmt = stmt.order_by(TaskSubmission.submitted_at.desc())
+        stmt = stmt.limit(limit).offset(offset)
 
         result = await db.execute(stmt)
         return [_submission_to_summary(s) for s in result.scalars().all()]
