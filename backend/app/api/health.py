@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
+from urllib.request import urlopen
 
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
@@ -47,13 +48,22 @@ async def check_redis() -> str:
         return "error"
 
 
+async def check_minio() -> str:
+    try:
+        url = f"{settings.s3.url}/minio/health/live"
+        with urlopen(url, timeout=2) as resp:  # noqa: S310
+            return "ok" if resp.status == 200 else "error"
+    except Exception:  # noqa: BLE001
+        return "error"
+
+
 # Registry of zero-argument readiness checks: (service_name, check_callable).
 # Postgres is excluded — it requires the injected DB session and is called
 # directly in the readiness_check endpoint.
 READINESS_CHECKS: list[tuple[str, Callable[[], Awaitable[str]]]] = [
     ("redis", check_redis),
     # ("qdrant", check_qdrant),
-    # ("minio", check_minio),
+    ("minio", check_minio),
     # ("ollama", check_ollama),
 ]
 
