@@ -63,6 +63,8 @@ services:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
       - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
+      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
+      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333

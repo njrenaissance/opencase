@@ -15,6 +15,7 @@ services:
   fastapi:
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
+      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
       - OPENCASE_OTEL_ENABLED=true
       - OPENCASE_OTEL_EXPORTER=otlp
       - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
