@@ -6,4 +6,5 @@ tasks are implemented (ingestion, deadline monitor, etc.).
 
 TASK_REGISTRY: dict[str, str] = {
     "ping": "opencase.ping",
+    "sleep": "opencase.sleep",
 }

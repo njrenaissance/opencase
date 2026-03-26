@@ -6,3 +6,4 @@ here so their @shared_task decorators run and register with Celery.
 """
 
 from app.workers.tasks.ping import ping  # noqa: F401
+from app.workers.tasks.sleep import sleep_task  # noqa: F401
