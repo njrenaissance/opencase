@@ -193,6 +193,14 @@ def _redis_ready(host: str, port: int) -> bool:
         return False
 
 
+def _minio_ready(host: str, port: int) -> bool:
+    try:
+        url = f"http://{host}:{port}/minio/health/live"
+        return httpx.get(url, timeout=2).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
 def _grafana_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
@@ -234,6 +242,17 @@ def redis_service(docker_ip, docker_services):
         check=lambda: _redis_ready(docker_ip, 6379),
     )
     return docker_ip, 6379
+
+
+@pytest.fixture(scope="session")
+def minio_service(docker_ip, docker_services):
+    """Ensure MinIO is up and return (host, port)."""
+    docker_services.wait_until_responsive(
+        timeout=30.0,
+        pause=0.5,
+        check=lambda: _minio_ready(docker_ip, 9000),
+    )
+    return docker_ip, 9000
 
 
 @pytest.fixture(scope="session")

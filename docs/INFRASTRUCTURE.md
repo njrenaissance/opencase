@@ -178,6 +178,11 @@ Configured via `OPENCASE_S3_*` environment variables (see
 to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` in docker-compose so a
 single `.env` entry drives both the application and the storage server.
 
+The `minio-init` sidecar service creates the bucket automatically on first
+run using `mc mb --ignore-existing`. FastAPI and celery-worker depend on
+`minio-init` completing successfully before they start, guaranteeing the
+bucket exists when the application boots.
+
 ---
 
 ### nextjs
