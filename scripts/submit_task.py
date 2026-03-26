@@ -10,6 +10,9 @@ print(f"Logging in with email: {admin_email}")
 
 client.login(email=admin_email, password=admin_password)
 
+# submit long-running task
+client.submit_task(task_name="sleep", kwargs={"seconds": 30})
+
 # Submit ping task
 result = client.submit_task(task_name="ping")
 print(f"Submitted: {result.task_id}")
