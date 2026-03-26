@@ -42,6 +42,8 @@ dependencies = [
     "psycopg2-binary>=2.9",
     # Document parsing
     "python-multipart>=0.0.18",
+    # S3-compatible object storage
+    "minio>=7.0",
     # Hashing / crypto
     "cryptography>=44",
     "opentelemetry-api>=1.29",
@@ -62,7 +64,6 @@ test = [
     "pytest-cov>=6.0",
     "httpx>=0.28",
     "factory-boy>=3.3",
-    "minio>=7.0",
     "python-dotenv>=1.0",
 ]
 
