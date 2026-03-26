@@ -157,7 +157,7 @@ class S3Settings(BaseSettings):
     property assembles http(s)://endpoint for SDK clients.
     """
 
-    endpoint: str = "minio:9000"
+    endpoint: str = Field("minio:9000", min_length=1)
     access_key: str = Field(..., min_length=1)
     secret_key: str = Field(..., min_length=1)
     bucket: str = "opencase"
@@ -178,6 +178,9 @@ class S3Settings(BaseSettings):
 # ---------------------------------------------------------------------------
 
 _SECRET_SUBSTRINGS = ("password", "secret")
+# access_key: covers S3Settings.access_key (MinIO credentials).
+# If a future settings class reuses this field name for a non-secret
+# value, move redaction into a per-class allowlist instead.
 _SECRET_EXACT = frozenset({"basic_auth", "access_key"})
 _URL_FIELDS = frozenset({"broker_url", "result_backend", "url"})
 
@@ -241,6 +244,8 @@ class Settings(BaseSettings):
     redis: RedisSettings = Field(default_factory=RedisSettings)
     celery: CelerySettings = Field(default_factory=CelerySettings)
     flower: FlowerSettings = Field(default_factory=FlowerSettings)
+    # S3Settings has required fields (access_key, secret_key) that are
+    # satisfied by env vars at startup, same pattern as auth/db.
     s3: S3Settings = Field(default_factory=S3Settings)  # type: ignore[arg-type]
 
     @model_validator(mode="after")
