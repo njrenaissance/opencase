@@ -146,7 +146,11 @@ async def _get_document_with_access(
 async def get_ingestion_config(
     user: User = Depends(get_current_user),  # noqa: B008
 ) -> IngestionConfigResponse:
-    """Return allowed content types and file extensions for ingestion."""
+    """Return allowed content types and file extensions for ingestion.
+
+    Available to all authenticated users (any role). The CLI needs this
+    to filter files during bulk-ingest before uploading.
+    """
     return IngestionConfigResponse(
         allowed_content_types=sorted(settings.ingestion.allowed_content_types),
         allowed_extensions=sorted(settings.ingestion.allowed_extensions),

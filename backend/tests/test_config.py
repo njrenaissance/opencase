@@ -14,8 +14,8 @@ from dotenv import dotenv_values
 from pydantic import ValidationError
 
 from app.core.config import (
-    _DEFAULT_CONTENT_TYPES,
-    _DEFAULT_EXTENSIONS,
+    DEFAULT_CONTENT_TYPES,
+    DEFAULT_EXTENSIONS,
     ApiSettings,
     AuthSettings,
     CelerySettings,
@@ -123,13 +123,14 @@ DEFAULTS = {
         "tika_url": "http://tika:9998",
         "ocr_enabled": True,
         "ocr_languages": "eng",
+        "ocr_language_list": ["eng"],
         "request_timeout": 120,
         "max_file_size_bytes": 100 * 1024 * 1024,
     },
     "ingestion": {
         "allowed_types_file": None,
-        "allowed_content_types": _DEFAULT_CONTENT_TYPES,
-        "allowed_extensions": _DEFAULT_EXTENSIONS,
+        "allowed_content_types": DEFAULT_CONTENT_TYPES,
+        "allowed_extensions": DEFAULT_EXTENSIONS,
     },
 }
 
@@ -493,6 +494,7 @@ def test_extraction_defaults():
     assert cfg.tika_url == "http://tika:9998"
     assert cfg.ocr_enabled is True
     assert cfg.ocr_languages == "eng"
+    assert cfg.ocr_language_list == ["eng"]
     assert cfg.request_timeout == 120
     assert cfg.max_file_size_bytes == 100 * 1024 * 1024
 
@@ -510,6 +512,13 @@ def test_extraction_prefix_isolation(monkeypatch):
     assert cfg.tika_url != "wrong"
 
 
+def test_extraction_ocr_languages_comma_separated(monkeypatch):
+    monkeypatch.setenv("OPENCASE_EXTRACTION_OCR_LANGUAGES", "eng,fra,deu")
+    cfg = ExtractionSettings()
+    assert cfg.ocr_languages == "eng,fra,deu"
+    assert cfg.ocr_language_list == ["eng", "fra", "deu"]
+
+
 # ---------------------------------------------------------------------------
 # IngestionSettings — tested directly
 # ---------------------------------------------------------------------------
@@ -518,8 +527,8 @@ def test_extraction_prefix_isolation(monkeypatch):
 def test_ingestion_defaults():
     cfg = IngestionSettings()
     assert cfg.allowed_types_file is None
-    assert cfg.allowed_content_types == _DEFAULT_CONTENT_TYPES
-    assert cfg.allowed_extensions == _DEFAULT_EXTENSIONS
+    assert cfg.allowed_content_types == DEFAULT_CONTENT_TYPES
+    assert cfg.allowed_extensions == DEFAULT_EXTENSIONS
 
 
 def test_ingestion_custom_types_file(tmp_path):
@@ -536,6 +545,13 @@ def test_ingestion_custom_types_file(tmp_path):
 def test_ingestion_missing_file_raises(tmp_path):
     with pytest.raises(ValidationError):
         IngestionSettings(allowed_types_file=tmp_path / "nonexistent.txt")
+
+
+def test_ingestion_empty_file_raises(tmp_path):
+    f = tmp_path / "empty.txt"
+    f.write_text("# only comments\n\n", encoding="utf-8")
+    with pytest.raises(ValidationError, match="no valid"):
+        IngestionSettings(allowed_types_file=f)
 
 
 def test_ingestion_prefix_isolation(monkeypatch):

@@ -182,7 +182,7 @@ Document extraction pipeline — Apache Tika text extraction and Tesseract OCR.
 | --- | --- | --- |
 | `OPENCASE_EXTRACTION_TIKA_URL` | `http://tika:9998` | Tika server endpoint |
 | `OPENCASE_EXTRACTION_OCR_ENABLED` | `true` | Enable Tesseract OCR for scanned documents |
-| `OPENCASE_EXTRACTION_OCR_LANGUAGES` | `eng` | Tesseract language packs (comma-separated) |
+| `OPENCASE_EXTRACTION_OCR_LANGUAGES` | `eng` | Tesseract language packs (comma-separated, e.g. `eng,fra,deu`) |
 | `OPENCASE_EXTRACTION_REQUEST_TIMEOUT` | `120` | HTTP timeout for Tika requests (seconds) |
 | `OPENCASE_EXTRACTION_MAX_FILE_SIZE_BYTES` | `104857600` (100 MB) | Maximum file size sent to Tika for extraction |
 

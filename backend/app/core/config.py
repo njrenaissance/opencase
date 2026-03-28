@@ -1,4 +1,5 @@
 import logging
+import re
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal
@@ -202,6 +203,12 @@ class ExtractionSettings(BaseSettings):
     request_timeout: int = Field(120, gt=0)
     max_file_size_bytes: int = Field(100 * 1024 * 1024, gt=0)  # 100 MB
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ocr_language_list(self) -> list[str]:
+        """Parse comma-separated language codes into a list."""
+        return [lang.strip() for lang in self.ocr_languages.split(",") if lang.strip()]
+
     model_config = SettingsConfigDict(env_prefix="OPENCASE_EXTRACTION_")
 
 
@@ -209,7 +216,9 @@ class ExtractionSettings(BaseSettings):
 # Ingestion defaults
 # ---------------------------------------------------------------------------
 
-_DEFAULT_CONTENT_TYPES = frozenset(
+_MIME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9!#$&\-^_]+/[a-zA-Z0-9!#$&\-^_.+]+$")
+
+DEFAULT_CONTENT_TYPES = frozenset(
     {
         "application/pdf",
         "application/msword",
@@ -231,7 +240,7 @@ _DEFAULT_CONTENT_TYPES = frozenset(
     }
 )
 
-_DEFAULT_EXTENSIONS = frozenset(
+DEFAULT_EXTENSIONS = frozenset(
     {
         ".pdf",
         ".doc",
@@ -256,6 +265,48 @@ _DEFAULT_EXTENSIONS = frozenset(
 )
 
 
+def _parse_allowed_types_file(
+    path: Path,
+) -> tuple[frozenset[str], frozenset[str]]:
+    """Parse a flat file into (mime_types, extensions).
+
+    Raises ``ValueError`` on missing file, empty result, or invalid entries.
+    """
+    if not path.is_file():
+        msg = f"allowed_types_file not found: {path}"
+        raise ValueError(msg)
+    entries = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    mime_types: list[str] = []
+    extensions: list[str] = []
+    for entry in entries:
+        if "/" in entry:
+            if not _MIME_RE.match(entry):
+                logger.warning(
+                    "Ignoring invalid MIME type in %s: %r",
+                    path,
+                    entry,
+                )
+                continue
+            mime_types.append(entry)
+        elif entry.startswith(".") and len(entry) > 1:
+            extensions.append(entry)
+        else:
+            logger.warning(
+                "Ignoring unrecognized entry in %s: %r"
+                " (expected MIME type with '/' or extension with '.')",
+                path,
+                entry,
+            )
+    if not mime_types and not extensions:
+        msg = f"allowed_types_file {path} contains no valid MIME types or extensions"
+        raise ValueError(msg)
+    return frozenset(mime_types), frozenset(extensions)
+
+
 class IngestionSettings(BaseSettings):
     """Ingestion pipeline sub-config (OPENCASE_INGESTION_ prefix).
 
@@ -263,42 +314,28 @@ class IngestionSettings(BaseSettings):
     When ``allowed_types_file`` is set, MIME types and file extensions are
     loaded from the flat file (one entry per line, ``#`` comments allowed).
     Otherwise built-in defaults are used.
+
+    All authenticated users can read this config via
+    ``GET /documents/ingestion-config`` — the CLI needs it to filter
+    files during bulk-ingest before uploading.
     """
 
     allowed_types_file: Path | None = None
-    allowed_content_types: frozenset[str] = _DEFAULT_CONTENT_TYPES
-    allowed_extensions: frozenset[str] = _DEFAULT_EXTENSIONS
+    allowed_content_types: frozenset[str] = DEFAULT_CONTENT_TYPES
+    allowed_extensions: frozenset[str] = DEFAULT_EXTENSIONS
 
-    @model_validator(mode="after")
-    def _load_allowed_types(self) -> "IngestionSettings":
-        if self.allowed_types_file is None:
-            return self
-        path = Path(self.allowed_types_file)
-        if not path.is_file():
-            msg = f"allowed_types_file not found: {path}"
-            raise ValueError(msg)
-        entries = [
-            line.strip()
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.strip().startswith("#")
-        ]
-        mime_types: list[str] = []
-        extensions: list[str] = []
-        for entry in entries:
-            if "/" in entry:
-                mime_types.append(entry)
-            elif entry.startswith("."):
-                extensions.append(entry)
-            else:
-                logger.warning(
-                    "Ignoring unrecognized entry in %s: %r"
-                    " (expected MIME type with '/' or extension with '.')",
-                    path,
-                    entry,
-                )
-        self.allowed_content_types = frozenset(mime_types)
-        self.allowed_extensions = frozenset(extensions)
-        return self
+    @model_validator(mode="before")
+    @classmethod
+    def _load_allowed_types(cls, values: dict[str, Any]) -> dict[str, Any]:
+        path = values.get("allowed_types_file")
+        if path is None:
+            return values
+        if not isinstance(path, Path):
+            path = Path(path)
+        mime_types, extensions = _parse_allowed_types_file(path)
+        values["allowed_content_types"] = mime_types
+        values["allowed_extensions"] = extensions
+        return values
 
     model_config = SettingsConfigDict(env_prefix="OPENCASE_INGESTION_")
 
