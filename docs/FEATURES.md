@@ -78,7 +78,7 @@
 | 6.4 | Manual upload API endpoint (receive file via multipart form, SHA-256 hash + dedup, S3 upload, fire-and-forget ingestion) | Pending | **Done** | Pending |
 | 6.5 | Bulk upload CLI command (`opencase document bulk-ingest` — walk directory, client-side pre-hash dedup, per-file upload, progress summary) | Pending | **Done** | **Done** |
 | 6.6 | Document listing/status API endpoint (read-only — query documents by matter, ingestion status, metadata) | Pending | Pending | Pending |
-| 6.7 | Cloud ingestion Celery task (OneDrive/SharePoint via Graph API) | Pending | Pending | Pending |
+| 6.7 | Cloud ingestion Celery task (SharePoint via Graph API) | Pending | Pending | Pending |
 | 6.8 | Cloud ingestion Beat schedule (15-min polling interval) | Pending | Pending | Pending |
 | 6.9 | Configuration + env vars (S3Settings: `max_upload_bytes`, `spool_threshold_bytes`) | Pending | **Done** | **Done** |
 | 6.10 | Observability (ingestion spans/metrics) | Pending | Pending | Pending |

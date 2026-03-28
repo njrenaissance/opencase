@@ -1,6 +1,6 @@
 Feature: Scheduled cloud ingestion
   As a firm administrator
-  I want documents from OneDrive/SharePoint to be ingested automatically
+  I want documents from SharePoint to be ingested automatically
   So that new discovery productions are processed without manual upload
 
   Background:
@@ -9,13 +9,13 @@ Feature: Scheduled cloud ingestion
     And Microsoft Graph API credentials are configured
     And a matter "People v. Smith" exists for "Cora Firm"
 
-  # Top-level folder name in OneDrive/SharePoint maps to the matter.
+  # Top-level folder name in SharePoint maps to the matter.
   # Every file encountered is recorded with its SHA-256 hash in
   # PostgreSQL, regardless of whether it is new or already ingested.
   # This ensures integrity verification and prevents reprocessing.
 
-  Scenario: Poll OneDrive folder and ingest new files
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+  Scenario: Poll SharePoint folder and ingest new files
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And the folder contains 3 new PDF files
     When the cloud ingestion worker runs
     Then all 3 files should be downloaded to the temp volume
@@ -27,7 +27,7 @@ Feature: Scheduled cloud ingestion
     And the temp files should be deleted after processing
 
   Scenario: Skip already-ingested files based on hash
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And "report.pdf" has been ingested with SHA-256 hash "abc123"
     And "new_filing.pdf" has SHA-256 hash "def456" which is not in the database
     When the cloud ingestion worker runs
@@ -36,7 +36,7 @@ Feature: Scheduled cloud ingestion
     And "report.pdf" should be skipped because its hash matches an existing record
 
   Scenario: Handle modified files in cloud storage
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And "witness_list.docx" was previously ingested
     And "witness_list.docx" has been modified since last ingestion
     When the cloud ingestion worker runs
@@ -55,7 +55,7 @@ Feature: Scheduled cloud ingestion
     And no outbound network calls should be possible from any service
 
   Scenario: Temp files are cleaned up on failure
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And the folder contains "corrupt_file.pdf"
     When the cloud ingestion worker runs
     And processing fails for "corrupt_file.pdf"
@@ -68,7 +68,7 @@ Feature: Scheduled cloud ingestion
     Then all orphaned temp files should be deleted
 
   Scenario: Ingestion run is recorded in audit log
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And the folder contains 1 new file
     When the cloud ingestion worker runs
     Then an audit log entry should record the ingestion run

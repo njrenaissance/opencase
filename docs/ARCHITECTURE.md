@@ -28,11 +28,11 @@ graph LR
         Celery --> TmpVol[(celery-tmp)]
     end
 
-    Celery -.->|internet mode only| OneDrive[OneDrive / SharePoint]
+    Celery -.->|internet mode only| SharePoint[SharePoint]
 
     style docker fill:#f8f9fa,stroke:#333
     style Browser fill:#fff,stroke:#333
-    style OneDrive fill:#fff,stroke:#999,stroke-dasharray: 5 5
+    style SharePoint fill:#fff,stroke:#999,stroke-dasharray: 5 5
 ```
 
 ### Services
@@ -186,7 +186,7 @@ opencase/
   cannot be deleted or overwritten
 - Both manual uploads and cloud-ingested files end up
   here
-- OneDrive/SharePoint is read-only — OpenCase never
+- SharePoint is read-only — OpenCase never
   writes back to cloud storage
 
 Every vector in Qdrant carries this permission payload:

@@ -82,7 +82,7 @@ not a separate service.
 | Relational DB | PostgreSQL |
 | Background jobs | Celery + Redis (Celery Beat for scheduling) |
 | Document parsing | Apache Tika + Tesseract OCR |
-| Cloud ingestion | Microsoft Graph API (OneDrive + SharePoint) |
+| Cloud ingestion | Microsoft Graph API (SharePoint) |
 | Deployment | Docker Compose |
 | Container base | Debian slim (`python:3.12-slim`, `node:22-slim`) |
 | Container pattern | Two-stage builds (builder + runtime), non-root user |

@@ -4,7 +4,7 @@ Feature: Document storage in MinIO S3
   So that originals are preserved and OpenCase controls document lifecycle
 
   # All original files are stored in MinIO regardless of ingestion
-  # source (manual upload or cloud poll). OneDrive/SharePoint is
+  # source (manual upload or cloud poll). SharePoint is
   # read-only — OpenCase never writes back to cloud storage.
   #
   # Bucket layout: opencase/{firm_id}/{matter_id}/{document_id}/original.{ext}
@@ -22,7 +22,7 @@ Feature: Document storage in MinIO S3
     And the stored file should be byte-identical to the uploaded file
 
   Scenario: Cloud-ingested file stores original in S3
-    Given a OneDrive top-level folder "People v. Smith" is mapped to that matter
+    Given a SharePoint top-level folder "People v. Smith" is mapped to that matter
     And the folder contains "prosecution_filing.docx"
     When the cloud ingestion worker runs
     Then the original file should be stored in the S3 bucket

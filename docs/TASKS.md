@@ -188,7 +188,7 @@ Tasks will be added as features are built:
 | Task | Feature | Purpose |
 | --- | --- | --- |
 | Document ingestion (full) | 4.2, 5.2, 5.3 | Tika extraction, chunking, embedding, Qdrant upsert |
-| Cloud ingestion | 6.7 | Poll OneDrive/SharePoint via Graph API |
+| Cloud ingestion | 6.7 | Poll SharePoint via Graph API |
 | Text extraction | 4.2 | Parse documents via Apache Tika |
 | Chunking + embedding | 5.2, 5.3 | Split text, embed via Ollama, upsert to Qdrant |
 | Deadline monitor | 10.10 | CPL 245 and 30.30 clock alerts (Beat-scheduled) |
