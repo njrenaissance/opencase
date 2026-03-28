@@ -23,6 +23,7 @@ out/
 backend/config.json
 
 # Claude Code — developer-local settings (may contain absolute paths or credentials)
+.claude/settings.json
 .claude/settings.local.json
 
 # IDE
