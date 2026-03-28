@@ -159,6 +159,18 @@ def test_login_failure_closes_client() -> None:
         pass  # pragma: no cover
 
 
+def test_credentials_cleared_on_login_failure() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"detail": "Invalid credentials"})
+
+    session = _build_session(httpx.MockTransport(handler))
+    with pytest.raises(AuthenticationError):
+        session.__enter__()
+
+    assert session._email is None  # noqa: SLF001
+    assert session._password is None  # noqa: SLF001
+
+
 # ---------------------------------------------------------------------------
 # Async not implemented
 # ---------------------------------------------------------------------------

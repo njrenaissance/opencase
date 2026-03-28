@@ -38,10 +38,12 @@ class Session:
         return self._client
 
     def __enter__(self) -> Client:
-        result = self._client.login(self._email, self._password)  # type: ignore[arg-type]
-        # Scrub credentials — only JWT tokens remain (inside AuthManager).
-        self._email = None
-        self._password = None
+        try:
+            result = self._client.login(self._email, self._password)  # type: ignore[arg-type]
+        finally:
+            # Scrub credentials regardless of success/failure.
+            self._email = None
+            self._password = None
         if isinstance(result, MfaRequiredResponse):
             self._client.close()
             raise AuthenticationError(

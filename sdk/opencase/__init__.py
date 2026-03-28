@@ -22,8 +22,8 @@ __all__ = [
     "Client",
     "NotFoundError",
     "OpenCaseClient",
-    "Session",
     "OpenCaseError",
     "ServerError",
+    "Session",
     "ValidationError",
 ]
