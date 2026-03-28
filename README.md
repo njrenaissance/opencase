@@ -76,6 +76,30 @@ full details.
    docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
    ```
 
+## Scripts
+
+Operational scripts live in `scripts/` and are run from the repo root
+against the running dev stack. All Python scripts read credentials from
+`.env` via `dotenv`.
+
+```bash
+# Seed demo data (users, matters, access grants)
+uv run python scripts/seed_demo.py
+
+# Submit a Celery task and poll for results
+uv run python scripts/submit_task.py
+
+# Upload a file and verify DB + S3 round-trip
+uv run python scripts/upload_file.py
+uv run python scripts/upload_file.py --file ./evidence.pdf
+```
+
+| Script | Purpose |
+| --- | --- |
+| `seed_demo.py` | Create demo users (Virginia Cora, Jonathan Phillips), two matters, and access grants via the API. Idempotent. |
+| `submit_task.py` | Submit a ping task and a 30-second sleep task via the API; poll until completion. |
+| `upload_file.py` | Upload a file (or auto-generated test file) to the first matter, then verify the DB record, S3 object, and download round-trip. |
+
 ## Privacy & Security
 
 - All data stays on your infrastructure — no exceptions

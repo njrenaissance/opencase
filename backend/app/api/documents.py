@@ -62,6 +62,7 @@ _ALLOWED_CONTENT_TYPES = frozenset(
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "application/rtf",
         "text/plain",
+        "text/markdown",
         "text/csv",
         "text/html",
         "image/jpeg",

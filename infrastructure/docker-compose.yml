@@ -6,7 +6,10 @@ name: opencase
 services:
 
   # --- UI & Proxy -------------------------------------------
+  # Disabled until frontend implementation begins. Re-enable by removing
+  # the profiles line or running: docker compose --profile frontend up
   nextjs:
+    profiles: [frontend]
     build:
       context: ../frontend
       dockerfile: Dockerfile
@@ -129,6 +132,9 @@ services:
     expose:
       - "9000"
       - "9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=${OPENCASE_S3_ACCESS_KEY:-opencase}
       - MINIO_ROOT_PASSWORD=${OPENCASE_S3_SECRET_KEY:-changeme}
@@ -163,7 +169,10 @@ services:
     restart: "no"
 
   # --- Local LLM + Embeddings ------------------------------
+  # Disabled until RAG pipeline implementation begins. Re-enable by
+  # removing the profiles line or running: docker compose --profile rag up
   ollama:
+    profiles: [rag]
     image: ollama/ollama:latest
     expose:
       - "11434"
@@ -203,7 +212,10 @@ services:
     restart: unless-stopped
 
   # --- Vector Store -----------------------------------------
+  # Disabled until RAG pipeline implementation begins. Re-enable by
+  # removing the profiles line or running: docker compose --profile rag up
   qdrant:
+    profiles: [rag]
     image: qdrant/qdrant:latest
     expose:
       - "6333"

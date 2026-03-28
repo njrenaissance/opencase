@@ -1,24 +1,51 @@
+import time
 import dotenv
 from opencase import OpenCaseClient
 
-config_file="../backend/.env.test"
-client = OpenCaseClient(base_url="http://127.0.0.1:8000")
+BASE_URL = "http://127.0.0.1:8000"
 
-admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
-admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
-print(f"Logging in with email: {admin_email}")
+def submit_log_running_task(client: OpenCaseClient) -> None:
+    print("Submitting long-running task (sleep for 30 seconds)...")
+    result = client.submit_task(task_name="sleep", kwargs={"seconds": 30})
+    print(f"Submitted: {result.task_id}")
 
-client.login(email=admin_email, password=admin_password)
+def submit_ping_task(client: OpenCaseClient) -> None:
+    print("Submitting ping task...")
+    result = client.submit_task(task_name="ping")
+    print(f"Submitted: {result.task_id}")
+    return result
 
-# submit long-running task
-client.submit_task(task_name="sleep", kwargs={"seconds": 30})
+def wait_for_task_result(client: OpenCaseClient, task_id: str) -> None:
+    print(f"Waiting for task {task_id} to complete...")
+    while True:
+        task = client.get_task(task_id)
+        if task.status == "completed":
+            print(f"Task {task_id} completed with result: {task.result}")
+            break
+        elif task.status == "failed":
+            print(f"Task {task_id} failed.")
+            break
+        else:
+            print(f"Task {task_id} status: {task.status}. Waiting...")
+            time.sleep(5)
 
-# Submit ping task
-result = client.submit_task(task_name="ping")
-print(f"Submitted: {result.task_id}")
+def main(config_file: str) -> None:
 
-# Poll for result
-task = client.get_task(result.task_id)
-print(f"Status: {task.status}, Result: {task.result}")
+    with OpenCaseClient(base_url=BASE_URL) as client:
 
-client.logout()
+        admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
+        admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
+        print(f"Logging in with email: {admin_email}")
+
+        client.login(email=admin_email, password=admin_password)
+
+        submit_log_running_task(client)
+
+        ping_result = submit_ping_task(client)
+        wait_for_task_result(client, ping_result.task_id)
+
+        client.logout()
+
+
+if __name__ == "__main__":
+    main(config_file=".env")

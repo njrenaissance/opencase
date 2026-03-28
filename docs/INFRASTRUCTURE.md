@@ -18,24 +18,67 @@ Documents the Docker Compose setup in `infrastructure/`. See
 
 ## Running the Stack
 
+### Development stack
+
+The dev stack uses `.env` at the project root and starts the services
+needed for local development: PostgreSQL, Redis, MinIO, FastAPI,
+Celery worker + beat, Flower, and Grafana.
+
+Services not yet implemented (Next.js, Ollama, Qdrant) are disabled
+via Docker Compose profiles and will not start.
+
 ```bash
-# Start full development stack (from project root)
+# Start development stack (from project root)
 docker compose -f infrastructure/docker-compose.yml --env-file .env up
 
 # Start in background
 docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
 
 # Stop and remove containers (preserve volumes)
-docker compose -f infrastructure/docker-compose.yml down
+docker compose -f infrastructure/docker-compose.yml --env-file .env down
 
-# Stop and wipe all volumes
-docker compose -f infrastructure/docker-compose.yml down -v
+# Stop and wipe all volumes (clean slate)
+docker compose -f infrastructure/docker-compose.yml --env-file .env down -v
 ```
 
 Copy `.env.example` to `.env` and fill in the required values before first run.
 At minimum, set `OPENCASE_AUTH_SECRET_KEY`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `OPENCASE_S3_ACCESS_KEY`, and
 `OPENCASE_S3_SECRET_KEY`.
+
+To enable future services when ready:
+
+```bash
+# Enable RAG services (Ollama + Qdrant)
+docker compose -f infrastructure/docker-compose.yml --env-file .env --profile rag up
+
+# Enable frontend (Next.js)
+docker compose -f infrastructure/docker-compose.yml --env-file .env --profile frontend up
+```
+
+### Integration test stack
+
+The test stack uses `backend/.env.test` and is managed automatically by
+`pytest-docker`. It overlays `docker-compose.integration.yml` on top of the
+base compose file, which points FastAPI and Celery at the `opencase_test`
+and `opencase_tasks_test` databases (created by `postgres/init.sql`).
+
+Flower is additionally disabled for tests. Volumes are wiped on teardown
+so each run starts from a clean database.
+
+```bash
+# Run integration tests (pytest-docker starts/stops the stack)
+cd backend
+uv run pytest -m integration
+
+# Run a specific integration test file
+cd backend
+uv run pytest -m integration tests/test_document_upload_integration.py -v
+```
+
+You do not need to start or stop Docker manually — `pytest-docker`
+handles the full lifecycle. The test stack uses a separate project name
+(`opencase-test`) so it does not conflict with a running dev stack.
 
 ---
 
@@ -185,9 +228,10 @@ bucket exists when the application boots.
 
 ---
 
-### nextjs
+### nextjs (disabled — profile: `frontend`)
 
-Next.js frontend and reverse proxy.
+Next.js frontend and reverse proxy. **Not yet implemented.** Enable with
+`--profile frontend` when the frontend is ready.
 
 | Setting | Value |
 | --- | --- |
@@ -196,14 +240,12 @@ Next.js frontend and reverse proxy.
 | Proxies to | `fastapi:8000` (internal) |
 | Depends on | `fastapi` |
 
-The Next.js container is the only service with a public port. FastAPI is
-not directly reachable from outside the Docker network.
-
 ---
 
-### ollama
+### ollama (disabled — profile: `rag`)
 
-Ollama local LLM and embedding server.
+Ollama local LLM and embedding server. **Not yet implemented.** Enable with
+`--profile rag` when the RAG pipeline is ready.
 
 | Setting | Value |
 | --- | --- |
@@ -238,9 +280,10 @@ tests), and `opencase_tasks_test` (integration test result backend).
 
 ---
 
-### qdrant
+### qdrant (disabled — profile: `rag`)
 
-Qdrant vector store (single collection).
+Qdrant vector store (single collection). **Not yet implemented.** Enable with
+`--profile rag` when the RAG pipeline is ready.
 
 | Setting | Value |
 | --- | --- |
@@ -289,18 +332,19 @@ corresponding data permanently.
 
 | Port | Service | Access |
 | --- | --- | --- |
-| `3000` | Next.js | Public — browser entry point |
+| `3000` | Next.js | Disabled (profile: `frontend`) |
 | `3001` | Grafana UI | Dev/test only — traces, metrics, logs |
 | `4317` | Grafana OTLP gRPC | Internal (Docker network) |
 | `4318` | Grafana OTLP HTTP | Internal (Docker network) |
 | `5432` | PostgreSQL | Dev/test only |
 | `5555` | Flower | Dev/test only — Celery monitoring UI |
 | `8000` | FastAPI | Dev/test only — remove in production |
-| `9000` | MinIO API | Internal (Docker network) |
-| `9001` | MinIO Console | Internal (Docker network) |
+| `9000` | MinIO API | Dev/test only |
+| `9001` | MinIO Console | Dev/test only |
 
-All other services (Qdrant, Redis, Ollama, Celery) are internal only
-and not mapped to host ports.
+Qdrant, Ollama, Redis, and Celery are internal only and not mapped to
+host ports. Qdrant and Ollama are disabled via profiles until their
+features are implemented.
 
 ---
 
@@ -316,23 +360,20 @@ variables.
 ### Demo Seed (manual)
 
 The `seed_demo` script populates the database with sample data for
-development and testing:
+development and testing via the API:
 
-- **Cora Firm**
 - **Virginia Cora** (attorney) — access to both matters
 - **Jonathan Phillips** (paralegal) — access to Matter B only
 - **People v. Smith** (Matter A)
 - **People v. Jones** (Matter B)
 
 ```bash
-# From the backend directory (requires the stack to be running)
-cd backend
-uv run python -m scripts.seed_demo
+# From the repo root (requires the stack to be running)
+uv run python scripts/seed_demo.py
 ```
 
-The script is idempotent — safe to run multiple times. It uses
-deterministic UUIDs so re-runs skip existing records. Password for
-both demo users: `DemoPassword123!`
+The script is idempotent — safe to run multiple times. Skips existing
+records. Password for both demo users: `DemoPassword123!`
 
 ---
 
@@ -348,17 +389,11 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 - `redis` exposes port `6379` to the host for test access
 - `celery-worker` result backend points at `opencase_tasks_test`
 - `minio` exposes ports `9000` and `9001` to the host for test access
-- All unneeded services are disabled via Docker Compose profiles:
-  `nextjs`, `ollama`, `qdrant`, `flower`
+- `flower` is disabled (not needed for tests)
+- `nextjs`, `ollama`, `qdrant` are already disabled via profiles in the
+  base compose file
 - Active services: `postgres` + `redis` + `minio` + `fastapi` +
   `celery-worker` + `celery-beat` + `grafana`
 
-To run integration tests:
-
-```bash
-cd backend
-uv run pytest -m integration
-```
-
-pytest-docker starts the stack before tests and tears it down with `-v`
-afterward so the test database is wiped between runs.
+See the [Running the Stack](#running-the-stack) section above for how to
+run integration tests.

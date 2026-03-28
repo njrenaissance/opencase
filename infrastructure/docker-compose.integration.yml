@@ -48,14 +48,8 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  # Services below are not yet implemented — exclude from integration test stack.
-  # They will be removed from this list as each feature is built.
+  # nextjs, ollama, and qdrant are already disabled via profiles in the
+  # base docker-compose.yml. Flower is disabled for tests only.
   # grafana (otel-lgtm) runs with defaults from docker-compose.yml — do NOT disable it.
-  nextjs:
-    profiles: [disabled]
-  ollama:
-    profiles: [disabled]
-  qdrant:
-    profiles: [disabled]
   flower:
     profiles: [disabled]

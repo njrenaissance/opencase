@@ -41,6 +41,7 @@ SUPPORTED_EXTENSIONS = frozenset(
         ".pptx",
         ".rtf",
         ".txt",
+        ".md",
         ".csv",
         ".html",
         ".htm",
