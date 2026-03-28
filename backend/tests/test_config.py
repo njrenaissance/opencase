@@ -14,11 +14,15 @@ from dotenv import dotenv_values
 from pydantic import ValidationError
 
 from app.core.config import (
+    _DEFAULT_CONTENT_TYPES,
+    _DEFAULT_EXTENSIONS,
     ApiSettings,
     AuthSettings,
     CelerySettings,
     DbSettings,
+    ExtractionSettings,
     FlowerSettings,
+    IngestionSettings,
     RedisSettings,
     S3Settings,
     Settings,
@@ -114,6 +118,18 @@ DEFAULTS = {
         "max_upload_bytes": 100 * 1024 * 1024,
         "spool_threshold_bytes": 10 * 1024 * 1024,
         "url": f"http://{_ENV_TEST['OPENCASE_S3_ENDPOINT']}",
+    },
+    "extraction": {
+        "tika_url": "http://tika:9998",
+        "ocr_enabled": True,
+        "ocr_languages": "eng",
+        "request_timeout": 120,
+        "max_file_size_bytes": 100 * 1024 * 1024,
+    },
+    "ingestion": {
+        "allowed_types_file": None,
+        "allowed_content_types": _DEFAULT_CONTENT_TYPES,
+        "allowed_extensions": _DEFAULT_EXTENSIONS,
     },
 }
 
@@ -465,6 +481,68 @@ def test_s3_url_https(monkeypatch):
     monkeypatch.setenv("OPENCASE_S3_USE_SSL", "true")
     cfg = S3Settings()
     assert cfg.url == "https://minio:9000"
+
+
+# ---------------------------------------------------------------------------
+# ExtractionSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_extraction_defaults():
+    cfg = ExtractionSettings()
+    assert cfg.tika_url == "http://tika:9998"
+    assert cfg.ocr_enabled is True
+    assert cfg.ocr_languages == "eng"
+    assert cfg.request_timeout == 120
+    assert cfg.max_file_size_bytes == 100 * 1024 * 1024
+
+
+def test_extraction_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_EXTRACTION_TIKA_URL", "http://custom:8080")
+    cfg = ExtractionSettings()
+    assert cfg.tika_url == "http://custom:8080"
+
+
+def test_extraction_prefix_isolation(monkeypatch):
+    # OPENCASE_TIKA_URL (wrong prefix) must not override OPENCASE_EXTRACTION_TIKA_URL
+    monkeypatch.setenv("OPENCASE_TIKA_URL", "wrong")
+    cfg = ExtractionSettings()
+    assert cfg.tika_url != "wrong"
+
+
+# ---------------------------------------------------------------------------
+# IngestionSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_ingestion_defaults():
+    cfg = IngestionSettings()
+    assert cfg.allowed_types_file is None
+    assert cfg.allowed_content_types == _DEFAULT_CONTENT_TYPES
+    assert cfg.allowed_extensions == _DEFAULT_EXTENSIONS
+
+
+def test_ingestion_custom_types_file(tmp_path):
+    f = tmp_path / "types.txt"
+    f.write_text(
+        "# Custom types\napplication/pdf\ntext/plain\n.pdf\n.txt\n",
+        encoding="utf-8",
+    )
+    cfg = IngestionSettings(allowed_types_file=f)
+    assert cfg.allowed_content_types == frozenset({"application/pdf", "text/plain"})
+    assert cfg.allowed_extensions == frozenset({".pdf", ".txt"})
+
+
+def test_ingestion_missing_file_raises(tmp_path):
+    with pytest.raises(ValidationError):
+        IngestionSettings(allowed_types_file=tmp_path / "nonexistent.txt")
+
+
+def test_ingestion_prefix_isolation(monkeypatch):
+    # OPENCASE_ALLOWED_TYPES_FILE (wrong prefix) must not override
+    monkeypatch.setenv("OPENCASE_ALLOWED_TYPES_FILE", "/tmp/wrong.txt")  # noqa: S108
+    cfg = IngestionSettings()
+    assert cfg.allowed_types_file is None
 
 
 # ---------------------------------------------------------------------------

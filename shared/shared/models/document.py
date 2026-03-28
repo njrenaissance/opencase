@@ -41,3 +41,10 @@ class DuplicateCheckResponse(BaseModel):
 
     exists: bool
     document_id: UUID | None = None
+
+
+class IngestionConfigResponse(BaseModel):
+    """Public-facing ingestion configuration — no server internals."""
+
+    allowed_content_types: list[str]
+    allowed_extensions: list[str]

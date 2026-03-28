@@ -24,6 +24,7 @@ from shared.models.document import (
     DocumentResponse,
     DocumentSummary,
     DuplicateCheckResponse,
+    IngestionConfigResponse,
 )
 from shared.models.enums import Classification, DocumentSource, Role
 from sqlalchemy import select
@@ -52,28 +53,6 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 # Helpers
 # ---------------------------------------------------------------------------
 
-
-_ALLOWED_CONTENT_TYPES = frozenset(
-    {
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "application/rtf",
-        "text/plain",
-        "text/markdown",
-        "text/csv",
-        "text/html",
-        "image/jpeg",
-        "image/png",
-        "image/tiff",
-        "image/gif",
-        "image/bmp",
-        "image/webp",
-        "application/octet-stream",
-    }
-)
 
 _SAFE_FILENAME_RE = re.compile(r"[^\w\s\-.,()]+")
 
@@ -159,6 +138,22 @@ async def _get_document_with_access(
 
 
 # ---------------------------------------------------------------------------
+# GET /documents/ingestion-config
+# ---------------------------------------------------------------------------
+
+
+@router.get("/ingestion-config", response_model=IngestionConfigResponse)
+async def get_ingestion_config(
+    user: User = Depends(get_current_user),  # noqa: B008
+) -> IngestionConfigResponse:
+    """Return allowed content types and file extensions for ingestion."""
+    return IngestionConfigResponse(
+        allowed_content_types=sorted(settings.ingestion.allowed_content_types),
+        allowed_extensions=sorted(settings.ingestion.allowed_extensions),
+    )
+
+
+# ---------------------------------------------------------------------------
 # POST /documents/
 # ---------------------------------------------------------------------------
 
@@ -192,7 +187,7 @@ async def create_document(
 
         # 2. Validate content type
         content_type = file.content_type or "application/octet-stream"
-        if content_type not in _ALLOWED_CONTENT_TYPES:
+        if content_type not in settings.ingestion.allowed_content_types:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 detail=f"Content type '{content_type}' is not allowed",

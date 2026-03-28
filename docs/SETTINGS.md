@@ -174,6 +174,65 @@ so only one file is in flight at a time.
 
 ---
 
+## ExtractionSettings (`OPENCASE_EXTRACTION_` prefix)
+
+Document extraction pipeline — Apache Tika text extraction and Tesseract OCR.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_EXTRACTION_TIKA_URL` | `http://tika:9998` | Tika server endpoint |
+| `OPENCASE_EXTRACTION_OCR_ENABLED` | `true` | Enable Tesseract OCR for scanned documents |
+| `OPENCASE_EXTRACTION_OCR_LANGUAGES` | `eng` | Tesseract language packs (comma-separated) |
+| `OPENCASE_EXTRACTION_REQUEST_TIMEOUT` | `120` | HTTP timeout for Tika requests (seconds) |
+| `OPENCASE_EXTRACTION_MAX_FILE_SIZE_BYTES` | `104857600` (100 MB) | Maximum file size sent to Tika for extraction |
+
+---
+
+## IngestionSettings (`OPENCASE_INGESTION_` prefix)
+
+Controls which document types are accepted for upload and CLI bulk-ingest.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_INGESTION_ALLOWED_TYPES_FILE` | *none* | Path to a flat file listing allowed MIME types and extensions |
+
+When `ALLOWED_TYPES_FILE` is not set, built-in defaults are used. When set, the
+file replaces the defaults entirely.
+
+**File format:** one entry per line. Lines starting with `#` are comments. Blank
+lines are ignored. MIME types (containing `/`) and file extensions (starting with
+`.`) can be mixed freely:
+
+```text
+# Allowed MIME types
+application/pdf
+application/msword
+text/plain
+
+# Allowed file extensions (for CLI bulk-ingest discovery)
+.pdf
+.doc
+.txt
+```
+
+**Default MIME types** (17): `application/pdf`, `application/msword`,
+`application/vnd.openxmlformats-officedocument.wordprocessingml.document`,
+`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`,
+`application/vnd.openxmlformats-officedocument.presentationml.presentation`,
+`application/rtf`, `text/plain`, `text/markdown`, `text/csv`, `text/html`,
+`image/jpeg`, `image/png`, `image/tiff`, `image/gif`, `image/bmp`,
+`image/webp`, `application/octet-stream`.
+
+**Default extensions** (19): `.pdf`, `.doc`, `.docx`, `.xlsx`, `.pptx`, `.rtf`,
+`.txt`, `.md`, `.csv`, `.html`, `.htm`, `.jpg`, `.jpeg`, `.png`, `.tiff`,
+`.tif`, `.gif`, `.bmp`, `.webp`.
+
+The CLI fetches allowed types from the API at bulk-ingest start via
+`GET /documents/ingestion-config`, so the server's configuration is always
+the single source of truth.
+
+---
+
 ## RedisSettings (`OPENCASE_REDIS_` prefix)
 
 Redis connection settings. Individual fields are preferred over a monolithic URL

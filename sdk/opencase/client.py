@@ -18,6 +18,7 @@ from shared.models.document import (
     DocumentResponse,
     DocumentSummary,
     DuplicateCheckResponse,
+    IngestionConfigResponse,
 )
 from shared.models.enums import Classification, DocumentSource, TaskState
 from shared.models.firm import FirmResponse
@@ -270,6 +271,11 @@ class OpenCaseClient:
     def get_document(self, document_id: str) -> DocumentResponse:
         resp = self._request("GET", f"/documents/{document_id}")
         return DocumentResponse.model_validate(resp.json())
+
+    def get_ingestion_config(self) -> IngestionConfigResponse:
+        """Return allowed content types and file extensions for ingestion."""
+        resp = self._request("GET", "/documents/ingestion-config")
+        return IngestionConfigResponse.model_validate(resp.json())
 
     def upload_document(
         self,

@@ -32,38 +32,16 @@ _DOCUMENT_COLUMNS = [
     "matter_id",
 ]
 
-SUPPORTED_EXTENSIONS = frozenset(
-    {
-        ".pdf",
-        ".doc",
-        ".docx",
-        ".xlsx",
-        ".pptx",
-        ".rtf",
-        ".txt",
-        ".md",
-        ".csv",
-        ".html",
-        ".htm",
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".tiff",
-        ".tif",
-        ".gif",
-        ".bmp",
-        ".webp",
-    }
-)
 
-
-def _discover_files(directory: Path, *, recursive: bool) -> list[Path]:
-    """Find files with supported extensions in a directory."""
+def _discover_files(
+    directory: Path, *, recursive: bool, extensions: frozenset[str]
+) -> list[Path]:
+    """Find files with extensions allowed by the server's ingestion config."""
     pattern = "**/*" if recursive else "*"
     return sorted(
         p
         for p in directory.glob(pattern)
-        if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
+        if p.is_file() and p.suffix.lower() in extensions
     )
 
 
@@ -160,32 +138,35 @@ def bulk_ingest(
     json_output: JsonOption = False,
 ) -> None:
     """Bulk-ingest documents from a local directory."""
-    files = _discover_files(directory, recursive=recursive)
-
-    if not files:
-        if json_output:
-            console.print("[]", highlight=False)
-        else:
-            console.print("[dim]No supported files found.[/dim]")
-        return
-
-    if dry_run:
-        if json_output:
-            rows = [{"file": str(f), "status": "pending"} for f in files]
-            console.print(json.dumps(rows, indent=2), highlight=False)
-        else:
-            for f in files:
-                console.print(str(f))
-            console.print(f"\n[bold]{len(files)}[/bold] file(s) found.")
-        return
-
     client = get_client(base_url, timeout, authenticated=True)
-    uploaded = 0
-    skipped = 0
-    failed = 0
-    results: list[dict[str, str]] = []
 
     with handle_errors(), client:
+        config = client.get_ingestion_config()
+        extensions = frozenset(config.allowed_extensions)
+        files = _discover_files(directory, recursive=recursive, extensions=extensions)
+
+        if not files:
+            if json_output:
+                console.print("[]", highlight=False)
+            else:
+                console.print("[dim]No supported files found.[/dim]")
+            return
+
+        if dry_run:
+            if json_output:
+                rows = [{"file": str(f), "status": "pending"} for f in files]
+                console.print(json.dumps(rows, indent=2), highlight=False)
+            else:
+                for f in files:
+                    console.print(str(f))
+                console.print(f"\n[bold]{len(files)}[/bold] file(s) found.")
+            return
+
+        uploaded = 0
+        skipped = 0
+        failed = 0
+        results: list[dict[str, str]] = []
+
         for path in files:
             try:
                 # Pre-hash locally and check for duplicates before uploading
@@ -239,16 +220,18 @@ def bulk_ingest(
                     else:
                         print_error(f"  FAIL  {path.name}: {exc}")
 
-    total = uploaded + skipped + failed
-    if json_output:
-        console.print(json.dumps(results, indent=2), highlight=False, soft_wrap=True)
-    else:
-        console.print(
-            f"\n[bold]{uploaded}[/bold] uploaded, "
-            f"[bold]{skipped}[/bold] skipped (duplicate), "
-            f"[bold]{failed}[/bold] failed "
-            f"out of [bold]{total}[/bold] total."
-        )
+        total = uploaded + skipped + failed
+        if json_output:
+            console.print(
+                json.dumps(results, indent=2), highlight=False, soft_wrap=True
+            )
+        else:
+            console.print(
+                f"\n[bold]{uploaded}[/bold] uploaded, "
+                f"[bold]{skipped}[/bold] skipped (duplicate), "
+                f"[bold]{failed}[/bold] failed "
+                f"out of [bold]{total}[/bold] total."
+            )
 
-    if failed > 0:
-        raise SystemExit(1)
+        if failed > 0:
+            raise SystemExit(1)

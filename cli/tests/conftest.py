@@ -17,7 +17,11 @@ from shared.models.auth import (
     TokenResponse,
 )
 from shared.models.base import MessageResponse
-from shared.models.document import DocumentResponse, DocumentSummary
+from shared.models.document import (
+    DocumentResponse,
+    DocumentSummary,
+    IngestionConfigResponse,
+)
 from shared.models.enums import TaskState
 from shared.models.firm import FirmResponse
 from shared.models.health import HealthResponse, ReadinessResponse, ServiceChecks
@@ -91,6 +95,34 @@ def mock_client() -> MagicMock:
     mock = MagicMock(spec=OpenCaseClient)
     mock.__enter__ = MagicMock(return_value=mock)
     mock.__exit__ = MagicMock(return_value=False)
+    # Default ingestion config for bulk-ingest tests
+    mock.get_ingestion_config.return_value = IngestionConfigResponse(
+        allowed_content_types=[
+            "application/pdf",
+            "text/plain",
+        ],
+        allowed_extensions=[
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".txt",
+            ".md",
+            ".csv",
+            ".html",
+            ".htm",
+            ".xlsx",
+            ".pptx",
+            ".rtf",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".tiff",
+            ".tif",
+            ".gif",
+            ".bmp",
+            ".webp",
+        ],
+    )
     return mock
 
 

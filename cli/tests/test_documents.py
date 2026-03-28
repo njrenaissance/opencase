@@ -98,20 +98,21 @@ class TestBulkIngest:
         tmp_path: Path,
     ) -> None:
         _make_files(tmp_path, ["a.pdf", "b.txt", "c.jpg"])
-        result = runner.invoke(
-            app,
-            [
-                "document",
-                "bulk-ingest",
-                str(tmp_path),
-                "--matter-id",
-                _MATTER_ID,
-                "--dry-run",
-            ],
-        )
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                [
+                    "document",
+                    "bulk-ingest",
+                    str(tmp_path),
+                    "--matter-id",
+                    _MATTER_ID,
+                    "--dry-run",
+                ],
+            )
         assert result.exit_code == 0
         assert "3" in result.output
-        # No client calls should have been made
+        # No upload calls should have been made (only get_ingestion_config)
         mock_client.upload_document.assert_not_called()
 
     def test_upload_all_success(
@@ -249,10 +250,11 @@ class TestBulkIngest:
     ) -> None:
         empty = tmp_path / "empty"
         empty.mkdir()
-        result = runner.invoke(
-            app,
-            ["document", "bulk-ingest", str(empty), "--matter-id", _MATTER_ID],
-        )
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "bulk-ingest", str(empty), "--matter-id", _MATTER_ID],
+            )
         assert result.exit_code == 0
         assert "no supported files" in result.output.lower()
 

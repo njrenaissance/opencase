@@ -54,7 +54,7 @@
 | --- | --- | --- | --- | --- |
 | 4.1 | Tika container setup | Pending | Pending | Pending |
 | 4.2 | Extraction task definitions (Celery tasks in app/workers/tasks/) | Pending | Pending | Pending |
-| 4.3 | Configuration + env vars (ExtractionSettings) | Pending | Pending | Pending |
+| 4.3 | Configuration + env vars (ExtractionSettings) | **Done** | **Done** | **Done** |
 | 4.4 | Observability (extraction spans/metrics) | Pending | Pending | Pending |
 
 ## Feature 5 — Chunking & Embedding
@@ -85,6 +85,7 @@
 | 6.11 | Duplicate-check API endpoint (`GET /documents/check-duplicate` — lightweight pre-upload hash check) | Pending | **Done** | **Done** |
 | 6.12 | Disk-buffered hashing (SpooledTemporaryFile — small files in RAM, large files spill to disk) | Pending | **Done** | Pending |
 | 6.13 | SDK multipart upload + client-side hashing (`upload_document`, `check_duplicate`, `hash_file`) | Pending | **Done** | Pending |
+| 6.14 | Configuration + env vars (IngestionSettings: `allowed_types_file`, `allowed_content_types`, `allowed_extensions`, ingestion-config API endpoint) | **Done** | **Done** | **Done** |
 
 ## Feature 7 — Audit Logging
 

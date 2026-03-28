@@ -1,4 +1,6 @@
+import logging
 from importlib.metadata import version
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
@@ -9,6 +11,8 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OtelSettings(BaseSettings):
@@ -185,6 +189,120 @@ class S3Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_S3_")
 
 
+class ExtractionSettings(BaseSettings):
+    """Document extraction sub-config (OPENCASE_EXTRACTION_ prefix).
+
+    Configures Apache Tika text extraction and Tesseract OCR for the
+    ingestion pipeline.
+    """
+
+    tika_url: str = "http://tika:9998"
+    ocr_enabled: bool = True
+    ocr_languages: str = "eng"
+    request_timeout: int = Field(120, gt=0)
+    max_file_size_bytes: int = Field(100 * 1024 * 1024, gt=0)  # 100 MB
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_EXTRACTION_")
+
+
+# ---------------------------------------------------------------------------
+# Ingestion defaults
+# ---------------------------------------------------------------------------
+
+_DEFAULT_CONTENT_TYPES = frozenset(
+    {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/rtf",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "text/html",
+        "image/jpeg",
+        "image/png",
+        "image/tiff",
+        "image/gif",
+        "image/bmp",
+        "image/webp",
+        "application/octet-stream",
+    }
+)
+
+_DEFAULT_EXTENSIONS = frozenset(
+    {
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".xlsx",
+        ".pptx",
+        ".rtf",
+        ".txt",
+        ".md",
+        ".csv",
+        ".html",
+        ".htm",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".tiff",
+        ".tif",
+        ".gif",
+        ".bmp",
+        ".webp",
+    }
+)
+
+
+class IngestionSettings(BaseSettings):
+    """Ingestion pipeline sub-config (OPENCASE_INGESTION_ prefix).
+
+    Controls which document types are accepted for upload and bulk-ingest.
+    When ``allowed_types_file`` is set, MIME types and file extensions are
+    loaded from the flat file (one entry per line, ``#`` comments allowed).
+    Otherwise built-in defaults are used.
+    """
+
+    allowed_types_file: Path | None = None
+    allowed_content_types: frozenset[str] = _DEFAULT_CONTENT_TYPES
+    allowed_extensions: frozenset[str] = _DEFAULT_EXTENSIONS
+
+    @model_validator(mode="after")
+    def _load_allowed_types(self) -> "IngestionSettings":
+        if self.allowed_types_file is None:
+            return self
+        path = Path(self.allowed_types_file)
+        if not path.is_file():
+            msg = f"allowed_types_file not found: {path}"
+            raise ValueError(msg)
+        entries = [
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        ]
+        mime_types: list[str] = []
+        extensions: list[str] = []
+        for entry in entries:
+            if "/" in entry:
+                mime_types.append(entry)
+            elif entry.startswith("."):
+                extensions.append(entry)
+            else:
+                logger.warning(
+                    "Ignoring unrecognized entry in %s: %r"
+                    " (expected MIME type with '/' or extension with '.')",
+                    path,
+                    entry,
+                )
+        self.allowed_content_types = frozenset(mime_types)
+        self.allowed_extensions = frozenset(extensions)
+        return self
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_INGESTION_")
+
+
 # ---------------------------------------------------------------------------
 # Secret redaction
 # ---------------------------------------------------------------------------
@@ -259,6 +377,8 @@ class Settings(BaseSettings):
     # S3Settings has required fields (access_key, secret_key) that are
     # satisfied by env vars at startup, same pattern as auth/db.
     s3: S3Settings = Field(default_factory=S3Settings)  # type: ignore[arg-type]
+    extraction: ExtractionSettings = Field(default_factory=ExtractionSettings)  # type: ignore[arg-type]
+    ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
 
     @model_validator(mode="after")
     def _derive_celery_broker_url(self) -> "Settings":
