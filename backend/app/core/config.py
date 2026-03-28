@@ -163,8 +163,18 @@ class S3Settings(BaseSettings):
     bucket: str = "opencase"
     use_ssl: bool = False
     region: str = "us-east-1"
-    max_upload_bytes: int = 100 * 1024 * 1024  # 100 MB
-    spool_threshold_bytes: int = 10 * 1024 * 1024  # 10 MB
+    max_upload_bytes: int = Field(100 * 1024 * 1024, gt=0)  # 100 MB
+    spool_threshold_bytes: int = Field(10 * 1024 * 1024, gt=0)  # 10 MB
+
+    @model_validator(mode="after")
+    def _validate_spool_threshold(self) -> "S3Settings":
+        if self.spool_threshold_bytes > self.max_upload_bytes:
+            msg = (
+                f"spool_threshold_bytes ({self.spool_threshold_bytes}) must not"
+                f" exceed max_upload_bytes ({self.max_upload_bytes})"
+            )
+            raise ValueError(msg)
+        return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -313,7 +313,7 @@ async def create_document(
 async def check_duplicate(
     matter_id: uuid.UUID = Query(...),  # noqa: B008
     file_hash: str = Query(  # noqa: B008
-        ..., min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$"
+        ..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$"
     ),
     user: User = Depends(get_current_user),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
@@ -324,6 +324,9 @@ async def check_duplicate(
     avoiding the bandwidth cost of sending files that would be rejected
     as duplicates.
     """
+    # Normalize to lowercase for consistent DB comparison.
+    file_hash = file_hash.lower()
+
     with tracer.start_as_current_span(
         "documents.check_duplicate",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
