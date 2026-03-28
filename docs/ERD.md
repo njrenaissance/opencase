@@ -1,6 +1,6 @@
 # OpenCase — Entity Relationship Diagram
 
-Covers tables through Feature 2.6. Tables from later features
+Covers tables through Feature 3.2. Tables from later features
 (audit_log, witnesses, disclosure_checklist, etc.) will be added
 as each feature lands.
 

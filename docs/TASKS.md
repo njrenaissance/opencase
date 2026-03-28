@@ -135,6 +135,8 @@ be invoked by API callers.
 ```python
 TASK_REGISTRY: dict[str, str] = {
     "ping": "opencase.ping",
+    "sleep": "opencase.sleep",
+    "ingest_document": "opencase.ingest_document",
 }
 ```
 
@@ -165,13 +167,27 @@ result = app.send_task("opencase.ping")
 assert result.get(timeout=10) == "pong"
 ```
 
+### `opencase.ingest_document`
+
+Stub task for the document ingestion pipeline. Currently logs the
+request; the full pipeline (Tika extraction, chunking, embedding,
+Qdrant upsert) will be added in Features 4–5.
+
+| Field | Value |
+| --- | --- |
+| Module | `app.workers.tasks.ingest_document` |
+| Name | `opencase.ingest_document` |
+| Arguments | `document_id: str`, `s3_key: str` |
+| Returns | `{"status": "stub", "document_id": ...}` |
+| Purpose | Placeholder for the full ingestion pipeline |
+
 ### Future tasks
 
 Tasks will be added as features are built:
 
 | Task | Feature | Purpose |
 | --- | --- | --- |
-| Document ingestion | 6.3 | SHA-256 dedup, store to MinIO, trigger extraction |
+| Document ingestion (full) | 4.2, 5.2, 5.3 | Tika extraction, chunking, embedding, Qdrant upsert |
 | Cloud ingestion | 6.7 | Poll OneDrive/SharePoint via Graph API |
 | Text extraction | 4.2 | Parse documents via Apache Tika |
 | Chunking + embedding | 5.2, 5.3 | Split text, embed via Ollama, upsert to Qdrant |
