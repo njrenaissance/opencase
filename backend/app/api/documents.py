@@ -232,7 +232,7 @@ async def create_document(
                 detail="A document with the same content already exists in this matter",
             ) from exc
 
-        # 4. Upload to S3
+        # 5. Upload to S3
         try:
             s3_key = await storage.upload_document(
                 firm_id=user.firm_id,
@@ -255,16 +255,23 @@ async def create_document(
         # 6. Commit DB transaction (clean up S3 object on failure)
         try:
             await db.commit()
-        except Exception:
+        except Exception as commit_exc:
             logger.exception(
                 "DB commit failed for document %s; removing S3 object",
                 doc_id,
             )
-            await storage.delete_document(s3_key)
-            raise
+            try:
+                await storage.delete_document(s3_key)
+            except Exception:
+                logger.exception(
+                    "S3 cleanup also failed for document %s, key %s",
+                    doc_id,
+                    s3_key,
+                )
+            raise commit_exc
         await db.refresh(doc)
 
-        # 6. Fire-and-forget ingestion task
+        # 7. Fire-and-forget ingestion task
         try:
             from app.ingestion import get_ingestion_service
 
@@ -378,10 +385,14 @@ async def download_document(
             ) from exc
 
         encoded_name = quote(doc.filename, safe="")
+        ascii_name = doc.filename.encode("ascii", "replace").decode()
         return Response(
             content=file_bytes,
             media_type=doc.content_type,
             headers={
-                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}",
+                "Content-Disposition": (
+                    f'attachment; filename="{ascii_name}"; '
+                    f"filename*=UTF-8''{encoded_name}"
+                ),
             },
         )
