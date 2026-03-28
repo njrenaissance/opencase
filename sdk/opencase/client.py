@@ -1,4 +1,4 @@
-"""OpenCaseClient — synchronous REST client for the OpenCase API."""
+"""Synchronous REST client for the OpenCase API."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ from opencase.exceptions import (
 )
 
 
-class OpenCaseClient:
+class Client:
     """Synchronous Python client for the OpenCase REST API.
 
     Handles JWT lifecycle transparently: auto-refreshes expired access
@@ -63,7 +63,7 @@ class OpenCaseClient:
 
     Usage::
 
-        client = OpenCaseClient(base_url="http://localhost:8000")
+        client = Client(base_url="http://localhost:8000")
         client.login(email="user@firm.com", password="secret")
 
         health = client.health()
@@ -71,7 +71,7 @@ class OpenCaseClient:
 
     Or as a context manager::
 
-        with OpenCaseClient(base_url="http://localhost:8000") as client:
+        with Client(base_url="http://localhost:8000") as client:
             client.login(email="user@firm.com", password="secret")
             ...
     """
@@ -88,7 +88,7 @@ class OpenCaseClient:
 
     # -- context manager -----------------------------------------------------
 
-    def __enter__(self) -> OpenCaseClient:
+    def __enter__(self) -> Client:
         return self
 
     def __exit__(self, *args: object) -> None:

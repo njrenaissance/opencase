@@ -1,6 +1,6 @@
 """OpenCase Python SDK — REST client for the OpenCase API."""
 
-from opencase.client import OpenCaseClient
+from opencase.client import Client
 from opencase.exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -9,14 +9,20 @@ from opencase.exceptions import (
     ServerError,
     ValidationError,
 )
+from opencase.session import Session
 
 __version__ = "0.1.0"
+
+# Backwards-compatible alias.
+OpenCaseClient = Client
 
 __all__ = [
     "AuthenticationError",
     "AuthorizationError",
+    "Client",
     "NotFoundError",
     "OpenCaseClient",
+    "Session",
     "OpenCaseError",
     "ServerError",
     "ValidationError",

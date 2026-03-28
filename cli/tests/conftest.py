@@ -89,10 +89,10 @@ def stored_tokens(tmp_opencase_dir: Path) -> tuple[str, str]:
 
 @pytest.fixture()
 def mock_client() -> MagicMock:
-    """Return a MagicMock that quacks like OpenCaseClient."""
-    from opencase import OpenCaseClient
+    """Return a MagicMock that quacks like Client."""
+    from opencase import Client
 
-    mock = MagicMock(spec=OpenCaseClient)
+    mock = MagicMock(spec=Client)
     mock.__enter__ = MagicMock(return_value=mock)
     mock.__exit__ = MagicMock(return_value=False)
     # Default ingestion config for bulk-ingest tests

@@ -21,7 +21,7 @@ import argparse
 import sys
 
 import dotenv
-from opencase import OpenCaseClient
+from opencase import Client
 from opencase.exceptions import OpenCaseError, ValidationError
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -29,7 +29,7 @@ DEMO_PASSWORD = "DemoPassword123!"  # noqa: S105
 
 
 def _create_user(
-    client: OpenCaseClient,
+    client: Client,
     email: str,
     first_name: str,
     last_name: str,
@@ -57,7 +57,7 @@ def _create_user(
         raise
 
 
-def _create_matter(client: OpenCaseClient, name: str) -> str:
+def _create_matter(client: Client, name: str) -> str:
     """Create a matter, return matter_id.  Skip if already exists."""
     import uuid
 
@@ -73,7 +73,7 @@ def _create_matter(client: OpenCaseClient, name: str) -> str:
 
 
 def _grant_access(
-    client: OpenCaseClient,
+    client: Client,
     matter_id: str,
     user_id: str,
     label: str,
@@ -99,7 +99,7 @@ def main(config_file: str) -> None:
         print("ERROR: OPENCASE_ADMIN_EMAIL / OPENCASE_ADMIN_PASSWORD not set in .env")  # noqa: T201
         sys.exit(1)
 
-    with OpenCaseClient(base_url=BASE_URL) as client:
+    with Client(base_url=BASE_URL) as client:
         print(f"Logging in as {admin_email}")  # noqa: T201
         client.login(email=admin_email, password=admin_password)
 

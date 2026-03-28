@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import typer
-from opencase import OpenCaseClient
+from opencase import Client
 
 from opencase_cli.config import load_config
 from opencase_cli.output import print_error
@@ -31,10 +31,10 @@ def get_client(
     timeout: float | None = None,
     *,
     authenticated: bool = False,
-) -> OpenCaseClient:
-    """Create a configured ``OpenCaseClient``, optionally with stored tokens."""
+) -> Client:
+    """Create a configured ``Client``, optionally with stored tokens."""
     config = load_config(base_url=base_url, timeout=timeout)
-    client = OpenCaseClient(base_url=config.base_url, timeout=config.timeout)
+    client = Client(base_url=config.base_url, timeout=config.timeout)
 
     if authenticated:
         tokens = load_tokens()

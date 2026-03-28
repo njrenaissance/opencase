@@ -5,9 +5,9 @@ Python REST client for the OpenCase API.
 ## Usage
 
 ```python
-from opencase import OpenCaseClient
+from opencase import Client
 
-client = OpenCaseClient(base_url="http://localhost:8000")
+client = Client(base_url="http://localhost:8000")
 client.login(email="user@firm.com", password="secret")
 
 health = client.health()

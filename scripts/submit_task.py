@@ -1,21 +1,21 @@
 import time
 import dotenv
-from opencase import OpenCaseClient
+from opencase import Client
 
 BASE_URL = "http://127.0.0.1:8000"
 
-def submit_log_running_task(client: OpenCaseClient) -> None:
+def submit_log_running_task(client: Client) -> None:
     print("Submitting long-running task (sleep for 30 seconds)...")
     result = client.submit_task(task_name="sleep", kwargs={"seconds": 30})
     print(f"Submitted: {result.task_id}")
 
-def submit_ping_task(client: OpenCaseClient) -> None:
+def submit_ping_task(client: Client) -> None:
     print("Submitting ping task...")
     result = client.submit_task(task_name="ping")
     print(f"Submitted: {result.task_id}")
     return result
 
-def wait_for_task_result(client: OpenCaseClient, task_id: str) -> None:
+def wait_for_task_result(client: Client, task_id: str) -> None:
     print(f"Waiting for task {task_id} to complete...")
     while True:
         task = client.get_task(task_id)
@@ -31,7 +31,7 @@ def wait_for_task_result(client: OpenCaseClient, task_id: str) -> None:
 
 def main(config_file: str) -> None:
 
-    with OpenCaseClient(base_url=BASE_URL) as client:
+    with Client(base_url=BASE_URL) as client:
 
         admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
         admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
