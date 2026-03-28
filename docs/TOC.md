@@ -44,5 +44,8 @@ BDD scenarios.*
 
 ### Legal Framework
 
+- [Third-Party Licenses](../LICENSING.md) — component
+  license inventory and compatibility analysis
+
 *Coming soon — jurisdiction-specific discovery rules,
 compliance references, and domain glossary.*
