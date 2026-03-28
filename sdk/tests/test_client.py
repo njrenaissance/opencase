@@ -1,4 +1,4 @@
-"""Unit tests for opencase.client.OpenCaseClient using httpx.MockTransport."""
+"""Unit tests for opencase.client.Client using httpx.MockTransport."""
 
 from __future__ import annotations
 

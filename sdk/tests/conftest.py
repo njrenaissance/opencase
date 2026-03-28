@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 import httpx
 
-from opencase import OpenCaseClient
+from opencase import Client
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -34,15 +34,15 @@ def mock_http(handler: Handler) -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(handler))
 
 
-def build_client(handler: Handler) -> OpenCaseClient:
-    """Create an OpenCaseClient backed by a mock transport."""
-    client = OpenCaseClient(base_url="http://test")
+def build_client(handler: Handler) -> Client:
+    """Create a Client backed by a mock transport."""
+    client = Client(base_url="http://test")
     client._http = mock_http(handler)  # noqa: SLF001
     return client
 
 
-def build_authenticated_client(handler: Handler) -> OpenCaseClient:
-    """Create an OpenCaseClient with pre-stored auth tokens."""
+def build_authenticated_client(handler: Handler) -> Client:
+    """Create a Client with pre-stored auth tokens."""
     client = build_client(handler)
     token = make_jwt(exp=time.time() + 3600)
     client._auth.store_tokens(token, "refresh")  # noqa: SLF001

@@ -23,7 +23,7 @@ from pathlib import Path
 import dotenv
 import httpx
 from minio import Minio
-from opencase import OpenCaseClient
+from opencase import Client
 
 BASE_URL = "http://127.0.0.1:8000"
 MINIO_ENDPOINT = "localhost:9000"
@@ -34,7 +34,7 @@ MINIO_ENDPOINT = "localhost:9000"
 # ---------------------------------------------------------------------------
 
 
-def pick_matter(client: OpenCaseClient) -> dict:
+def pick_matter(client: Client) -> dict:
     """Return the first matter, or create one if none exist."""
     matters = client.list_matters()
     if matters:
@@ -69,7 +69,7 @@ def prepare_file(file_path: Path | None) -> tuple[Path, str, bool]:
     return file_path, local_hash, cleanup
 
 
-def upload(client: OpenCaseClient, file_path: Path, matter_id: str) -> object:
+def upload(client: Client, file_path: Path, matter_id: str) -> object:
     """Upload the file and print the response."""
     print("\nUploading...")  # noqa: T201
     doc = client.upload_document(file_path=file_path, matter_id=matter_id)
@@ -88,7 +88,7 @@ def verify_hash(doc: object, local_hash: str) -> None:
     print("  Hash match:   OK")  # noqa: T201
 
 
-def verify_database(client: OpenCaseClient, doc_id: str) -> None:
+def verify_database(client: Client, doc_id: str) -> None:
     """Confirm the document record exists via API."""
     print("\nVerifying database (GET /documents/{id})...")  # noqa: T201
     db_doc = client.get_document(doc_id)
@@ -122,7 +122,7 @@ def verify_s3(
     print(f"  S3 timestamp: {meta.get('x-amz-meta-ingestion-timestamp', '???')}")  # noqa: T201
 
 
-def verify_download(client: OpenCaseClient, doc_id: str, local_hash: str) -> None:
+def verify_download(client: Client, doc_id: str, local_hash: str) -> None:
     """Download the file and compare its hash to the original."""
     print("\nVerifying download (GET /documents/{id}/download)...")  # noqa: T201
     resp = httpx.get(
@@ -155,7 +155,7 @@ def main(config_file: str, file_path: Path | None = None) -> None:
         print("ERROR: OPENCASE_ADMIN_EMAIL / OPENCASE_ADMIN_PASSWORD not set")  # noqa: T201
         sys.exit(1)
 
-    with OpenCaseClient(base_url=BASE_URL) as client:
+    with Client(base_url=BASE_URL) as client:
         print(f"Logging in as {admin_email}")  # noqa: T201
         client.login(email=admin_email, password=admin_password)
 
