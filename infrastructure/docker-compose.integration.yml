@@ -30,10 +30,18 @@ services:
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
       - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
+      - OPENCASE_EXTRACTION_TIKA_URL=http://tika:9998
       - OPENCASE_OTEL_ENABLED=true
       - OPENCASE_OTEL_EXPORTER=otlp
       - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
       - OPENCASE_OTEL_SERVICE_NAME=opencase-worker
+    depends_on:
+      tika:
+        condition: service_healthy
+
+  tika:
+    ports:
+      - "9998:9998"
 
   celery-beat:
     environment:

@@ -168,6 +168,20 @@ services:
       - opencase
     restart: "no"
 
+  # --- Document Text Extraction -------------------------------
+  tika:
+    image: apache/tika:3.1.0.0
+    expose:
+      - "9998"
+    healthcheck:
+      test: ["CMD", "perl", "-e", "use IO::Socket::INET; my $$s = IO::Socket::INET->new(PeerAddr=>'localhost',PeerPort=>9998,Proto=>'tcp',Timeout=>2) or exit 1; print $$s \"GET /tika HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\"; my $$r = <$$s>; exit($$r =~ /200/ ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opencase
+    restart: unless-stopped
+
   # --- Local LLM + Embeddings ------------------------------
   # Disabled until RAG pipeline implementation begins. Re-enable by
   # removing the profiles line or running: docker compose --profile rag up
@@ -266,6 +280,8 @@ services:
       - OPENCASE_S3_BUCKET=${OPENCASE_S3_BUCKET:-opencase}
       - OPENCASE_S3_USE_SSL=${OPENCASE_S3_USE_SSL:-false}
       - OPENCASE_S3_REGION=${OPENCASE_S3_REGION:-us-east-1}
+      # Document extraction (Tika)
+      - OPENCASE_EXTRACTION_TIKA_URL=${OPENCASE_EXTRACTION_TIKA_URL:-http://tika:9998}
       # Cloud ingestion (internet mode only)
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
@@ -285,6 +301,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      tika:
+        condition: service_healthy
     networks:
       - opencase
     restart: unless-stopped

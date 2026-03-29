@@ -208,6 +208,13 @@ def _minio_ready(host: str, port: int) -> bool:
         return False
 
 
+def _tika_ready(host: str, port: int) -> bool:
+    try:
+        return httpx.get(f"http://{host}:{port}/tika", timeout=2).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
 def _grafana_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
@@ -271,6 +278,17 @@ def grafana_service(docker_ip, docker_services):
         check=lambda: _grafana_ready(docker_ip, 3001),
     )
     return f"http://{docker_ip}:3001"
+
+
+@pytest.fixture(scope="session")
+def tika_service(docker_ip, docker_services):
+    """Ensure Tika is up and return (host, port)."""
+    docker_services.wait_until_responsive(
+        timeout=60.0,
+        pause=0.5,
+        check=lambda: _tika_ready(docker_ip, 9998),
+    )
+    return docker_ip, 9998
 
 
 @pytest.fixture(scope="session")
