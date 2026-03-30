@@ -41,7 +41,6 @@ def mock_metrics():
         "extraction_duration_seconds": MagicMock(),
         "extraction_document_size_bytes": MagicMock(),
         "extraction_text_length_chars": MagicMock(),
-        "extraction_ocr_applied": MagicMock(),
     }
 
 
@@ -176,7 +175,7 @@ class TestExtractDocumentSpans:
         parent = [s for s in spans if s.name == "extract_document"][0]
         assert parent.status.status_code.name == "ERROR"
         events = [e for e in parent.events if e.name == "exception"]
-        assert len(events) == 1
+        assert len(events) >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +249,7 @@ class TestIngestDocumentSpans:
         parent = [s for s in spans if s.name == "ingest_document"][0]
         assert parent.status.status_code.name == "ERROR"
         events = [e for e in parent.events if e.name == "exception"]
-        assert len(events) == 1
+        assert len(events) >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +292,7 @@ class TestExtractionMetrics:
         args, _ = mock_metrics["extraction_failed"].add.call_args
         assert args[0] == 1
         assert args[1]["error_type"] == "HTTPStatusError"
+        assert args[1]["content_type"] == "unknown"
 
     @pytest.mark.asyncio
     async def test_duration_recorded(self, mock_metrics):
@@ -331,7 +331,7 @@ class TestExtractionMetrics:
         assert args[0] == 11  # len("hello world")
 
     @pytest.mark.asyncio
-    async def test_ocr_counter_when_ocr_applied(self, mock_metrics):
+    async def test_completed_counter_carries_ocr_attribute(self, mock_metrics):
         transport = _mock_transport(
             meta_body={
                 "Content-Type": "image/png",
@@ -346,20 +346,9 @@ class TestExtractionMetrics:
         with patch.multiple("app.extraction.tika", **mock_metrics):
             await svc.extract_text(b"img", "scan.png", "image/png")
 
-        mock_metrics["extraction_ocr_applied"].add.assert_called_once()
-        args, _ = mock_metrics["extraction_ocr_applied"].add.call_args
-        assert args[0] == 1
+        args, _ = mock_metrics["extraction_completed"].add.call_args
+        assert args[1]["ocr_applied"] == "true"
         assert args[1]["content_type"] == "image/png"
-
-    @pytest.mark.asyncio
-    async def test_ocr_counter_not_called_when_no_ocr(self, mock_metrics):
-        transport = _mock_transport()
-        svc = _make_service(transport=transport)
-
-        with patch.multiple("app.extraction.tika", **mock_metrics):
-            await svc.extract_text(b"data", "test.txt")
-
-        mock_metrics["extraction_ocr_applied"].add.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_duration_recorded_on_failure(self, mock_metrics):

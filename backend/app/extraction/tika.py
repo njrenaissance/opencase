@@ -16,7 +16,6 @@ from app.core.metrics import (
     extraction_document_size_bytes,
     extraction_duration_seconds,
     extraction_failed,
-    extraction_ocr_applied,
     extraction_text_length_chars,
 )
 from app.extraction.models import ExtractionResult
@@ -125,17 +124,14 @@ class TikaExtractionService:
 
                 # Record metrics.
                 elapsed = time.monotonic() - start
-                ocr_str = str(ocr_applied).lower()
                 attrs = {
                     "content_type": detected_type,
-                    "ocr_applied": ocr_str,
+                    "ocr_applied": "true" if ocr_applied else "false",
                 }
                 extraction_completed.add(1, attrs)
                 extraction_duration_seconds.record(elapsed, attrs)
                 extraction_document_size_bytes.record(size, attrs)
                 extraction_text_length_chars.record(len(text), attrs)
-                if ocr_applied:
-                    extraction_ocr_applied.add(1, {"content_type": detected_type})
 
                 logger.info(
                     "Extracted %d chars from %s (ocr=%s, lang=%s)",
@@ -157,17 +153,22 @@ class TikaExtractionService:
                 elapsed = time.monotonic() - start
                 span.set_status(StatusCode.ERROR, str(exc))
                 span.record_exception(exc)
+                # Use "unknown" on the error path — Tika never resolved the
+                # type, so the caller-supplied hint (or lack thereof) would
+                # create inconsistent cardinality vs the success path which
+                # uses Tika's detected_type.
+                error_ct = "unknown"
                 extraction_failed.add(
                     1,
                     {
-                        "content_type": content_type or "auto",
+                        "content_type": error_ct,
                         "error_type": type(exc).__name__,
                     },
                 )
                 extraction_duration_seconds.record(
                     elapsed,
                     {
-                        "content_type": content_type or "auto",
+                        "content_type": error_ct,
                         "ocr_applied": "false",
                     },
                 )

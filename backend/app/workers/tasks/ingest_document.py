@@ -50,10 +50,7 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, str]:
             extraction = get_extraction_service()
 
             # 1. Download original from S3
-            with tracer.start_as_current_span(
-                "ingestion.s3_download",
-                record_exception=False,
-            ):
+            with tracer.start_as_current_span("ingestion.s3_download"):
                 file_bytes, content_type = await storage.download_document(s3_key)
 
             filename = s3_key.rsplit("/", 1)[-1]
@@ -64,10 +61,7 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, str]:
             # 3. Persist extracted.json to S3 alongside the original
             # Replace the final path component (original.{ext}) with extracted.json.
             extracted_key = s3_key.rsplit("/", 1)[0] + "/extracted.json"
-            with tracer.start_as_current_span(
-                "ingestion.s3_upload",
-                record_exception=False,
-            ):
+            with tracer.start_as_current_span("ingestion.s3_upload"):
                 await storage.upload_json(key=extracted_key, data=result.to_dict())
 
             span.set_attribute("extraction.text_length", len(result.text))

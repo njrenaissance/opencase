@@ -51,10 +51,7 @@ async def _extract(document_id: str, s3_key: str) -> dict[str, object]:
             storage = get_storage_service()
             extraction = get_extraction_service()
 
-            with tracer.start_as_current_span(
-                "extraction.s3_download",
-                record_exception=False,
-            ):
+            with tracer.start_as_current_span("extraction.s3_download"):
                 file_bytes, content_type = await storage.download_document(s3_key)
 
             filename = s3_key.rsplit("/", 1)[-1]

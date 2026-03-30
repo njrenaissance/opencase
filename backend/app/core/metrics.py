@@ -148,9 +148,5 @@ extraction_document_size_bytes = meter.create_histogram(
 extraction_text_length_chars = meter.create_histogram(
     "opencase.extraction.text_length_chars",
     description="Extracted text length in characters",
-)
-
-extraction_ocr_applied = meter.create_counter(
-    "opencase.extraction.ocr_applied",
-    description="Documents where OCR was used during extraction",
+    unit="{char}",
 )
