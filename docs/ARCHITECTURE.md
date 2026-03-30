@@ -44,7 +44,7 @@ graph LR
 | **MinIO** | S3-compatible object store for original documents | 9000 (internal) |
 | **Ollama** | Local LLM + embeddings (Llama 3 8B / Mistral 7B; nomic-embed-text) | 11434 (internal) |
 | **PostgreSQL** | Relational store — matters, documents, users, audit log | 5432 (internal) |
-| **Qdrant** | Vector store — single collection, permission-filtered | 6333 (internal) |
+| **Qdrant** | Vector store — single collection, permission-filtered | 6333, 6334/gRPC (internal) |
 | **Redis** | Task queue (Celery broker) + cache | 6379 (internal) |
 | **Celery + Beat** | Background workers — ingestion, deadlines, audit, legal hold | N/A |
 | **Grafana otel-lgtm** | Observability — traces (Tempo), metrics (Prometheus), logs (Loki), UI (Grafana) | 3001 |

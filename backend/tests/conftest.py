@@ -291,6 +291,42 @@ def tika_service(docker_ip, docker_services):
     return docker_ip, 9998
 
 
+def _qdrant_ready(host: str, port: int) -> bool:
+    try:
+        return httpx.get(f"http://{host}:{port}/healthz", timeout=2).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
+def _ollama_ready(host: str, port: int) -> bool:
+    try:
+        return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def qdrant_service(docker_ip, docker_services):
+    """Ensure Qdrant is up and return (host, port)."""
+    docker_services.wait_until_responsive(
+        timeout=60.0,
+        pause=0.5,
+        check=lambda: _qdrant_ready(docker_ip, 6333),
+    )
+    return docker_ip, 6333
+
+
+@pytest.fixture(scope="session")
+def ollama_service(docker_ip, docker_services):
+    """Ensure Ollama is up and return (host, port)."""
+    docker_services.wait_until_responsive(
+        timeout=120.0,
+        pause=1.0,
+        check=lambda: _ollama_ready(docker_ip, 11434),
+    )
+    return docker_ip, 11434
+
+
 @pytest.fixture(scope="session")
 def fastapi_service(docker_ip, docker_services):
     """Start the integration compose stack and return the FastAPI base URL.

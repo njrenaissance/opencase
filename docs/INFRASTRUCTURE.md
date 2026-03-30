@@ -24,8 +24,8 @@ The dev stack uses `.env` at the project root and starts the services
 needed for local development: PostgreSQL, Redis, MinIO, FastAPI,
 Celery worker + beat, Flower, and Grafana.
 
-Services not yet implemented (Next.js, Ollama, Qdrant) are disabled
-via Docker Compose profiles and will not start.
+Next.js is disabled via Docker Compose profiles and will not start
+until frontend implementation begins.
 
 ```bash
 # Start development stack (from project root)
@@ -46,12 +46,9 @@ At minimum, set `OPENCASE_AUTH_SECRET_KEY`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `OPENCASE_S3_ACCESS_KEY`, and
 `OPENCASE_S3_SECRET_KEY`.
 
-To enable future services when ready:
+To enable the frontend when ready:
 
 ```bash
-# Enable RAG services (Ollama + Qdrant)
-docker compose -f infrastructure/docker-compose.yml --env-file .env --profile rag up
-
 # Enable frontend (Next.js)
 docker compose -f infrastructure/docker-compose.yml --env-file .env --profile frontend up
 ```
@@ -112,7 +109,7 @@ Celery background task worker.
 | Dockerfile | `backend/docker/Dockerfile` |
 | Command | `celery -A app.workers worker -l info` |
 | Volume | `celery-tmp` (ephemeral temp files) |
-| Depends on | `postgres` (healthy), `redis` (healthy), `minio` (healthy) |
+| Depends on | `postgres` (healthy), `redis` (healthy), `minio-init` (completed), `tika` (healthy), `qdrant-init` (completed), `ollama-init` (completed) |
 
 Processes background tasks: document ingestion, embeddings, deadline
 monitoring, audit chain validation, legal hold enforcement. Migrations
@@ -150,7 +147,7 @@ Python API server (uvicorn + FastAPI).
 | Dockerfile | `backend/docker/Dockerfile` |
 | Public port | `8000` (dev/test only — remove in production) |
 | Internal port | `8000` |
-| Depends on | `db-migrate` (completed), `redis` (healthy) |
+| Depends on | `db-migrate` (completed), `redis` (healthy), `minio-init` (completed), `qdrant-init` (completed), `ollama-init` (completed) |
 
 The public port mapping (`8000:8000`) is present for local development and
 integration tests. In production it should be removed — all external traffic
@@ -242,22 +239,43 @@ Next.js frontend and reverse proxy. **Not yet implemented.** Enable with
 
 ---
 
-### ollama (disabled — profile: `rag`)
+### ollama
 
-Ollama local LLM and embedding server. **Not yet implemented.** Enable with
-`--profile rag` when the RAG pipeline is ready.
+Ollama local LLM and embedding server.
 
 | Setting | Value |
 | --- | --- |
 | Image | `ollama/ollama:latest` |
 | Internal port | `11434` |
 | Volume | `ollama-models` |
+| Healthcheck | `curl -sf http://localhost:11434/ \|\| exit 1` |
 
 Default LLM: `OLLAMA_LLM_MODEL` (default: `llama3:8b`).
-Default embed model: `OLLAMA_EMBED_MODEL` (default: `nomic-embed-text`).
+Default embed model: `OPENCASE_EMBEDDING_MODEL` (default: `nomic-embed-text`).
+
+The `ollama-init` sidecar service pulls the embedding model automatically on
+first run using `ollama pull`. FastAPI and celery-worker depend on `ollama-init`
+completing successfully before they start, guaranteeing the model is available
+when the application boots.
 
 NVIDIA GPU acceleration is available — uncomment the `deploy.resources`
 block in `docker-compose.yml` to enable it.
+
+---
+
+### ollama-init
+
+One-shot init container that pulls the embedding model into Ollama. Uses the
+`ollama/ollama:latest` image with `OLLAMA_HOST` pointed at the Ollama server.
+Idempotent — pulling an already-present model is a no-op.
+
+| Setting | Value |
+| --- | --- |
+| Image | `ollama/ollama:latest` |
+| Depends on | `ollama` (healthy) |
+| Restart | `no` |
+
+Environment: `OLLAMA_HOST`, `EMBEDDING_MODEL`.
 
 ---
 
@@ -280,19 +298,42 @@ tests), and `opencase_tasks_test` (integration test result backend).
 
 ---
 
-### qdrant (disabled — profile: `rag`)
+### qdrant
 
-Qdrant vector store (single collection). **Not yet implemented.** Enable with
-`--profile rag` when the RAG pipeline is ready.
+Qdrant vector store (single collection, permission-filtered on every query).
 
 | Setting | Value |
 | --- | --- |
 | Image | `qdrant/qdrant:latest` |
-| Internal port | `6333` |
+| Internal REST port | `6333` |
+| Internal gRPC port | `6334` |
 | Volume | `qdrant-data` |
+| Healthcheck | `wget -qO- http://localhost:6333/healthz \|\| exit 1` |
 
 Only accessible from within the Docker network. Collection name is
-controlled by `QDRANT_COLLECTION` (default: `opencase`).
+controlled by `OPENCASE_QDRANT_COLLECTION` (default: `opencase`).
+
+The `qdrant-init` sidecar service creates the collection automatically on first
+run via the Qdrant REST API. FastAPI and celery-worker depend on `qdrant-init`
+completing successfully before they start, guaranteeing the collection exists
+when the application boots.
+
+---
+
+### qdrant-init
+
+One-shot init container that creates the default Qdrant collection if it does
+not exist. Uses `curlimages/curl:latest`. Idempotent — checks for collection
+existence before creating.
+
+| Setting | Value |
+| --- | --- |
+| Image | `curlimages/curl:latest` |
+| Depends on | `qdrant` (healthy) |
+| Restart | `no` |
+
+Environment: `QDRANT_HOST`, `QDRANT_PORT`, `COLLECTION_NAME`,
+`EMBEDDING_DIMENSIONS`.
 
 ---
 
@@ -343,8 +384,7 @@ corresponding data permanently.
 | `9001` | MinIO Console | Dev/test only |
 
 Qdrant, Ollama, Redis, and Celery are internal only and not mapped to
-host ports. Qdrant and Ollama are disabled via profiles until their
-features are implemented.
+host ports.
 
 ---
 
@@ -390,10 +430,11 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 - `celery-worker` result backend points at `opencase_tasks_test`
 - `minio` exposes ports `9000` and `9001` to the host for test access
 - `flower` is disabled (not needed for tests)
-- `nextjs`, `ollama`, `qdrant` are already disabled via profiles in the
-  base compose file
-- Active services: `postgres` + `redis` + `minio` + `fastapi` +
-  `celery-worker` + `celery-beat` + `grafana`
+- `nextjs` is disabled via profiles in the base compose file
+- `qdrant` exposes port `6333` to the host for test access
+- `qdrant-init` overrides collection name to `opencase_test`
+- Active services: `postgres` + `redis` + `minio` + `qdrant` + `ollama` +
+  `fastapi` + `celery-worker` + `celery-beat` + `grafana`
 
 See the [Running the Stack](#running-the-stack) section above for how to
 run integration tests.

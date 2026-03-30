@@ -7,8 +7,8 @@
 #   - Points FastAPI at opencase_test database (created by postgres/init.sql)
 #   - Exposes Redis port for host-side test access
 #   - Points celery-worker result backend at opencase_tasks_test database
-#   - Disables services not yet implemented (nextjs, ollama, qdrant)
-#     so pytest-docker only starts postgres + redis + minio + fastapi + workers + grafana
+#   - Disables services not needed for tests (nextjs)
+#     so pytest-docker starts postgres + redis + minio + qdrant + ollama + fastapi + workers + grafana
 #   - Tears down with -v so the test database is wiped between runs
 
 services:
@@ -16,6 +16,7 @@ services:
     environment:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
       - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
+      - OPENCASE_QDRANT_COLLECTION=opencase_test
       - OPENCASE_OTEL_ENABLED=true
       - OPENCASE_OTEL_EXPORTER=otlp
       - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
@@ -31,6 +32,7 @@ services:
       - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
       - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
       - OPENCASE_EXTRACTION_TIKA_URL=http://tika:9998
+      - OPENCASE_QDRANT_COLLECTION=opencase_test
       - OPENCASE_OTEL_ENABLED=true
       - OPENCASE_OTEL_EXPORTER=otlp
       - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
@@ -56,8 +58,16 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  # nextjs, ollama, and qdrant are already disabled via profiles in the
-  # base docker-compose.yml. Flower is disabled for tests only.
+  qdrant:
+    ports:
+      - "6333:6333"
+
+  qdrant-init:
+    environment:
+      - COLLECTION_NAME=opencase_test
+
+  # nextjs is disabled via profiles in the base docker-compose.yml.
+  # Flower is disabled for tests only.
   # grafana (otel-lgtm) runs with defaults from docker-compose.yml — do NOT disable it.
   flower:
     profiles: [disabled]
