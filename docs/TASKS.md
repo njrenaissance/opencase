@@ -169,17 +169,32 @@ assert result.get(timeout=10) == "pong"
 
 ### `opencase.ingest_document`
 
-Stub task for the document ingestion pipeline. Currently logs the
-request; the full pipeline (Tika extraction, chunking, embedding,
-Qdrant upsert) will be added in Features 4–5.
+Orchestrates the document ingestion pipeline. Downloads the original
+file from S3, extracts text via Apache Tika, and persists the extraction
+result as `extracted.json` alongside the original in S3. Future steps
+(chunking, embedding, Qdrant upsert) will be added in Features 5–6.
 
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.ingest_document` |
 | Name | `opencase.ingest_document` |
 | Arguments | `document_id: str`, `s3_key: str` |
-| Returns | `{"status": "stub", "document_id": ...}` |
-| Purpose | Placeholder for the full ingestion pipeline |
+| Returns | `{"status": "extracted", "document_id": ...}` |
+| Purpose | Orchestrate ingestion: extraction → S3 persist → (future) chunking → embedding |
+
+### `opencase.extract_document`
+
+Extract text and metadata from a document stored in S3 using Apache
+Tika. Returns the extraction result without persisting it — callers
+(e.g. `ingest_document`) are responsible for storage.
+
+| Field | Value |
+| --- | --- |
+| Module | `app.workers.tasks.extract_document` |
+| Name | `opencase.extract_document` |
+| Arguments | `document_id: str`, `s3_key: str` |
+| Returns | `{"text": "...", "content_type": "...", "metadata": {...}, "ocr_applied": bool, "language": str\|null}` |
+| Purpose | Download from S3, extract text via Tika, return `ExtractionResult` as dict |
 
 ### Future tasks
 
@@ -187,9 +202,7 @@ Tasks will be added as features are built:
 
 | Task | Feature | Purpose |
 | --- | --- | --- |
-| Document ingestion (full) | 4.2, 5.2, 5.3 | Tika extraction, chunking, embedding, Qdrant upsert |
 | Cloud ingestion | 6.7 | Poll SharePoint via Graph API |
-| Text extraction | 4.2 | Parse documents via Apache Tika |
 | Chunking + embedding | 5.2, 5.3 | Split text, embed via Ollama, upsert to Qdrant |
 | Deadline monitor | 10.10 | CPL 245 and 30.30 clock alerts (Beat-scheduled) |
 | Audit chain validator | 7.3 | Nightly hash chain integrity check (Beat-scheduled) |

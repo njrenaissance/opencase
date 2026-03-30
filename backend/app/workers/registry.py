@@ -8,4 +8,5 @@ TASK_REGISTRY: dict[str, str] = {
     "ping": "opencase.ping",
     "sleep": "opencase.sleep",
     "ingest_document": "opencase.ingest_document",
+    "extract_document": "opencase.extract_document",
 }

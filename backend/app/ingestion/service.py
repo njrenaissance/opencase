@@ -1,10 +1,8 @@
-"""Stub ingestion workflow — placeholder for the full pipeline.
+"""Ingestion workflow — submits documents for background extraction.
 
-Future features will extend this with:
-- Text extraction via Apache Tika + Tesseract OCR
-- Chunking and overlap strategy
-- Embedding via Ollama (nomic-embed-text)
-- Vector storage in Qdrant with permission payload
+After a document is uploaded and stored in S3, this service submits an
+``ingest_document`` Celery task that runs the extraction pipeline
+(Tika text extraction → persist extracted.json to S3).
 """
 
 from __future__ import annotations
@@ -18,8 +16,8 @@ logger = logging.getLogger(__name__)
 class IngestionService:
     """Orchestrates the document ingestion pipeline.
 
-    Currently a stub that logs the request. The full pipeline will
-    download from S3, extract text, chunk, embed, and store vectors.
+    Submits an ``ingest_document`` Celery task that downloads from S3,
+    extracts text via Tika, and persists the result alongside the original.
     """
 
     async def process_document(self, document_id: uuid.UUID, s3_key: str) -> None:
@@ -29,8 +27,14 @@ class IngestionService:
             document_id: The document's primary key.
             s3_key: The S3 object key where the original file is stored.
         """
+        from app.workers import celery_app
+
+        celery_app.send_task(
+            "opencase.ingest_document",
+            args=[str(document_id), s3_key],
+        )
         logger.info(
-            "Ingestion stub: document_id=%s s3_key=%s (pipeline not yet implemented)",
+            "Submitted ingest_document task: document_id=%s s3_key=%s",
             document_id,
             s3_key,
         )

@@ -42,3 +42,113 @@ def test_ping_task_returns_pong():
     from app.workers.tasks.ping import ping
 
     assert ping() == "pong"
+
+
+# ---------------------------------------------------------------------------
+# extract_document task
+# ---------------------------------------------------------------------------
+
+
+def test_extract_document_task_is_registered():
+    import app.workers.tasks.extract_document  # noqa: F401
+    from app.workers import celery_app
+
+    assert "opencase.extract_document" in celery_app.tasks
+
+
+def test_extract_document_in_task_registry():
+    from app.workers.registry import TASK_REGISTRY
+
+    assert TASK_REGISTRY["extract_document"] == "opencase.extract_document"
+
+
+def test_extract_document_task_returns_dict():
+    """Mock S3 + extraction service and call the task function directly."""
+    from unittest.mock import AsyncMock, patch
+
+    from app.extraction.models import ExtractionResult
+
+    mock_result = ExtractionResult(
+        text="hello",
+        content_type="text/plain",
+        metadata={},
+        ocr_applied=False,
+        language="en",
+    )
+
+    mock_storage = AsyncMock()
+    mock_storage.download_document.return_value = (b"data", "text/plain")
+
+    mock_extraction = AsyncMock()
+    mock_extraction.extract_text.return_value = mock_result
+
+    with (
+        patch("app.storage.get_storage_service", return_value=mock_storage),
+        patch("app.extraction.get_extraction_service", return_value=mock_extraction),
+    ):
+        from app.workers.tasks.extract_document import extract_document
+
+        result = extract_document("doc-id", "firm/matter/doc/original.pdf")
+
+    assert result["text"] == "hello"
+    assert result["content_type"] == "text/plain"
+    assert result["ocr_applied"] is False
+
+
+# ---------------------------------------------------------------------------
+# ingest_document task (orchestration)
+# ---------------------------------------------------------------------------
+
+
+def test_ingest_document_task_is_registered():
+    import app.workers.tasks.ingest_document  # noqa: F401
+    from app.workers import celery_app
+
+    assert "opencase.ingest_document" in celery_app.tasks
+
+
+def test_ingest_document_calls_extraction_and_persists():
+    """ingest_document should extract text and upload extracted.json to S3."""
+    from unittest.mock import AsyncMock, patch
+
+    from app.extraction.models import ExtractionResult
+
+    mock_result = ExtractionResult(
+        text="extracted content",
+        content_type="application/pdf",
+        metadata={"author": "test"},
+        ocr_applied=False,
+        language="en",
+    )
+
+    mock_storage = AsyncMock()
+    mock_storage.download_document.return_value = (b"pdf bytes", "application/pdf")
+
+    mock_extraction = AsyncMock()
+    mock_extraction.extract_text.return_value = mock_result
+
+    s3_key = "firm-1/matter-1/doc-1/original.pdf"
+
+    with (
+        patch("app.storage.get_storage_service", return_value=mock_storage),
+        patch("app.extraction.get_extraction_service", return_value=mock_extraction),
+    ):
+        from app.workers.tasks.ingest_document import ingest_document
+
+        result = ingest_document("doc-1", s3_key)
+
+    assert result["status"] == "extracted"
+    assert result["document_id"] == "doc-1"
+
+    # Verify extraction was called
+    mock_extraction.extract_text.assert_awaited_once_with(
+        b"pdf bytes",
+        "original.pdf",
+        "application/pdf",
+    )
+
+    # Verify extracted.json was uploaded to S3
+    mock_storage.upload_json.assert_awaited_once()
+    call_kwargs = mock_storage.upload_json.call_args.kwargs
+    assert call_kwargs["key"] == "firm-1/matter-1/doc-1/extracted.json"
+    assert call_kwargs["data"]["text"] == "extracted content"

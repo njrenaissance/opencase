@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import io
+import json
 import uuid
 from datetime import UTC, datetime
 from typing import BinaryIO
@@ -146,3 +148,35 @@ class S3StorageService:
 
     def _remove_object(self, key: str) -> None:
         self._client.remove_object(self._bucket, key)
+
+    # ------------------------------------------------------------------
+    # JSON artifact upload (extracted text, future chunk data, etc.)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def extracted_key(
+        firm_id: uuid.UUID,
+        matter_id: uuid.UUID,
+        document_id: uuid.UUID,
+    ) -> str:
+        """Build the S3 key for a document's extracted text artifact."""
+        return f"{firm_id}/{matter_id}/{document_id}/extracted.json"
+
+    async def upload_json(self, *, key: str, data: dict[str, object]) -> None:
+        """Upload a JSON-serializable dict as an S3 object."""
+        with tracer.start_as_current_span(
+            "s3.upload_json",
+            attributes={"s3.key": key, "s3.bucket": self._bucket},
+        ):
+            payload = json.dumps(data, ensure_ascii=False).encode()
+            buf = io.BytesIO(payload)
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                self._put_object,
+                key,
+                buf,
+                len(payload),
+                "application/json",
+                {},
+            )

@@ -54,8 +54,8 @@
 
 | ID | Feature | Specs | Code | Docs |
 | --- | --- | --- | --- | --- |
-| 4.1 | Tika container setup | Pending | Pending | Pending |
-| 4.2 | Extraction task definitions (Celery tasks in app/workers/tasks/) | Pending | Pending | Pending |
+| 4.1 | Tika container setup | **Done** | **Done** | **Done** |
+| 4.2 | Extraction task definitions (Celery tasks in app/workers/tasks/) | **Done** | **Done** | **Done** |
 | 4.3 | Configuration + env vars (ExtractionSettings) | **Done** | **Done** | **Done** |
 | 4.4 | Observability (extraction spans/metrics) | Pending | Pending | Pending |
 
