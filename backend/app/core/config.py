@@ -212,6 +212,74 @@ class ExtractionSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_EXTRACTION_")
 
 
+class ChunkingSettings(BaseSettings):
+    """Text chunking sub-config (OPENCASE_CHUNKING_ prefix).
+
+    Controls how extracted document text is split into chunks for
+    embedding and vector search.  The default strategy uses recursive
+    character splitting with the given separators.
+    """
+
+    strategy: Literal["recursive"] = "recursive"
+    chunk_size: int = Field(1000, gt=0)
+    chunk_overlap: int = Field(200, ge=0)
+    separators: list[str] = Field(default_factory=lambda: ["\n\n", "\n", ". ", " ", ""])
+
+    @model_validator(mode="after")
+    def _validate_overlap_less_than_size(self) -> "ChunkingSettings":
+        if self.chunk_overlap >= self.chunk_size:
+            msg = (
+                f"chunk_overlap ({self.chunk_overlap}) must be less than"
+                f" chunk_size ({self.chunk_size})"
+            )
+            raise ValueError(msg)
+        return self
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_CHUNKING_")
+
+
+class EmbeddingSettings(BaseSettings):
+    """Embedding generation sub-config (OPENCASE_EMBEDDING_ prefix).
+
+    Controls which embedding provider and model are used to vectorize
+    document chunks.  Only Ollama is supported (airgapped deployment).
+    """
+
+    provider: Literal["ollama"] = "ollama"
+    model: str = "nomic-embed-text"
+    base_url: str = "http://ollama:11434"
+    dimensions: int = Field(768, gt=0)
+    batch_size: int = Field(100, gt=0)
+    request_timeout: int = Field(120, gt=0)
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_EMBEDDING_")
+
+
+class QdrantSettings(BaseSettings):
+    """Qdrant vector store sub-config (OPENCASE_QDRANT_ prefix).
+
+    Connection settings for the Qdrant vector database, analogous to
+    S3Settings for MinIO — vendor-specific because it's an external
+    service connection.
+    """
+
+    host: str = "qdrant"
+    port: int = 6333
+    grpc_port: int = 6334
+    collection: str = "opencase"
+    prefer_grpc: bool = True
+    use_ssl: bool = False
+    api_key: str | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def url(self) -> str:
+        scheme = "https" if self.use_ssl else "http"
+        return f"{scheme}://{self.host}:{self.port}"
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_QDRANT_")
+
+
 # ---------------------------------------------------------------------------
 # Ingestion defaults
 # ---------------------------------------------------------------------------
@@ -345,10 +413,10 @@ class IngestionSettings(BaseSettings):
 # ---------------------------------------------------------------------------
 
 _SECRET_SUBSTRINGS = ("password", "secret")
-# access_key: covers S3Settings.access_key (MinIO credentials).
-# If a future settings class reuses this field name for a non-secret
-# value, move redaction into a per-class allowlist instead.
-_SECRET_EXACT = frozenset({"basic_auth", "access_key"})
+# access_key: S3Settings (MinIO), api_key: QdrantSettings.
+# If a future settings class reuses one of these field names for a
+# non-secret value, move redaction into a per-class allowlist instead.
+_SECRET_EXACT = frozenset({"basic_auth", "access_key", "api_key"})
 _URL_FIELDS = frozenset({"broker_url", "result_backend", "url"})
 
 
@@ -416,6 +484,9 @@ class Settings(BaseSettings):
     s3: S3Settings = Field(default_factory=S3Settings)  # type: ignore[arg-type]
     extraction: ExtractionSettings = Field(default_factory=ExtractionSettings)  # type: ignore[arg-type]
     ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
+    chunking: ChunkingSettings = Field(default_factory=ChunkingSettings)  # type: ignore[arg-type]
+    embedding: EmbeddingSettings = Field(default_factory=EmbeddingSettings)  # type: ignore[arg-type]
+    qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
 
     @model_validator(mode="after")
     def _derive_celery_broker_url(self) -> "Settings":

@@ -19,10 +19,13 @@ from app.core.config import (
     ApiSettings,
     AuthSettings,
     CelerySettings,
+    ChunkingSettings,
     DbSettings,
+    EmbeddingSettings,
     ExtractionSettings,
     FlowerSettings,
     IngestionSettings,
+    QdrantSettings,
     RedisSettings,
     S3Settings,
     Settings,
@@ -131,6 +134,30 @@ DEFAULTS = {
         "allowed_types_file": None,
         "allowed_content_types": DEFAULT_CONTENT_TYPES,
         "allowed_extensions": DEFAULT_EXTENSIONS,
+    },
+    "chunking": {
+        "strategy": "recursive",
+        "chunk_size": 1000,
+        "chunk_overlap": 200,
+        "separators": ["\n\n", "\n", ". ", " ", ""],
+    },
+    "embedding": {
+        "provider": "ollama",
+        "model": "nomic-embed-text",
+        "base_url": "http://ollama:11434",
+        "dimensions": 768,
+        "batch_size": 100,
+        "request_timeout": 120,
+    },
+    "qdrant": {
+        "host": "qdrant",
+        "port": 6333,
+        "grpc_port": 6334,
+        "collection": "opencase",
+        "prefer_grpc": True,
+        "use_ssl": False,
+        "api_key": None,
+        "url": "http://qdrant:6333",
     },
 }
 
@@ -562,6 +589,114 @@ def test_ingestion_prefix_isolation(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# ChunkingSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_chunking_defaults():
+    cfg = ChunkingSettings()
+    assert cfg.strategy == "recursive"
+    assert cfg.chunk_size == 1000
+    assert cfg.chunk_overlap == 200
+    assert cfg.separators == ["\n\n", "\n", ". ", " ", ""]
+
+
+def test_chunking_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_SIZE", "500")
+    cfg = ChunkingSettings()
+    assert cfg.chunk_size == 500
+
+
+def test_chunking_prefix_isolation(monkeypatch):
+    # OPENCASE_CHUNK_SIZE (wrong prefix) must not override OPENCASE_CHUNKING_CHUNK_SIZE
+    monkeypatch.setenv("OPENCASE_CHUNK_SIZE", "999")
+    cfg = ChunkingSettings()
+    assert cfg.chunk_size == 1000
+
+
+@pytest.mark.parametrize(
+    "overlap,size",
+    [(1000, 1000), (1500, 1000)],
+    ids=["equal", "exceeds"],
+)
+def test_chunking_overlap_gte_size_raises(monkeypatch, overlap, size):
+    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_OVERLAP", str(overlap))
+    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_SIZE", str(size))
+    with pytest.raises(ValidationError, match="chunk_overlap"):
+        ChunkingSettings()
+
+
+def test_chunking_zero_overlap_valid(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_OVERLAP", "0")
+    cfg = ChunkingSettings()
+    assert cfg.chunk_overlap == 0
+
+
+# ---------------------------------------------------------------------------
+# EmbeddingSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_embedding_defaults():
+    cfg = EmbeddingSettings()
+    assert cfg.model_dump() == DEFAULTS["embedding"]
+
+
+def test_embedding_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_EMBEDDING_MODEL", "mxbai-embed-large")
+    cfg = EmbeddingSettings()
+    assert cfg.model == "mxbai-embed-large"
+
+
+def test_embedding_prefix_isolation(monkeypatch):
+    # OPENCASE_MODEL (wrong prefix) must not override OPENCASE_EMBEDDING_MODEL
+    monkeypatch.setenv("OPENCASE_MODEL", "wrong")
+    cfg = EmbeddingSettings()
+    assert cfg.model == "nomic-embed-text"
+
+
+# ---------------------------------------------------------------------------
+# QdrantSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_qdrant_defaults():
+    cfg = QdrantSettings()
+    assert cfg.model_dump() == DEFAULTS["qdrant"]
+
+
+def test_qdrant_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "custom-qdrant")
+    cfg = QdrantSettings()
+    assert cfg.host == "custom-qdrant"
+
+
+def test_qdrant_prefix_isolation(monkeypatch):
+    # OPENCASE_HOST (wrong prefix) must not override OPENCASE_QDRANT_HOST
+    monkeypatch.setenv("OPENCASE_HOST", "wrong")
+    cfg = QdrantSettings()
+    assert cfg.host == "qdrant"
+
+
+def test_qdrant_url_computed():
+    cfg = QdrantSettings()
+    assert cfg.url == "http://qdrant:6333"
+
+
+def test_qdrant_url_custom_host_port(monkeypatch):
+    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "my-qdrant")
+    monkeypatch.setenv("OPENCASE_QDRANT_PORT", "7333")
+    cfg = QdrantSettings()
+    assert cfg.url == "http://my-qdrant:7333"
+
+
+def test_qdrant_url_https(monkeypatch):
+    monkeypatch.setenv("OPENCASE_QDRANT_USE_SSL", "true")
+    cfg = QdrantSettings()
+    assert cfg.url == "https://qdrant:6333"
+
+
+# ---------------------------------------------------------------------------
 # redact_settings
 # ---------------------------------------------------------------------------
 
@@ -586,6 +721,10 @@ def test_redact_settings_masks_secrets():
             "endpoint": "minio:9000",
             "bucket": "opencase",
         },
+        "qdrant": {
+            "api_key": "secret-qdrant-key",
+            "host": "qdrant",
+        },
     }
     redacted = redact_settings(data)
     assert redacted["auth"]["secret_key"] == _REDACTED
@@ -607,6 +746,9 @@ def test_redact_settings_masks_secrets():
     assert redacted["s3"]["secret_key"] == _REDACTED
     assert redacted["s3"]["endpoint"] == "minio:9000"
     assert redacted["s3"]["bucket"] == "opencase"
+    # Qdrant API key is redacted
+    assert redacted["qdrant"]["api_key"] == _REDACTED
+    assert redacted["qdrant"]["host"] == "qdrant"
 
 
 def test_redact_settings_url_without_password():
