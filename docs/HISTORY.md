@@ -150,4 +150,272 @@ SETTINGS.md, INFRASTRUCTURE.md, TOC updates
 
 ---
 
+## 2026-03-17 — Authentication and RBAC
+
+**Authentication (Feature 1.4):** Built the full auth flow — JWT access/refresh
+tokens, TOTP-based MFA, login/logout/refresh endpoints. Added a `db-init`
+service that runs Alembic migrations and seeds the admin user from env vars on
+startup, so FastAPI doesn't boot until the schema is ready. Wrote an
+authentication flow guide with Mermaid diagrams.
+
+PR #8 review caught two issues: an unused `hash_password` re-export from the
+auth router, and that `POST /auth/mfa/setup` would silently overwrite an
+active TOTP secret. Added a guard so setup is rejected if MFA is already
+enabled. Also hit a `python-jose` typing gap — `jwt.encode` returns `Any`,
+which mypy strict rejects. Added `types-python-jose` to dev deps, then
+discovered CI uses `uv sync --group dev` (reads `[dependency-groups]`, not
+`[project.optional-dependencies]`), so had to add it in both places.
+
+**RBAC (Feature 1.5):** Implemented the three core permission primitives:
+`build_qdrant_filter()` (the most security-critical function — enforces firm
+scoping, matter access, Jencks gating, and work product visibility on every
+vector query), `require_role()` (FastAPI dependency factory for role-based
+endpoint gating), and `require_matter_access()` (matter-level permission
+check).
+
+PR #10 review tightened the security model: extracted `_fetch_matter_access()`
+with an explicit `Matter.firm_id == user.firm_id` join to prevent cross-firm
+access even if a `MatterAccess` row were somehow miscreated across firms.
+Also moved admin seed config from raw `os.environ` into validated Settings
+fields.
+
+**Commits:** Features 1.4, 1.5, db-init, auth docs, PR #8 and #10 fixes
+
+---
+
+## 2026-03-22 — SDK, shared models, and the Jaeger-to-Grafana pivot
+
+**Observability pivot:** Replaced Jaeger with `grafana/otel-lgtm` — a single
+container that provides Tempo (traces), Prometheus (metrics), Loki (logs), and
+Grafana (UI on port 3001). This was a significant improvement: instead of only
+traces going to Jaeger, all three OTel signals now have backends. Added an
+OTel log bridge so Python's standard `logging` flows to Loki with automatic
+`trace_id`/`span_id` correlation. Had to fix the Grafana healthcheck —
+the `otel-lgtm` image doesn't include `wget`, so switched to `curl`.
+
+Also renamed `db-init` → `db-migrate` (the service only runs migrations now,
+admin seeding moved to FastAPI lifespan), and made the admin seed reuse the
+app's `AsyncSessionLocal` pool instead of creating a throwaway engine.
+
+**SDK and shared models (Feature 1.6):** This was the biggest structural
+change so far — splitting the codebase into three packages under a `uv`
+workspace: `backend/` (FastAPI), `shared/` (Pydantic models and enums), and
+`sdk/` (synchronous REST client). The shared package has minimal dependencies
+(just pydantic) and is consumed by both backend and SDK. Rewired all backend
+imports to use `shared.models.*` instead of local definitions.
+
+The SDK includes auto-refresh (transparent token renewal), MFA flow support,
+exception mapping, and `MockTransport`-based tests. PR #12 review caught a
+thread safety issue in `AuthManager.refresh` — added a `threading.Lock` with
+double-checked locking. Also fixed `logout()` to actually send the stored
+refresh token for server-side revocation.
+
+**Commits:** Jaeger→Grafana pivot, admin seed refactor, Feature 1.6,
+PR #12 fixes, observability docs
+
+---
+
+## 2026-03-23 — Entity CRUD, demo seed, CLI, and worker queue config
+
+A marathon day — shipped five features and a pile of CI improvements.
+
+**Entity CRUD:** Added read-only endpoints by default with full CRUD for
+user/matter/matter-access management, all firm-scoped and RBAC-enforced
+across three layers (shared models → API routers → SDK methods). 103 tests
+across the three packages. Security: every query scopes to `firm_id`, sensitive
+fields are excluded from responses, and access-denied returns 404 (not 403)
+to avoid leaking resource existence.
+
+**Demo seed:** Created a seed script with deterministic UUIDs (idempotent,
+safe to rerun) populating Cora Firm with two users, two matters, and
+differentiated access grants — Virginia (attorney) has access to both matters,
+Jonathan (paralegal) only to one.
+
+**CI hardening:** Added `mypy --strict` to pre-commit hooks, aligned
+pre-commit with GitHub Actions across all three packages, and moved the
+container build to on-demand only (no registry target yet).
+
+**CLI (Feature 1.7):** Built the `opencase` command-line tool on Typer + Rich,
+consuming the SDK for all API calls. Commands for health, auth, MFA, user/
+matter/firm management, all with `--json` output for scripting. 61 tests, 87%
+coverage. One subtle bug from code review: `logout` wasn't clearing local
+tokens when the API call failed — moved cleanup into a `finally` block.
+
+**Document and prompt stubs (Feature 1.8):** Added Document and Prompt
+SQLAlchemy models, Alembic migration, stub endpoints, SDK methods, and CLI
+commands. The Document model includes a SHA-256 `file_hash` with a
+matter-scoped uniqueness constraint for deduplication from day one.
+
+**Worker queue config (Feature 2.1):** Added `CelerySettings`,
+`RedisSettings`, and `FlowerSettings` pydantic config classes. PR review caught
+that special characters in Redis passwords break URLs — added `quote()` for
+URL encoding. Also changed settings logging from INFO to DEBUG (no operator
+needs to see connection strings on every boot) and made the redaction helper
+smart enough to mask only the password component of URLs, not the whole value.
+
+**Commits:** Entity CRUD (#14), demo seed, CI alignment, Feature 1.7,
+Feature 1.8 (#16), Feature 2.1, multiple review fixes
+
+---
+
+## 2026-03-24 — Worker queue infrastructure
+
+**Redis + Celery containers (Features 2.1–2.4):** Wired up the complete
+worker queue stack: Redis container with healthcheck, Celery worker and beat
+containers sharing the backend Dockerfile, task autodiscovery via
+`app.workers.tasks`, a `ping` health-check task, and a separate
+`opencase_tasks` PostgreSQL database for Celery result persistence (fault
+isolation from the main API database).
+
+The Docker dependency chain required some thought — worker and beat must wait
+for both postgres and redis to be healthy before starting. Integration tests
+verify Redis connectivity, the readiness probe, and a full Celery task
+round-trip (submit → execute → result).
+
+Code review flagged several issues: guarding against `None` broker URL in
+Celery app init, adding `socket_connect_timeout` to Redis healthcheck to
+prevent DNS hangs, and properly closing Redis connections in test fixtures.
+
+**Commits:** Features 2.1–2.4, review fixes
+
+---
+
+## 2026-03-25 — Task API, Flower monitoring, and MinIO storage
+
+**Task CRUD API (Features 2.5–2.6):** Added `/tasks` router with submit, list,
+get, and cancel endpoints. Tasks are submitted asynchronously to Celery via a
+`TaskBroker` abstraction and tracked in a firm-scoped `task_submissions` table.
+Includes a task whitelist registry, OTel instrumentation, and RBAC (admin/
+attorney can submit, admin-only cancel). Added SDK methods and CLI commands.
+
+One non-obvious issue: FastAPI needs `OPENCASE_CELERY_BROKER_URL` and
+`OPENCASE_CELERY_RESULT_BACKEND` env vars to submit tasks and query results
+via `TaskBroker`. Without them, the Celery client initialized with a
+`DisabledBackend` and `get_status()` raised an `AttributeError`. Added a
+`submit_task.py` script for manual testing and an `opencase.sleep` task for
+observability testing in Flower and Grafana.
+
+**Flower monitoring (Feature 2.7):** Deployed Flower for real-time queue
+monitoring and wired `CeleryInstrumentor` into worker/beat processes. Code
+review pushed for moving OTel init from import-time to Celery
+`worker_init`/`beat_init` signals to avoid global state pollution during
+tests. Also extracted Flower into an optional `[monitoring]` dependency and
+added an `INSTALL_EXTRAS` build arg to the Dockerfile so worker/API/beat
+images stay lean.
+
+**S3 storage foundation (Feature 3.3):** Added `S3Settings` pydantic config,
+renamed `MINIO_*` env vars to `OPENCASE_S3_*` for prefix consistency,
+enabled MinIO in the integration test stack, and added a `minio-init` sidecar
+container for automatic bucket creation. Integration tests verify readiness
+probe, bucket existence, and object put/get round-trip.
+
+One pain point: `Settings()` validates all required fields at import time,
+even for services that don't use S3. Had to add `OPENCASE_S3_ACCESS_KEY` and
+`OPENCASE_S3_SECRET_KEY` to every Docker Compose service, including ones like
+`db-migrate` and `flower` that never touch S3.
+
+**Commits:** Features 2.5–2.7, Feature 3.3, MinIO init (#28), multiple
+review rounds
+
+---
+
+## 2026-03-27 — Document upload and S3 integration
+
+**S3 document upload (Feature 3.2):** Replaced the stub document endpoints
+with a full multipart upload flow. Documents are SHA-256 hashed on upload
+(100 MB size limit), stored in MinIO via `S3StorageService`, and deduplicated
+within each matter. Added content-type allowlisting, filename sanitization,
+and RFC 5987 `Content-Disposition` encoding to prevent header injection.
+
+The upload flow includes S3 orphan cleanup on DB commit failure — if the
+database insert fails after the file is already in S3, the orphaned object
+is deleted. Code review caught that the cleanup `try/except` should preserve
+the original exception if the S3 delete also fails, and that
+`Content-Disposition` needs both an ASCII fallback (`filename=`) and a UTF-8
+encoded form (`filename*=`) for older client compatibility.
+
+Also stubbed out `IngestionService` and the `ingest_document` Celery task as
+the entry point for the extraction pipeline.
+
+**Commits:** Feature 3.2, docs updates, review fixes
+
+---
+
+## 2026-03-28 — CLI bulk ingest, extraction config, SDK refactor, and licensing
+
+**Bulk ingest CLI:** Added `opencase document bulk-ingest` — walks a local
+directory, pre-hashes files client-side, checks for duplicates via a new
+lightweight `GET /documents/check-duplicate` endpoint, and uploads
+non-duplicates via multipart form data. Replaced in-memory `BytesIO` buffering
+with `SpooledTemporaryFile` (configurable 10 MB threshold) so large uploads
+spill to disk instead of consuming memory. Added configurable
+`OPENCASE_S3_MAX_UPLOAD_BYTES` and `OPENCASE_S3_SPOOL_THRESHOLD_BYTES`
+settings with a model validator ensuring spool threshold doesn't exceed max
+upload size.
+
+**Extraction and ingestion config:** Added `ExtractionSettings`
+(OPENCASE_EXTRACTION_ prefix) for Tika/OCR pipeline configuration and
+`IngestionSettings` (OPENCASE_INGESTION_ prefix) for configurable document
+type allowlists. Allowed MIME types and file extensions are now loaded from
+an optional flat file, replacing hardcoded constants. The CLI's `bulk-ingest`
+fetches allowed extensions from the API at runtime so the server is the single
+source of truth.
+
+**SDK refactor:** Renamed `OpenCaseClient` → `Client` and introduced
+`opencase.Session` — a context manager that automates the login/logout
+lifecycle and scrubs credentials from memory after authentication. Code review
+pushed credential scrubbing into a `finally` block so email/password are
+cleared even when `login()` raises.
+
+**Scope clarification:** Cleaned up all references to "OneDrive/SharePoint" —
+cloud ingestion targets SharePoint document libraries only, not personal
+OneDrive drives.
+
+**Licensing:** Added Apache 2.0 LICENSE file and a third-party license
+inventory (`LICENSING.md`) covering infrastructure services, Python
+dependencies, LLM models, and planned components. The analysis confirmed
+Apache 2.0 compatibility despite AGPL components (network services, not
+linked) and LGPL components (dynamic linking only).
+
+**Tika container:** Added Apache Tika 3.1.0.0 as a Docker Compose service
+for document text extraction. Used a Perl-based HTTP healthcheck since Tika's
+image doesn't include `curl` or `wget`. Had to add a `start_period` to the
+healthcheck because Tika's JVM cold start takes 10–15 seconds before the HTTP
+endpoint responds.
+
+**Commits:** Bulk ingest, extraction/ingestion config (#40, #38), Client
+rename (#37), SharePoint scope (#41), LICENSE (#39), Tika container, scripts
+reorganization
+
+---
+
+## 2026-03-30 — Document extraction pipeline
+
+**TikaExtractionService and extract_document task (#48):** Wired up the
+end-to-end document extraction pipeline. `TikaExtractionService` wraps
+httpx for async HTTP calls to Tika, returning an `ExtractionResult` dataclass
+with extracted text, metadata, page count, and content type. The
+`extract_document` Celery task is registered in the task whitelist and the
+`ingest_document` task was un-stubbed to orchestrate the full flow: S3
+download → Tika extraction → persist `extracted.json` back to S3.
+
+A few Tika 3.x compatibility lessons: content must be sent as
+`application/octet-stream` (Tika auto-detects format), the OCR language
+header isn't supported in the same way, and the `/rmeta/text` endpoint
+returns both text and metadata in a single call (halving latency compared to
+separate `/tika` and `/meta` calls).
+
+One tricky issue: httpx clients can't be reused across Celery task invocations
+because the event loop may be closed between calls. Switched to creating a
+fresh httpx client per extraction call instead of using a shared instance.
+
+Code review also tightened the S3 key parsing (using `rsplit` instead of
+positional split to handle keys with multiple path separators) and widened
+the Tika metadata type annotation to `dict[str, object]` since Tika returns
+mixed types (strings, lists, numbers) in its metadata response.
+
+**Commits:** TikaExtractionService (#48), review fixes
+
+---
+
 *Add new entries below as work continues.*
