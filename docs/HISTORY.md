@@ -463,7 +463,23 @@ mixed types (strings, lists, numbers) in its metadata response.
 | Mar 27 | ~3 |
 | Mar 28 | ~8 |
 | Mar 30 | ~3 |
-| **Total** | **~59 ± 7 hours** |
+| **Total to date** | **~59 ± 7 hours** |
+
+**Estimated remaining (critical path to MVP — Features 5–9):**
+
+| Feature | Est. Hours | Notes |
+| --- | --- | --- |
+| 5 — Chunking & Embedding | ~15 | Qdrant, Ollama, text splitting |
+| 6 — Ingestion (finish) | ~10 | Pipeline completion, skip cloud sync |
+| 7 — Audit Logging | ~15 | Hash chain, validation, export |
+| 8 — RBAC & MFA (fill gaps) | ~10 | Mostly built in 1.4/1.5 |
+| 9 — Chatbot / Q&A | ~40–50 | RAG core — biggest unknown |
+| **Remaining estimate** | **~90–100** | |
+| **Projected total** | **~150–160 hours** | |
+
+Deferred to V1.1: Brady/Giglio tracker (10), witness index (11),
+legal hold (12), cloud ingestion (6.7/6.8), release engineering.
+Target: MVP complete by mid-May 2026 (~6 weeks at 20–25 hrs/week).
 
 Time estimates are derived from branch creation timestamps and commit
 clustering. Each day carries ±0.5 hour margin (work before first commit
