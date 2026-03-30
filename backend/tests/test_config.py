@@ -158,6 +158,7 @@ DEFAULTS = {
         "use_ssl": False,
         "api_key": None,
         "url": "http://qdrant:6333",
+        "grpc_url": "qdrant:6334",
     },
 }
 
@@ -694,6 +695,18 @@ def test_qdrant_url_https(monkeypatch):
     monkeypatch.setenv("OPENCASE_QDRANT_USE_SSL", "true")
     cfg = QdrantSettings()
     assert cfg.url == "https://qdrant:6333"
+
+
+def test_qdrant_grpc_url_computed():
+    cfg = QdrantSettings()
+    assert cfg.grpc_url == "qdrant:6334"
+
+
+def test_qdrant_grpc_url_custom(monkeypatch):
+    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "my-qdrant")
+    monkeypatch.setenv("OPENCASE_QDRANT_GRPC_PORT", "7334")
+    cfg = QdrantSettings()
+    assert cfg.grpc_url == "my-qdrant:7334"
 
 
 # ---------------------------------------------------------------------------

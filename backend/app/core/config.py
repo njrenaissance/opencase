@@ -274,8 +274,15 @@ class QdrantSettings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def url(self) -> str:
+        """REST API URL (always HTTP/HTTPS)."""
         scheme = "https" if self.use_ssl else "http"
         return f"{scheme}://{self.host}:{self.port}"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def grpc_url(self) -> str:
+        """gRPC endpoint address (host:grpc_port, no scheme)."""
+        return f"{self.host}:{self.grpc_port}"
 
     model_config = SettingsConfigDict(env_prefix="OPENCASE_QDRANT_")
 
@@ -417,6 +424,8 @@ _SECRET_SUBSTRINGS = ("password", "secret")
 # If a future settings class reuses one of these field names for a
 # non-secret value, move redaction into a per-class allowlist instead.
 _SECRET_EXACT = frozenset({"basic_auth", "access_key", "api_key"})
+# _redact_url only masks the password component of URLs — credential-free
+# URLs (e.g. QdrantSettings.url, S3Settings.url) pass through unchanged.
 _URL_FIELDS = frozenset({"broker_url", "result_backend", "url"})
 
 
