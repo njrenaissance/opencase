@@ -7,6 +7,8 @@ from the commit history. New entries are added by hand as work progresses.
 
 ## 2026-03-12 — Project kickoff and scaffolding
 
+*~3 hours (21:32–00:42)*
+
 Started OpenCase from scratch. The goal: a free, self-hostable, AI-powered
 discovery platform for solo and small criminal defense practitioners — built
 first for Virginia Cora at Cora Firm in New York.
@@ -31,6 +33,8 @@ Feature 0.1 (FastAPI skeleton), Feature 0.2 (AppConfiguration)
 
 ## 2026-03-13 — Logging, observability, and containerization
 
+*~4.5 hours (11:51–16:11)*
+
 Wired up Python's standard `logging` with configurable level and output
 stream — kept it simple, no third-party log libraries. Then added
 OpenTelemetry tracing and metrics with a console exporter as the initial
@@ -52,6 +56,8 @@ became clearer.
 
 ## 2026-03-14 — Roadmap refinement
 
+*~1 hour (single evening session)*
+
 Continued expanding the feature roadmap, adding detailed API routes, DB
 model fields, and reordering features to reflect the correct build sequence
 (scaffolding → API foundation → workers → storage → extraction → ingestion
@@ -63,6 +69,8 @@ model fields, and reordering features to reflect the correct build sequence
 
 ## 2026-03-15 — Environment configuration
 
+*~1 hour (single evening session)*
+
 Created `.env.example` documenting every configurable environment variable
 across all settings classes with sensible defaults. This becomes the
 operator's first touchpoint when deploying.
@@ -72,6 +80,8 @@ operator's first touchpoint when deploying.
 ---
 
 ## 2026-03-16 — CI, database foundation, and a full integration stack
+
+*~8 hours across three sessions (10:51–13:54, 18:08–21:32, 23:45–00:43)*
 
 A dense day. Shipped six features.
 
@@ -119,6 +129,8 @@ Opened and merged PR #1.
 
 ## 2026-03-17 — Jaeger, integration tests, and documentation
 
+*~3 hours (00:03–00:43 late-night carryover, plus afternoon docs session)*
+
 **Jaeger (Feature 0.9):** Added Jaeger all-in-one as a Docker Compose
 service (ports 16686 UI, 4317 gRPC, 4318 HTTP). Added an OTLP span exporter
 factory alongside the existing console exporter. Added OTel env var
@@ -151,6 +163,8 @@ SETTINGS.md, INFRASTRUCTURE.md, TOC updates
 ---
 
 ## 2026-03-17 — Authentication and RBAC
+
+*~5 hours (branch created 13:28, commits 20:51–21:59 + Mar 18 00:30–00:41, 12:55–14:25)*
 
 **Authentication (Feature 1.4):** Built the full auth flow — JWT access/refresh
 tokens, TOTP-based MFA, login/logout/refresh endpoints. Added a `db-init`
@@ -185,6 +199,8 @@ fields.
 
 ## 2026-03-22 — SDK, shared models, and the Jaeger-to-Grafana pivot
 
+*~3 hours (18:32–21:12)*
+
 **Observability pivot:** Replaced Jaeger with `grafana/otel-lgtm` — a single
 container that provides Tempo (traces), Prometheus (metrics), Loki (logs), and
 Grafana (UI on port 3001). This was a significant improvement: instead of only
@@ -216,6 +232,8 @@ PR #12 fixes, observability docs
 ---
 
 ## 2026-03-23 — Entity CRUD, demo seed, CLI, and worker queue config
+
+*~6 hours across two sessions (10:47–11:36, 18:31–22:35)*
 
 A marathon day — shipped five features and a pile of CI improvements.
 
@@ -260,6 +278,8 @@ Feature 1.8 (#16), Feature 2.1, multiple review fixes
 
 ## 2026-03-24 — Worker queue infrastructure
 
+*~3 hours (evening session, commits 22:09–22:19 — bulk of work before first commit)*
+
 **Redis + Celery containers (Features 2.1–2.4):** Wired up the complete
 worker queue stack: Redis container with healthcheck, Celery worker and beat
 containers sharing the backend Dockerfile, task autodiscovery via
@@ -281,6 +301,8 @@ prevent DNS hangs, and properly closing Redis connections in test fixtures.
 ---
 
 ## 2026-03-25 — Task API, Flower monitoring, and MinIO storage
+
+*~7 hours across three sessions (09:55–10:40, 15:25–16:02, 19:21–22:53)*
 
 **Task CRUD API (Features 2.5–2.6):** Added `/tasks` router with submit, list,
 get, and cancel endpoints. Tasks are submitted asynchronously to Celery via a
@@ -321,6 +343,8 @@ review rounds
 
 ## 2026-03-27 — Document upload and S3 integration
 
+*~3 hours (23:25–01:02, plus Mar 26 MinIO init 12:06–12:18)*
+
 **S3 document upload (Feature 3.2):** Replaced the stub document endpoints
 with a full multipart upload flow. Documents are SHA-256 hashed on upload
 (100 MB size limit), stored in MinIO via `S3StorageService`, and deduplicated
@@ -342,6 +366,8 @@ the entry point for the extraction pipeline.
 ---
 
 ## 2026-03-28 — CLI bulk ingest, extraction config, SDK refactor, and licensing
+
+*~8 hours across four sessions (00:02–01:02, 10:43–10:55, 12:41–16:33, 18:07–21:52)*
 
 **Bulk ingest CLI:** Added `opencase document bulk-ingest` — walks a local
 directory, pre-hashes files client-side, checks for duplicates via a new
@@ -390,6 +416,8 @@ reorganization
 ---
 
 ## 2026-03-30 — Document extraction pipeline
+
+*~3 hours (branch created Mar 28 22:58, commits 12:31–12:41)*
 
 **TikaExtractionService and extract_document task (#48):** Wired up the
 end-to-end document extraction pipeline. `TikaExtractionService` wraps
