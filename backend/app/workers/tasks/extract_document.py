@@ -11,8 +11,11 @@ import asyncio
 import logging
 
 from celery import shared_task  # type: ignore[import-untyped]
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 @shared_task(name="opencase.extract_document")  # type: ignore[untyped-decorator]
@@ -36,17 +39,39 @@ async def _extract(document_id: str, s3_key: str) -> dict[str, object]:
     from app.extraction import get_extraction_service
     from app.storage import get_storage_service
 
-    storage = get_storage_service()
-    extraction = get_extraction_service()
+    with tracer.start_as_current_span(
+        "extract_document",
+        record_exception=False,
+        attributes={
+            "document.id": document_id,
+            "document.s3_key": s3_key,
+        },
+    ) as span:
+        try:
+            storage = get_storage_service()
+            extraction = get_extraction_service()
 
-    file_bytes, content_type = await storage.download_document(s3_key)
-    filename = s3_key.rsplit("/", 1)[-1]
+            with tracer.start_as_current_span(
+                "extraction.s3_download",
+                record_exception=False,
+            ):
+                file_bytes, content_type = await storage.download_document(s3_key)
 
-    result = await extraction.extract_text(file_bytes, filename, content_type)
-    logger.info(
-        "extract_document done: %s (%d chars, ocr=%s)",
-        document_id,
-        len(result.text),
-        result.ocr_applied,
-    )
-    return result.to_dict()
+            filename = s3_key.rsplit("/", 1)[-1]
+            result = await extraction.extract_text(file_bytes, filename, content_type)
+
+            span.set_attribute("extraction.text_length", len(result.text))
+            span.set_attribute("extraction.ocr_applied", result.ocr_applied)
+
+            logger.info(
+                "extract_document done: %s (%d chars, ocr=%s)",
+                document_id,
+                len(result.text),
+                result.ocr_applied,
+            )
+            return result.to_dict()
+
+        except Exception as exc:
+            span.set_status(StatusCode.ERROR, str(exc))
+            span.record_exception(exc)
+            raise
