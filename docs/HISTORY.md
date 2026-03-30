@@ -446,4 +446,30 @@ mixed types (strings, lists, numbers) in its metadata response.
 
 ---
 
+## Running Total
+
+| Date | Est. Hours |
+| --- | --- |
+| Mar 12 | ~3 |
+| Mar 13 | ~4.5 |
+| Mar 14 | ~1 |
+| Mar 15 | ~1 |
+| Mar 16 | ~8 |
+| Mar 17 | ~8 |
+| Mar 22 | ~3 |
+| Mar 23 | ~6 |
+| Mar 24 | ~3 |
+| Mar 25 | ~7 |
+| Mar 27 | ~3 |
+| Mar 28 | ~8 |
+| Mar 30 | ~3 |
+| **Total** | **~59 ± 7 hours** |
+
+Time estimates are derived from branch creation timestamps and commit
+clustering. Each day carries ±0.5 hour margin (work before first commit
+and between commits is not captured). Days with no commits (Mar 18, 19–21,
+26, 29) had their work folded into adjacent entries.
+
+---
+
 *Add new entries below as work continues.*
