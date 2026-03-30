@@ -197,7 +197,7 @@ services:
     volumes:
       - ollama-models:/root/.ollama
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/ || exit 1"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -263,7 +263,7 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/6333'"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -283,20 +283,18 @@ services:
       - QDRANT_PORT=6333
       - COLLECTION_NAME=${OPENCASE_QDRANT_COLLECTION:-opencase}
       - EMBEDDING_DIMENSIONS=${OPENCASE_EMBEDDING_DIMENSIONS:-768}
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Checking collection $$COLLECTION_NAME...';
-      HTTP_CODE=$$(curl -sf -o /dev/null -w '%{http_code}'
-        http://$$QDRANT_HOST:$$QDRANT_PORT/collections/$$COLLECTION_NAME);
-      if [ \"$$HTTP_CODE\" = '200' ]; then
-        echo 'Collection already exists — skipping.'; exit 0;
-      fi;
-      echo 'Creating collection (dimensions=$$EMBEDDING_DIMENSIONS)...';
-      curl -sf -X PUT http://$$QDRANT_HOST:$$QDRANT_PORT/collections/$$COLLECTION_NAME
-        -H 'Content-Type: application/json'
-        -d '{\"vectors\":{\"size\":'$$EMBEDDING_DIMENSIONS',\"distance\":\"Cosine\"}}' || exit 1;
-      echo ''; echo 'Done.';
-      "
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Checking collection $$COLLECTION_NAME..."
+        HTTP_CODE=$$(curl -sf -o /dev/null -w '%{http_code}' http://$$QDRANT_HOST:$$QDRANT_PORT/collections/$$COLLECTION_NAME)
+        if [ "$$HTTP_CODE" = "200" ]; then
+          echo "Collection already exists — skipping."; exit 0
+        fi
+        echo "Creating collection (dimensions=$$EMBEDDING_DIMENSIONS)..."
+        curl -sf -X PUT "http://$$QDRANT_HOST:$$QDRANT_PORT/collections/$$COLLECTION_NAME" -H "Content-Type: application/json" -d "{\"vectors\":{\"size\":$$EMBEDDING_DIMENSIONS,\"distance\":\"Cosine\"}}" || exit 1
+        echo "Done."
     networks:
       - opencase
     restart: "no"

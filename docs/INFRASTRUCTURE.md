@@ -248,7 +248,7 @@ Ollama local LLM and embedding server.
 | Image | `ollama/ollama:latest` |
 | Internal port | `11434` |
 | Volume | `ollama-models` |
-| Healthcheck | `curl -sf http://localhost:11434/ \|\| exit 1` |
+| Healthcheck | `ollama list` |
 
 Default LLM: `OLLAMA_LLM_MODEL` (default: `llama3:8b`).
 Default embed model: `OPENCASE_EMBEDDING_MODEL` (default: `nomic-embed-text`).
@@ -308,7 +308,7 @@ Qdrant vector store (single collection, permission-filtered on every query).
 | Internal REST port | `6333` |
 | Internal gRPC port | `6334` |
 | Volume | `qdrant-data` |
-| Healthcheck | `wget -qO- http://localhost:6333/healthz \|\| exit 1` |
+| Healthcheck | `bash -c 'echo > /dev/tcp/localhost/6333'` |
 
 Only accessible from within the Docker network. Collection name is
 controlled by `OPENCASE_QDRANT_COLLECTION` (default: `opencase`).
