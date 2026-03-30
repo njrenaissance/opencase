@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import logging
+import time
 import urllib.parse
 
 import httpx
 from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
 from app.core.config import ExtractionSettings
+from app.core.metrics import (
+    extraction_completed,
+    extraction_document_size_bytes,
+    extraction_duration_seconds,
+    extraction_failed,
+    extraction_ocr_applied,
+    extraction_text_length_chars,
+)
 from app.extraction.models import ExtractionResult
 
 tracer = trace.get_tracer(__name__)
@@ -66,6 +76,8 @@ class TikaExtractionService:
                 ``max_file_size_bytes``.
             httpx.HTTPStatusError: On non-2xx responses from Tika.
         """
+        # Size validation intentionally runs before the span so that
+        # rejected files are not counted as extraction failures.
         size = len(document_bytes)
         max_size = self._settings.max_file_size_bytes
         if size > max_size:
@@ -80,43 +92,86 @@ class TikaExtractionService:
                 "extraction.size_bytes": size,
                 "extraction.content_type": content_type or "auto",
             },
-        ):
-            headers = self._build_headers(content_type, filename)
-            headers["Accept"] = "application/json"
+        ) as span:
+            start = time.monotonic()
+            try:
+                headers = self._build_headers(content_type, filename)
+                headers["Accept"] = "application/json"
 
-            async with self._make_client() as client:
-                # Single call to /rmeta/text returns text + metadata.
-                resp = await client.put(
-                    "/rmeta/text",
-                    content=document_bytes,
-                    headers=headers,
+                async with self._make_client() as client:
+                    # Single call to /rmeta/text returns text + metadata.
+                    resp = await client.put(
+                        "/rmeta/text",
+                        content=document_bytes,
+                        headers=headers,
+                    )
+                    resp.raise_for_status()
+                    payload = resp.json()
+
+                # /rmeta returns a list; take the first (and usually only) entry.
+                metadata = payload[0] if isinstance(payload, list) else payload
+
+                text = metadata.pop("X-TIKA:content", "").strip()
+                detected_type = metadata.get("Content-Type", content_type or "")
+                language = metadata.get("language") or None
+                ocr_applied = self._detect_ocr(metadata)
+
+                # Enrich span with result attributes.
+                span.set_attribute("extraction.text_length", len(text))
+                span.set_attribute("extraction.ocr_applied", ocr_applied)
+                span.set_attribute("extraction.detected_content_type", detected_type)
+                if language:
+                    span.set_attribute("extraction.language", language)
+
+                # Record metrics.
+                elapsed = time.monotonic() - start
+                ocr_str = str(ocr_applied).lower()
+                attrs = {
+                    "content_type": detected_type,
+                    "ocr_applied": ocr_str,
+                }
+                extraction_completed.add(1, attrs)
+                extraction_duration_seconds.record(elapsed, attrs)
+                extraction_document_size_bytes.record(size, attrs)
+                extraction_text_length_chars.record(len(text), attrs)
+                if ocr_applied:
+                    extraction_ocr_applied.add(1, {"content_type": detected_type})
+
+                logger.info(
+                    "Extracted %d chars from %s (ocr=%s, lang=%s)",
+                    len(text),
+                    filename,
+                    ocr_applied,
+                    language,
                 )
-                resp.raise_for_status()
-                payload = resp.json()
 
-            # /rmeta returns a list; take the first (and usually only) entry.
-            metadata = payload[0] if isinstance(payload, list) else payload
+                return ExtractionResult(
+                    text=text,
+                    content_type=detected_type,
+                    metadata=metadata,
+                    ocr_applied=ocr_applied,
+                    language=language,
+                )
 
-            text = metadata.pop("X-TIKA:content", "").strip()
-            detected_type = metadata.get("Content-Type", content_type or "")
-            language = metadata.get("language") or None
-            ocr_applied = self._detect_ocr(metadata)
-
-            logger.info(
-                "Extracted %d chars from %s (ocr=%s, lang=%s)",
-                len(text),
-                filename,
-                ocr_applied,
-                language,
-            )
-
-            return ExtractionResult(
-                text=text,
-                content_type=detected_type,
-                metadata=metadata,
-                ocr_applied=ocr_applied,
-                language=language,
-            )
+            except Exception as exc:
+                elapsed = time.monotonic() - start
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                extraction_failed.add(
+                    1,
+                    {
+                        "content_type": content_type or "auto",
+                        "error_type": type(exc).__name__,
+                    },
+                )
+                extraction_duration_seconds.record(
+                    elapsed,
+                    {
+                        "content_type": content_type or "auto",
+                        "ocr_applied": "false",
+                    },
+                )
+                raise
 
     async def health_check(self) -> bool:
         """Return ``True`` if the Tika server is reachable."""

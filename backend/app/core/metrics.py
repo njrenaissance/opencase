@@ -118,3 +118,39 @@ tasks_status_queried = meter.create_counter(
     "opencase.tasks.status_queried",
     description="Task status queries via broker",
 )
+
+# ---------------------------------------------------------------------------
+# Extraction (Feature 4.4)
+# ---------------------------------------------------------------------------
+
+extraction_completed = meter.create_counter(
+    "opencase.extraction.completed",
+    description="Successful text extractions",  # attrs: content_type, ocr_applied
+)
+
+extraction_failed = meter.create_counter(
+    "opencase.extraction.failed",
+    description="Failed text extractions",  # attrs: content_type, error_type
+)
+
+extraction_duration_seconds = meter.create_histogram(
+    "opencase.extraction.duration_seconds",
+    description="Extraction latency in seconds",
+    unit="s",
+)
+
+extraction_document_size_bytes = meter.create_histogram(
+    "opencase.extraction.document_size_bytes",
+    description="Input document size in bytes",
+    unit="By",
+)
+
+extraction_text_length_chars = meter.create_histogram(
+    "opencase.extraction.text_length_chars",
+    description="Extracted text length in characters",
+)
+
+extraction_ocr_applied = meter.create_counter(
+    "opencase.extraction.ocr_applied",
+    description="Documents where OCR was used during extraction",
+)

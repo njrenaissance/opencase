@@ -11,8 +11,11 @@ import asyncio
 import logging
 
 from celery import shared_task  # type: ignore[import-untyped]
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 @shared_task(name="opencase.ingest_document")  # type: ignore[untyped-decorator]
@@ -34,27 +37,53 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, str]:
     from app.extraction import get_extraction_service
     from app.storage import get_storage_service
 
-    storage = get_storage_service()
-    extraction = get_extraction_service()
+    with tracer.start_as_current_span(
+        "ingest_document",
+        record_exception=False,
+        attributes={
+            "document.id": document_id,
+            "document.s3_key": s3_key,
+        },
+    ) as span:
+        try:
+            storage = get_storage_service()
+            extraction = get_extraction_service()
 
-    # 1. Download original from S3
-    file_bytes, content_type = await storage.download_document(s3_key)
-    filename = s3_key.rsplit("/", 1)[-1]
+            # 1. Download original from S3
+            with tracer.start_as_current_span(
+                "ingestion.s3_download",
+                record_exception=False,
+            ):
+                file_bytes, content_type = await storage.download_document(s3_key)
 
-    # 2. Extract text via Tika
-    result = await extraction.extract_text(file_bytes, filename, content_type)
+            filename = s3_key.rsplit("/", 1)[-1]
 
-    # 3. Persist extracted.json to S3 alongside the original
-    # Replace the final path component (original.{ext}) with extracted.json.
-    extracted_key = s3_key.rsplit("/", 1)[0] + "/extracted.json"
-    await storage.upload_json(key=extracted_key, data=result.to_dict())
+            # 2. Extract text via Tika
+            result = await extraction.extract_text(file_bytes, filename, content_type)
 
-    logger.info(
-        "ingest_document done: %s (%d chars extracted, persisted to %s)",
-        document_id,
-        len(result.text),
-        extracted_key,
-    )
+            # 3. Persist extracted.json to S3 alongside the original
+            # Replace the final path component (original.{ext}) with extracted.json.
+            extracted_key = s3_key.rsplit("/", 1)[0] + "/extracted.json"
+            with tracer.start_as_current_span(
+                "ingestion.s3_upload",
+                record_exception=False,
+            ):
+                await storage.upload_json(key=extracted_key, data=result.to_dict())
 
-    # Future steps: chunking, embedding, Qdrant upsert
-    return {"status": "extracted", "document_id": document_id}
+            span.set_attribute("extraction.text_length", len(result.text))
+            span.set_attribute("ingestion.extracted_key", extracted_key)
+
+            logger.info(
+                "ingest_document done: %s (%d chars extracted, persisted to %s)",
+                document_id,
+                len(result.text),
+                extracted_key,
+            )
+
+            # Future steps: chunking, embedding, Qdrant upsert
+            return {"status": "extracted", "document_id": document_id}
+
+        except Exception as exc:
+            span.set_status(StatusCode.ERROR, str(exc))
+            span.record_exception(exc)
+            raise
