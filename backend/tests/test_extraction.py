@@ -65,18 +65,25 @@ def _make_settings(**overrides) -> ExtractionSettings:
 def _mock_transport(
     text_body: str = "extracted text",
     meta_body: dict | list | None = None,
-    text_status: int = 200,
-    meta_status: int = 200,
+    status: int = 200,
 ) -> httpx.MockTransport:
-    """Return a transport that responds to PUT /tika and PUT /meta."""
+    """Return a transport that responds to PUT /rmeta/text and GET /tika."""
     if meta_body is None:
         meta_body = {"Content-Type": "text/plain", "language": "en"}
 
+    def _rmeta_payload() -> list[dict]:
+        """Build the /rmeta/text response: metadata with X-TIKA:content."""
+        entries = list(meta_body) if isinstance(meta_body, list) else [dict(meta_body)]
+        entries[0].setdefault("X-TIKA:content", text_body)
+        return entries
+
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/tika" and request.method == "PUT":
-            return httpx.Response(text_status, text=text_body, request=request)
-        if request.url.path == "/meta" and request.method == "PUT":
-            return httpx.Response(meta_status, json=meta_body, request=request)
+        if request.url.path == "/rmeta/text" and request.method == "PUT":
+            return httpx.Response(
+                status,
+                json=_rmeta_payload(),
+                request=request,
+            )
         if request.url.path == "/tika" and request.method == "GET":
             return httpx.Response(200, text="Apache Tika 3.1.0", request=request)
         return httpx.Response(404, request=request)
@@ -166,12 +173,10 @@ class TestExtractText:
 
         def handler(request: httpx.Request) -> httpx.Response:
             requests_sent.append(request)
-            if request.url.path == "/tika":
-                return httpx.Response(200, text="text", request=request)
-            if request.url.path == "/meta":
+            if request.url.path == "/rmeta/text":
                 return httpx.Response(
                     200,
-                    json={"Content-Type": "text/plain"},
+                    json=[{"Content-Type": "text/plain", "X-TIKA:content": "text"}],
                     request=request,
                 )
             return httpx.Response(404, request=request)
@@ -184,9 +189,9 @@ class TestExtractText:
 
         await svc.extract_text(b"data", "test.txt")
 
-        tika_req = next(r for r in requests_sent if r.url.path == "/tika")
-        assert tika_req.headers["X-Tika-Skip-OcrAndOCR"] == "true"
-        assert "X-Tika-OCRLanguages" not in tika_req.headers
+        req = requests_sent[0]
+        assert req.headers["X-Tika-Skip-OcrAndOCR"] == "true"
+        assert "X-Tika-OCRLanguages" not in req.headers
 
     @pytest.mark.asyncio
     async def test_ocr_enabled_no_language_header(self):
@@ -195,12 +200,10 @@ class TestExtractText:
 
         def handler(request: httpx.Request) -> httpx.Response:
             requests_sent.append(request)
-            if request.url.path == "/tika":
-                return httpx.Response(200, text="text", request=request)
-            if request.url.path == "/meta":
+            if request.url.path == "/rmeta/text":
                 return httpx.Response(
                     200,
-                    json={"Content-Type": "text/plain"},
+                    json=[{"Content-Type": "text/plain", "X-TIKA:content": "text"}],
                     request=request,
                 )
             return httpx.Response(404, request=request)
@@ -213,23 +216,21 @@ class TestExtractText:
 
         await svc.extract_text(b"data", "test.txt")
 
-        tika_req = next(r for r in requests_sent if r.url.path == "/tika")
-        assert "X-Tika-OCRLanguages" not in tika_req.headers
-        assert "X-Tika-Skip-OcrAndOCR" not in tika_req.headers
+        req = requests_sent[0]
+        assert "X-Tika-OCRLanguages" not in req.headers
+        assert "X-Tika-Skip-OcrAndOCR" not in req.headers
 
     @pytest.mark.asyncio
     async def test_always_sends_octet_stream_content_type(self):
-        """Content-Type is always application/octet-stream regardless of caller hint."""
+        """Content-Type is always octet-stream regardless of caller hint."""
         requests_sent: list[httpx.Request] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
             requests_sent.append(request)
-            if request.url.path == "/tika":
-                return httpx.Response(200, text="text", request=request)
-            if request.url.path == "/meta":
+            if request.url.path == "/rmeta/text":
                 return httpx.Response(
                     200,
-                    json={"Content-Type": "text/plain"},
+                    json=[{"Content-Type": "text/plain", "X-TIKA:content": "text"}],
                     request=request,
                 )
             return httpx.Response(404, request=request)
@@ -237,11 +238,10 @@ class TestExtractText:
         transport = httpx.MockTransport(handler)
         svc = _make_service(transport=transport)
 
-        # Even when caller passes text/markdown, we send octet-stream
         await svc.extract_text(b"data", "test.md", "text/markdown")
 
-        tika_req = next(r for r in requests_sent if r.url.path == "/tika")
-        assert tika_req.headers["Content-Type"] == "application/octet-stream"
+        req = requests_sent[0]
+        assert req.headers["Content-Type"] == "application/octet-stream"
 
 
 # ---------------------------------------------------------------------------

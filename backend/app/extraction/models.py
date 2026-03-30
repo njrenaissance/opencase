@@ -19,7 +19,7 @@ class ExtractionResult:
 
     text: str
     content_type: str
-    metadata: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
     ocr_applied: bool = False
     language: str | None = None
 

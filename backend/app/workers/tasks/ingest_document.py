@@ -45,9 +45,8 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, str]:
     result = await extraction.extract_text(file_bytes, filename, content_type)
 
     # 3. Persist extracted.json to S3 alongside the original
-    # S3 key pattern: {firm_id}/{matter_id}/{document_id}/original.{ext}
-    parts = s3_key.split("/")
-    extracted_key = f"{parts[0]}/{parts[1]}/{parts[2]}/extracted.json"
+    # Replace the final path component (original.{ext}) with extracted.json.
+    extracted_key = s3_key.rsplit("/", 1)[0] + "/extracted.json"
     await storage.upload_json(key=extracted_key, data=result.to_dict())
 
     logger.info(

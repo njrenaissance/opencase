@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import urllib.parse
 
 import httpx
 from opentelemetry import trace
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Tika metadata key that lists the parsers used for extraction.
 _PARSED_BY_KEY = "X-TIKA:Parsed-By"
-_OCR_PARSER = "TesseractOCRParser"
+_OCR_PARSER = "org.apache.tika.parser.ocr.TesseractOCRParser"
 
 
 class TikaExtractionService:
@@ -81,32 +82,22 @@ class TikaExtractionService:
             },
         ):
             headers = self._build_headers(content_type, filename)
+            headers["Accept"] = "application/json"
 
             async with self._make_client() as client:
-                # 1. Extract plain text
-                text_headers = {**headers, "Accept": "text/plain"}
-                text_resp = await client.put(
-                    "/tika",
+                # Single call to /rmeta/text returns text + metadata.
+                resp = await client.put(
+                    "/rmeta/text",
                     content=document_bytes,
-                    headers=text_headers,
+                    headers=headers,
                 )
-                text_resp.raise_for_status()
-                text = text_resp.text.strip()
+                resp.raise_for_status()
+                payload = resp.json()
 
-                # 2. Extract metadata
-                meta_headers = {**headers, "Accept": "application/json"}
-                meta_resp = await client.put(
-                    "/meta",
-                    content=document_bytes,
-                    headers=meta_headers,
-                )
-                meta_resp.raise_for_status()
-                metadata = meta_resp.json()
+            # /rmeta returns a list; take the first (and usually only) entry.
+            metadata = payload[0] if isinstance(payload, list) else payload
 
-            # Tika may return a list with one dict, or a flat dict.
-            if isinstance(metadata, list):
-                metadata = metadata[0] if metadata else {}
-
+            text = metadata.pop("X-TIKA:content", "").strip()
             detected_type = metadata.get("Content-Type", content_type or "")
             language = metadata.get("language") or None
             ocr_applied = self._detect_ocr(metadata)
@@ -134,6 +125,7 @@ class TikaExtractionService:
                 resp = await client.get("/tika")
                 return resp.status_code == 200
         except Exception:
+            logger.warning("Tika health check failed", exc_info=True)
             return False
 
     # ------------------------------------------------------------------
@@ -148,9 +140,10 @@ class TikaExtractionService:
         # Always use application/octet-stream — Tika auto-detects the real
         # type and rejects some MIME types it doesn't recognise (e.g.
         # text/markdown) with 400.
+        safe_name = urllib.parse.quote(filename, safe="")
         headers: dict[str, str] = {
             "Content-Type": "application/octet-stream",
-            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Disposition": f"attachment; filename*=UTF-8''{safe_name}",
         }
         if not self._settings.ocr_enabled:
             headers["X-Tika-Skip-OcrAndOCR"] = "true"
