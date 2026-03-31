@@ -6,6 +6,7 @@ here so their @shared_task decorators run and register with Celery.
 """
 
 from app.workers.tasks.chunk_document import chunk_document  # noqa: F401
+from app.workers.tasks.embed_chunks import embed_chunks  # noqa: F401
 from app.workers.tasks.extract_document import extract_document  # noqa: F401
 from app.workers.tasks.ingest_document import ingest_document  # noqa: F401
 from app.workers.tasks.ping import ping  # noqa: F401

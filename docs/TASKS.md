@@ -137,6 +137,9 @@ TASK_REGISTRY: dict[str, str] = {
     "ping": "opencase.ping",
     "sleep": "opencase.sleep",
     "ingest_document": "opencase.ingest_document",
+    "extract_document": "opencase.extract_document",
+    "chunk_document": "opencase.chunk_document",
+    "embed_chunks": "opencase.embed_chunks",
 }
 ```
 
@@ -211,6 +214,29 @@ alongside the original and extracted artifacts.
 | Returns | `{"document_id": "...", "chunk_count": int, "chunks": [...]}` |
 | Purpose | Split text into chunks, persist `chunks.json` to S3 |
 
+### `opencase.embed_chunks`
+
+Generate vector embeddings for document chunks using Ollama and upsert
+the resulting vectors into Qdrant with full permission metadata payload.
+Batches chunk texts according to `EmbeddingSettings.batch_size`, validates
+returned vector dimensions, builds Qdrant points with deterministic IDs
+(UUID5 from `document_id:chunk_index`), and batch-upserts to the
+configured collection. Re-ingestion is idempotent — existing points are
+overwritten.
+
+| Field | Value |
+| --- | --- |
+| Module | `app.workers.tasks.embed_chunks` |
+| Name | `opencase.embed_chunks` |
+| Arguments | `document_id: str`, `chunks: list[dict]`, `payload_metadata: dict` |
+| Returns | `{"document_id": "...", "chunk_count": int, "point_count": int}` |
+| Purpose | Embed chunk texts via Ollama + upsert vectors to Qdrant with permission payload |
+
+`payload_metadata` must contain at least: `firm_id`, `matter_id`,
+`client_id`, `classification`, `source`. Optional: `bates_number`,
+`page_number`. These fields are stored in every Qdrant point payload
+to support `build_qdrant_filter()` RBAC enforcement.
+
 ### Future tasks
 
 Tasks will be added as features are built:
@@ -218,7 +244,6 @@ Tasks will be added as features are built:
 | Task | Feature | Purpose |
 | --- | --- | --- |
 | Cloud ingestion | 6.7 | Poll SharePoint via Graph API |
-| Embedding | 5.3 | Embed chunks via Ollama, upsert to Qdrant |
 | Deadline monitor | 10.10 | CPL 245 and 30.30 clock alerts (Beat-scheduled) |
 | Audit chain validator | 7.3 | Nightly hash chain integrity check (Beat-scheduled) |
 

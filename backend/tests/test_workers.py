@@ -107,10 +107,13 @@ def test_ingest_document_task_is_registered():
     assert "opencase.ingest_document" in celery_app.tasks
 
 
-def test_ingest_document_calls_extraction_and_persists():
-    """ingest_document should extract text and upload extracted.json to S3."""
-    from unittest.mock import AsyncMock, patch
+def test_ingest_document_full_pipeline():
+    """ingest_document should extract, chunk, embed, and upsert to Qdrant."""
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock, patch
 
+    from app.chunking.models import ChunkResult
+    from app.embedding.models import EmbeddingResult
     from app.extraction.models import ExtractionResult
 
     mock_result = ExtractionResult(
@@ -127,18 +130,81 @@ def test_ingest_document_calls_extraction_and_persists():
     mock_extraction = AsyncMock()
     mock_extraction.extract_text.return_value = mock_result
 
+    mock_chunking = MagicMock()
+    mock_chunking.chunk_text.return_value = [
+        ChunkResult(
+            document_id="doc-1",
+            chunk_index=0,
+            text="extracted content",
+            char_start=0,
+            char_end=17,
+            metadata={},
+        ),
+    ]
+
+    mock_embedding_svc = AsyncMock()
+    mock_embedding_svc.embed_chunks.return_value = [
+        EmbeddingResult(
+            document_id="doc-1",
+            chunk_index=0,
+            vector=[0.1] * 768,
+            text="extracted content",
+            metadata={},
+        ),
+    ]
+
+    mock_vectorstore = AsyncMock()
+    mock_vectorstore.upsert_vectors.return_value = 1
+
+    # Mock the DB session to return document + matter
+    mock_doc = SimpleNamespace(
+        firm_id="firm-1",
+        matter_id="matter-1",
+        classification="unclassified",
+        source="defense",
+        bates_number=None,
+    )
+    mock_matter = SimpleNamespace(client_id="client-1")
+
+    mock_session = AsyncMock()
+    mock_session.get = AsyncMock(side_effect=[mock_doc, mock_matter])
+    mock_session_factory = MagicMock()
+    mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
     s3_key = "firm-1/matter-1/doc-1/original.pdf"
 
     with (
         patch("app.storage.get_storage_service", return_value=mock_storage),
-        patch("app.extraction.get_extraction_service", return_value=mock_extraction),
+        patch(
+            "app.extraction.get_extraction_service",
+            return_value=mock_extraction,
+        ),
+        patch(
+            "app.chunking.get_chunking_service",
+            return_value=mock_chunking,
+        ),
+        patch(
+            "app.embedding.get_embedding_service",
+            return_value=mock_embedding_svc,
+        ),
+        patch(
+            "app.vectorstore.get_vectorstore_service",
+            return_value=mock_vectorstore,
+        ),
+        patch(
+            "app.db.session.AsyncSessionLocal",
+            mock_session_factory,
+        ),
     ):
         from app.workers.tasks.ingest_document import ingest_document
 
         result = ingest_document("doc-1", s3_key)
 
-    assert result["status"] == "extracted"
+    assert result["status"] == "completed"
     assert result["document_id"] == "doc-1"
+    assert result["chunk_count"] == 1
+    assert result["point_count"] == 1
 
     # Verify extraction was called
     mock_extraction.extract_text.assert_awaited_once_with(
@@ -148,7 +214,16 @@ def test_ingest_document_calls_extraction_and_persists():
     )
 
     # Verify extracted.json was uploaded to S3
-    mock_storage.upload_json.assert_awaited_once()
-    call_kwargs = mock_storage.upload_json.call_args.kwargs
-    assert call_kwargs["key"] == "firm-1/matter-1/doc-1/extracted.json"
-    assert call_kwargs["data"]["text"] == "extracted content"
+    upload_calls = mock_storage.upload_json.call_args_list
+    assert any(
+        c.kwargs["key"] == "firm-1/matter-1/doc-1/extracted.json" for c in upload_calls
+    )
+
+    # Verify chunks.json was uploaded to S3
+    assert any(
+        c.kwargs["key"] == "firm-1/matter-1/doc-1/chunks.json" for c in upload_calls
+    )
+
+    # Verify embedding + upsert were called
+    mock_embedding_svc.embed_chunks.assert_awaited_once()
+    mock_vectorstore.upsert_vectors.assert_awaited_once()

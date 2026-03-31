@@ -10,4 +10,5 @@ TASK_REGISTRY: dict[str, str] = {
     "ingest_document": "opencase.ingest_document",
     "extract_document": "opencase.extract_document",
     "chunk_document": "opencase.chunk_document",
+    "embed_chunks": "opencase.embed_chunks",
 }

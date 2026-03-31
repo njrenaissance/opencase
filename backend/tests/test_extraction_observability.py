@@ -186,6 +186,8 @@ class TestExtractDocumentSpans:
 class TestIngestDocumentSpans:
     def _run_task(self, otel_spans, upload_side_effect=None):
         """Run ingest_document with a test tracer patched in."""
+        from types import SimpleNamespace
+
         provider, exporter = otel_spans
         test_tracer = provider.get_tracer("test")
 
@@ -197,11 +199,76 @@ class TestIngestDocumentSpans:
         mock_extraction = AsyncMock()
         mock_extraction.extract_text.return_value = result
 
+        # Mock chunking service
+        from app.chunking.models import ChunkResult
+
+        mock_chunking = MagicMock()
+        mock_chunking.chunk_text.return_value = [
+            ChunkResult(
+                document_id="doc-1",
+                chunk_index=0,
+                text="hello",
+                char_start=0,
+                char_end=5,
+                metadata={},
+            ),
+        ]
+
+        # Mock embedding service
+        from app.embedding.models import EmbeddingResult
+
+        mock_embedding_svc = AsyncMock()
+        mock_embedding_svc.embed_chunks.return_value = [
+            EmbeddingResult(
+                document_id="doc-1",
+                chunk_index=0,
+                vector=[0.1] * 768,
+                text="hello",
+                metadata={},
+            ),
+        ]
+
+        mock_vectorstore = AsyncMock()
+        mock_vectorstore.upsert_vectors.return_value = 1
+
+        # Mock DB session for metadata lookup
+        mock_doc = SimpleNamespace(
+            firm_id="firm-1",
+            matter_id="matter-1",
+            classification="unclassified",
+            source="defense",
+            bates_number=None,
+        )
+        mock_matter = SimpleNamespace(client_id="client-1")
+        mock_session = AsyncMock()
+        mock_session.get = AsyncMock(side_effect=[mock_doc, mock_matter])
+        mock_session_factory = MagicMock()
+        mock_session_factory.return_value.__aenter__ = AsyncMock(
+            return_value=mock_session
+        )
+        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+
         with (
             patch("app.storage.get_storage_service", return_value=mock_storage),
             patch(
                 "app.extraction.get_extraction_service",
                 return_value=mock_extraction,
+            ),
+            patch(
+                "app.chunking.get_chunking_service",
+                return_value=mock_chunking,
+            ),
+            patch(
+                "app.embedding.get_embedding_service",
+                return_value=mock_embedding_svc,
+            ),
+            patch(
+                "app.vectorstore.get_vectorstore_service",
+                return_value=mock_vectorstore,
+            ),
+            patch(
+                "app.db.session.AsyncSessionLocal",
+                mock_session_factory,
             ),
             patch("app.workers.tasks.ingest_document.tracer", test_tracer),
         ):
