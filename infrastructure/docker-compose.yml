@@ -214,7 +214,7 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # One-shot init: pull the embedding model if not already present.
+  # One-shot init: pull the embedding and LLM models if not already present.
   ollama-init:
     image: ollama/ollama:latest
     depends_on:
@@ -223,11 +223,14 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - EMBEDDING_MODEL=${OPENCASE_EMBEDDING_MODEL:-nomic-embed-text}
+      - LLM_MODEL=${OLLAMA_LLM_MODEL:-llama3.1:8b}
     entrypoint: >
       /bin/sh -c "
       echo 'Pulling embedding model $$EMBEDDING_MODEL...';
       ollama pull $$EMBEDDING_MODEL;
-      echo 'Model pull complete.';
+      echo 'Pulling LLM model $$LLM_MODEL...';
+      ollama pull $$LLM_MODEL;
+      echo 'Model pulls complete.';
       "
     networks:
       - opencase

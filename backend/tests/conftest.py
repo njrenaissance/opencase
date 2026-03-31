@@ -183,7 +183,7 @@ def docker_cleanup():
 def _api_ready(url: str) -> bool:
     try:
         return httpx.get(f"{url}/health", timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
@@ -204,21 +204,21 @@ def _minio_ready(host: str, port: int) -> bool:
     try:
         url = f"http://{host}:{port}/minio/health/live"
         return httpx.get(url, timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
 def _tika_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/tika", timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
 def _grafana_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
@@ -291,17 +291,21 @@ def tika_service(docker_ip, docker_services):
     return docker_ip, 9998
 
 
+_QDRANT_PORT = 6333
+_OLLAMA_PORT = 11434
+
+
 def _qdrant_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/healthz", timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
 def _ollama_ready(host: str, port: int) -> bool:
     try:
         return httpx.get(f"http://{host}:{port}/", timeout=2).status_code == 200
-    except httpx.HTTPError:
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RemoteProtocolError):
         return False
 
 
@@ -311,20 +315,20 @@ def qdrant_service(docker_ip, docker_services):
     docker_services.wait_until_responsive(
         timeout=60.0,
         pause=0.5,
-        check=lambda: _qdrant_ready(docker_ip, 6333),
+        check=lambda: _qdrant_ready(docker_ip, _QDRANT_PORT),
     )
-    return docker_ip, 6333
+    return docker_ip, _QDRANT_PORT
 
 
 @pytest.fixture(scope="session")
 def ollama_service(docker_ip, docker_services):
     """Ensure Ollama is up and return (host, port)."""
     docker_services.wait_until_responsive(
-        timeout=120.0,
+        timeout=300.0,
         pause=1.0,
-        check=lambda: _ollama_ready(docker_ip, 11434),
+        check=lambda: _ollama_ready(docker_ip, _OLLAMA_PORT),
     )
-    return docker_ip, 11434
+    return docker_ip, _OLLAMA_PORT
 
 
 @pytest.fixture(scope="session")
