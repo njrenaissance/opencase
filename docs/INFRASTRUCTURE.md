@@ -186,7 +186,7 @@ single container. Receives all three OTLP signals.
 
 | Setting | Value |
 | --- | --- |
-| Image | `grafana/otel-lgtm:latest` |
+| Image | [`grafana/otel-lgtm:latest`](https://hub.docker.com/r/grafana/otel-lgtm) |
 | Grafana UI | `3001` |
 | OTLP gRPC receiver | `4317` |
 | OTLP HTTP receiver | `4318` |
@@ -206,7 +206,7 @@ MinIO S3-compatible object store for original documents.
 
 | Setting | Value |
 | --- | --- |
-| Image | `minio/minio:latest` |
+| Image | [`minio/minio:latest`](https://hub.docker.com/r/minio/minio) |
 | Internal API port | `9000` |
 | Internal console port | `9001` |
 | Volume | `minio-data` |
@@ -245,18 +245,18 @@ Ollama local LLM and embedding server.
 
 | Setting | Value |
 | --- | --- |
-| Image | `ollama/ollama:latest` |
+| Image | [`ollama/ollama:latest`](https://hub.docker.com/r/ollama/ollama) |
 | Internal port | `11434` |
 | Volume | `ollama-models` |
 | Healthcheck | `ollama list` |
 
-Default LLM: `OLLAMA_LLM_MODEL` (default: `llama3:8b`).
+Default LLM: `OLLAMA_LLM_MODEL` (default: `llama3.1:8b`).
 Default embed model: `OPENCASE_EMBEDDING_MODEL` (default: `nomic-embed-text`).
 
-The `ollama-init` sidecar service pulls the embedding model automatically on
-first run using `ollama pull`. FastAPI and celery-worker depend on `ollama-init`
-completing successfully before they start, guaranteeing the model is available
-when the application boots.
+The `ollama-init` sidecar service pulls both the embedding model and the LLM
+automatically on first run using `ollama pull`. FastAPI and celery-worker depend
+on `ollama-init` completing successfully before they start, guaranteeing the
+models are available when the application boots.
 
 NVIDIA GPU acceleration is available — uncomment the `deploy.resources`
 block in `docker-compose.yml` to enable it.
@@ -265,17 +265,17 @@ block in `docker-compose.yml` to enable it.
 
 ### ollama-init
 
-One-shot init container that pulls the embedding model into Ollama. Uses the
-`ollama/ollama:latest` image with `OLLAMA_HOST` pointed at the Ollama server.
-Idempotent — pulling an already-present model is a no-op.
+One-shot init container that pulls the embedding model and LLM into Ollama.
+Uses the `ollama/ollama:latest` image with `OLLAMA_HOST` pointed at the Ollama
+server. Idempotent — pulling an already-present model is a no-op.
 
 | Setting | Value |
 | --- | --- |
-| Image | `ollama/ollama:latest` |
+| Image | [`ollama/ollama:latest`](https://hub.docker.com/r/ollama/ollama) |
 | Depends on | `ollama` (healthy) |
 | Restart | `no` |
 
-Environment: `OLLAMA_HOST`, `EMBEDDING_MODEL`.
+Environment: `OLLAMA_HOST`, `EMBEDDING_MODEL`, `LLM_MODEL`.
 
 ---
 
@@ -285,7 +285,7 @@ PostgreSQL 17 relational database.
 
 | Setting | Value |
 | --- | --- |
-| Image | `postgres:17-alpine` |
+| Image | [`postgres:17-alpine`](https://hub.docker.com/_/postgres) |
 | Public port | `${POSTGRES_PORT:-5432}:5432` |
 | Volume | `postgres-data` |
 | Init script | `infrastructure/postgres/init.sql` |
@@ -304,7 +304,7 @@ Qdrant vector store (single collection, permission-filtered on every query).
 
 | Setting | Value |
 | --- | --- |
-| Image | `qdrant/qdrant:latest` |
+| Image | [`qdrant/qdrant:latest`](https://hub.docker.com/r/qdrant/qdrant) |
 | Internal REST port | `6333` |
 | Internal gRPC port | `6334` |
 | Volume | `qdrant-data` |
@@ -328,7 +328,7 @@ existence before creating.
 
 | Setting | Value |
 | --- | --- |
-| Image | `curlimages/curl:latest` |
+| Image | [`curlimages/curl:latest`](https://hub.docker.com/r/curlimages/curl) |
 | Depends on | `qdrant` (healthy) |
 | Restart | `no` |
 
@@ -343,7 +343,7 @@ Redis 7 task queue broker and cache.
 
 | Setting | Value |
 | --- | --- |
-| Image | `redis:7-alpine` |
+| Image | [`redis:7-alpine`](https://hub.docker.com/_/redis) |
 | Internal port | `6379` |
 | Volume | `redis-data` |
 | Healthcheck | `redis-cli ping` |
