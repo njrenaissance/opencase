@@ -196,6 +196,21 @@ Tika. Returns the extraction result without persisting it — callers
 | Returns | `{"text": "...", "content_type": "...", "metadata": {...}, "ocr_applied": bool, "language": str\|null}` |
 | Purpose | Download from S3, extract text via Tika, return `ExtractionResult` as dict |
 
+### `opencase.chunk_document`
+
+Split extracted document text into overlapping chunks with character
+offsets. Uses the configured chunking strategy (default: recursive
+character splitting via LangChain). Persists `chunks.json` to S3
+alongside the original and extracted artifacts.
+
+| Field | Value |
+| --- | --- |
+| Module | `app.workers.tasks.chunk_document` |
+| Name | `opencase.chunk_document` |
+| Arguments | `document_id: str`, `text: str`, `metadata: dict`, `s3_prefix: str` |
+| Returns | `{"document_id": "...", "chunk_count": int, "chunks": [...]}` |
+| Purpose | Split text into chunks, persist `chunks.json` to S3 |
+
 ### Future tasks
 
 Tasks will be added as features are built:
@@ -203,7 +218,7 @@ Tasks will be added as features are built:
 | Task | Feature | Purpose |
 | --- | --- | --- |
 | Cloud ingestion | 6.7 | Poll SharePoint via Graph API |
-| Chunking + embedding | 5.2, 5.3 | Split text, embed via Ollama, upsert to Qdrant |
+| Embedding | 5.3 | Embed chunks via Ollama, upsert to Qdrant |
 | Deadline monitor | 10.10 | CPL 245 and 30.30 clock alerts (Beat-scheduled) |
 | Audit chain validator | 7.3 | Nightly hash chain integrity check (Beat-scheduled) |
 

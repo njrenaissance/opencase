@@ -44,7 +44,7 @@
 | **5.0** | **Chunking & Embedding** | **Pending** |
 | 5.5 | Configuration + env vars (ChunkingSettings, EmbeddingSettings, QdrantSettings) | Done |
 | 5.1 | Infrastructure setup (Qdrant collection, Ollama model pull, health checks) | Done |
-| 5.2 | Chunking task (Celery task, text splitting, overlap strategy) | Pending |
+| 5.2 | Chunking task (Celery task, text splitting, overlap strategy) | Done |
 | 5.3 | Embedding task (Celery task, Ollama nomic-embed-text) | Pending |
 | 5.4 | Qdrant upsert task (Celery task, vector storage, permission metadata payload) | Pending |
 | 5.6 | Observability (chunking/embedding spans/metrics) | Pending |

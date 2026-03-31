@@ -37,6 +37,7 @@ dependencies = [
     "langchain>=0.3",
     "langchain-community>=0.3",
     "langchain-ollama>=0.3",
+    "langchain-text-splitters>=0.3",
     # Background jobs
     "celery[redis]>=5.4",
     "psycopg2-binary>=2.9",

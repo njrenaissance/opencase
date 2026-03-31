@@ -233,6 +233,29 @@ the single source of truth.
 
 ---
 
+## ChunkingSettings (`OPENCASE_CHUNKING_` prefix)
+
+Controls how extracted document text is split into overlapping chunks for
+embedding and vector search.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPENCASE_CHUNKING_STRATEGY` | `recursive` | Splitting strategy. Only `recursive` is supported. |
+| `OPENCASE_CHUNKING_CHUNK_SIZE` | `1000` | Maximum chunk size in characters |
+| `OPENCASE_CHUNKING_CHUNK_OVERLAP` | `200` | Overlap between consecutive chunks in characters |
+| `OPENCASE_CHUNKING_SEPARATORS` | `["\n\n", "\n", ". ", " ", ""]` | Ordered list of separators for recursive splitting |
+
+`CHUNK_OVERLAP` must be strictly less than `CHUNK_SIZE`.
+
+The `recursive` strategy uses LangChain's `RecursiveCharacterTextSplitter`.
+It attempts to split on the first separator in the list; if a resulting
+chunk exceeds `CHUNK_SIZE`, it recurses with the next separator. The empty
+string `""` ensures every chunk fits within the limit. New strategies can be
+added by implementing the `ChunkingStrategy` protocol and registering in
+`STRATEGY_MAP`.
+
+---
+
 ## RedisSettings (`OPENCASE_REDIS_` prefix)
 
 Redis connection settings. Individual fields are preferred over a monolithic URL
