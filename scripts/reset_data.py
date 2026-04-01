@@ -28,18 +28,6 @@ import psycopg2
 from minio import Minio
 from minio.deleteobjects import DeleteObject
 
-# ---------------------------------------------------------------------------
-# Defaults (overridden by .env when loaded)
-# ---------------------------------------------------------------------------
-LOCALHOST_DB_DSN = (
-    "postgresql://opencase:FynbWI4dix30YGjioiY8kwg4962U3pwOMMpdUpipW6c="
-    "@localhost:5432/opencase"
-)
-LOCALHOST_TASKS_DSN = (
-    "postgresql://opencase:FynbWI4dix30YGjioiY8kwg4962U3pwOMMpdUpipW6c="
-    "@localhost:5432/opencase_tasks"
-)
-
 # Tables truncated in FK-safe order (CASCADE handles the rest).
 # We truncate *all* user-data tables but leave alembic_version intact.
 TRUNCATE_TABLES = [
