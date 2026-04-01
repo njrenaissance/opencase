@@ -21,6 +21,7 @@ class DocumentSource(enum.StrEnum):
     defense = "defense"
     court = "court"
     work_product = "work_product"
+    reference = "reference"
 
 
 class TaskState(enum.StrEnum):

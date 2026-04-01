@@ -10,6 +10,7 @@ import pytest
 from fastapi import HTTPException
 from shared.models.enums import Role
 
+from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID
 from app.core.permissions import (
     PermissionFilter,
     build_qdrant_filter,
@@ -62,7 +63,7 @@ async def test_admin_no_exclusions() -> None:
     result = await build_qdrant_filter(user, _MATTER_ID, db)
 
     assert result.firm_id == user.firm_id
-    assert result.matter_id == _MATTER_ID
+    assert result.matter_ids == frozenset({_MATTER_ID, GLOBAL_KNOWLEDGE_MATTER_ID})
     assert result.excluded_classifications == frozenset()
     db.execute.assert_not_called()
 
