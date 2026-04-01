@@ -294,6 +294,7 @@ def _document_response_json() -> dict:
         "size_bytes": 12345,
         "source": "defense",
         "classification": "unclassified",
+        "ingestion_status": "pending",
         "legal_hold": False,
         "file_hash": "a" * 64,
         "bates_number": None,
