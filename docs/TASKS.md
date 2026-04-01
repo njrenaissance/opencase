@@ -172,18 +172,18 @@ assert result.get(timeout=10) == "pong"
 
 ### `opencase.ingest_document`
 
-Orchestrates the document ingestion pipeline. Downloads the original
-file from S3, extracts text via Apache Tika, and persists the extraction
-result as `extracted.json` alongside the original in S3. Future steps
-(chunking, embedding, Qdrant upsert) will be added in Features 5–6.
+Orchestrates the full document ingestion pipeline. Downloads the original
+file from S3, extracts text via Apache Tika, persists `extracted.json`,
+chunks the text, generates embeddings via Ollama, and upserts vectors to
+Qdrant with permission metadata payload.
 
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.ingest_document` |
 | Name | `opencase.ingest_document` |
 | Arguments | `document_id: str`, `s3_key: str` |
-| Returns | `{"status": "extracted", "document_id": ...}` |
-| Purpose | Orchestrate ingestion: extraction → S3 persist → (future) chunking → embedding |
+| Returns | `{"status": "completed", "document_id": ..., "text_length": int, "chunk_count": int, "point_count": int}` |
+| Purpose | Orchestrate ingestion: extraction → chunking → embedding → Qdrant upsert |
 
 ### `opencase.extract_document`
 

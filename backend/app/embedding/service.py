@@ -4,15 +4,26 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from typing import TYPE_CHECKING
 
 import httpx
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
+from app.core.metrics import (
+    embedding_batch_count,
+    embedding_chunks_processed,
+    embedding_completed,
+    embedding_duration_seconds,
+    embedding_failed,
+)
 from app.embedding.models import EmbeddingResult
 
 if TYPE_CHECKING:
     from app.core.config import EmbeddingSettings
 
+tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
 
 
@@ -64,55 +75,96 @@ class EmbeddingService:
                 msg = f"Chunk at index {i} missing keys: {sorted(missing)}"
                 raise ValueError(msg)
 
-        results: list[EmbeddingResult] = []
         batch_size = self._settings.batch_size
+        num_batches = math.ceil(len(chunks) / batch_size)
 
-        async with httpx.AsyncClient(
-            base_url=self._settings.base_url,
-            timeout=self._settings.request_timeout,
-        ) as client:
-            for batch_start in range(0, len(chunks), batch_size):
-                batch = chunks[batch_start : batch_start + batch_size]
-                texts = [str(c["text"]) for c in batch]
+        with tracer.start_as_current_span(
+            "embedding.embed_chunks",
+            attributes={
+                "embedding.chunk_count": len(chunks),
+                "embedding.model": self._settings.model,
+                "embedding.batch_size": batch_size,
+            },
+        ) as span:
+            start_time = time.monotonic()
+            try:
+                results: list[EmbeddingResult] = []
 
-                response = await client.post(
-                    "/api/embed",
-                    json={"model": self._settings.model, "input": texts},
+                async with httpx.AsyncClient(
+                    base_url=self._settings.base_url,
+                    timeout=self._settings.request_timeout,
+                ) as client:
+                    for batch_start in range(0, len(chunks), batch_size):
+                        batch = chunks[batch_start : batch_start + batch_size]
+                        texts = [str(c["text"]) for c in batch]
+
+                        response = await client.post(
+                            "/api/embed",
+                            json={
+                                "model": self._settings.model,
+                                "input": texts,
+                            },
+                        )
+                        response.raise_for_status()
+
+                        data = response.json()
+                        vectors: list[list[float]] = data["embeddings"]
+
+                        if len(vectors) != len(batch):
+                            msg = (
+                                f"Ollama returned {len(vectors)} vectors "
+                                f"for {len(batch)} inputs"
+                            )
+                            raise EmbeddingDimensionError(msg)
+
+                        for chunk, vector in zip(batch, vectors, strict=True):
+                            if len(vector) != self._settings.dimensions:
+                                msg = (
+                                    f"Expected {self._settings.dimensions} "
+                                    f"dimensions, got {len(vector)}"
+                                )
+                                raise EmbeddingDimensionError(msg)
+
+                            results.append(
+                                EmbeddingResult(
+                                    document_id=str(chunk["document_id"]),
+                                    chunk_index=int(chunk["chunk_index"]),  # type: ignore[call-overload]
+                                    vector=vector,
+                                    text=str(chunk["text"]),
+                                    metadata=dict(chunk.get("metadata") or {}),  # type: ignore[call-overload]
+                                )
+                            )
+
+                span.set_attribute("embedding.result_count", len(results))
+                span.set_attribute("embedding.batch_count", num_batches)
+
+                elapsed = time.monotonic() - start_time
+                attrs = {"model": self._settings.model}
+                embedding_completed.add(1, attrs)
+                embedding_duration_seconds.record(elapsed, attrs)
+                embedding_chunks_processed.record(len(chunks), attrs)
+                embedding_batch_count.record(num_batches, attrs)
+
+                logger.info(
+                    "Embedded %d chunks in %d batch(es) using %s",
+                    len(results),
+                    num_batches,
+                    self._settings.model,
                 )
-                response.raise_for_status()
+                return results
 
-                data = response.json()
-                vectors: list[list[float]] = data["embeddings"]
-
-                if len(vectors) != len(batch):
-                    msg = (
-                        f"Ollama returned {len(vectors)} vectors "
-                        f"for {len(batch)} inputs"
-                    )
-                    raise EmbeddingDimensionError(msg)
-
-                for chunk, vector in zip(batch, vectors, strict=True):
-                    if len(vector) != self._settings.dimensions:
-                        msg = (
-                            f"Expected {self._settings.dimensions} dimensions, "
-                            f"got {len(vector)}"
-                        )
-                        raise EmbeddingDimensionError(msg)
-
-                    results.append(
-                        EmbeddingResult(
-                            document_id=str(chunk["document_id"]),
-                            chunk_index=int(chunk["chunk_index"]),  # type: ignore[call-overload]
-                            vector=vector,
-                            text=str(chunk["text"]),
-                            metadata=dict(chunk.get("metadata") or {}),  # type: ignore[call-overload]
-                        )
-                    )
-
-        logger.info(
-            "Embedded %d chunks in %d batch(es) using %s",
-            len(results),
-            math.ceil(len(chunks) / batch_size),
-            self._settings.model,
-        )
-        return results
+            except Exception as exc:
+                elapsed = time.monotonic() - start_time
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                embedding_failed.add(
+                    1,
+                    {
+                        "model": self._settings.model,
+                        "error_type": type(exc).__name__,
+                    },
+                )
+                embedding_duration_seconds.record(
+                    elapsed, {"model": self._settings.model}
+                )
+                raise

@@ -19,7 +19,7 @@ from shared.models.enums import (
 )
 
 if TYPE_CHECKING:
-    from app.core.config import EmbeddingSettings, QdrantSettings
+    from app.core.config import ChunkingSettings, EmbeddingSettings, QdrantSettings
     from app.embedding.models import EmbeddingResult
 
 from app.db.models.document import Document
@@ -182,6 +182,20 @@ def make_payload_metadata(**overrides: Any) -> dict[str, object]:
     }
     defaults.update(overrides)
     return defaults
+
+
+def make_chunking_settings(**overrides: Any) -> ChunkingSettings:
+    """Build ChunkingSettings with sensible defaults."""
+    from app.core.config import ChunkingSettings as CSettings
+
+    defaults: dict[str, Any] = {
+        "strategy": "recursive",
+        "chunk_size": 1000,
+        "chunk_overlap": 200,
+        "separators": ["\n\n", "\n", ". ", " ", ""],
+    }
+    defaults.update(overrides)
+    return CSettings(**defaults)
 
 
 def make_embedding_settings(**overrides: Any) -> EmbeddingSettings:

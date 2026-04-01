@@ -52,14 +52,53 @@ async def ingest_document(doc):
 
 Current manually instrumented spans:
 
+#### RBAC / Auth
+
 | Span name | Module | Purpose |
 | --- | --- | --- |
 | `permissions.build_qdrant_filter` | `core/permissions.py` | Vector query access control |
 | `permissions.check_role` | `core/permissions.py` | Role enforcement on endpoints |
 | `permissions.check_matter_access` | `core/permissions.py` | Matter-level access verification |
+| `auth.login` | `api/auth.py` | Login flow |
+| `auth.mfa_verify` | `api/auth.py` | MFA TOTP verification |
+| `auth.mfa_setup` | `api/auth.py` | MFA provisioning |
+| `auth.mfa_confirm` | `api/auth.py` | MFA confirmation |
+| `auth.mfa_disable` | `api/auth.py` | MFA removal |
+| `auth.token_refresh` | `api/auth.py` | JWT token refresh |
+| `auth.logout` | `api/auth.py` | Session teardown |
+
+#### Task Broker
+
+| Span name | Module | Purpose |
+| --- | --- | --- |
 | `broker.submit` | `workers/broker.py` | Task submission (`messaging.destination.name`, `messaging.message.id`) |
 | `broker.get_status` | `workers/broker.py` | Task status query (`messaging.message.id`, `messaging.operation.name`) |
 | `broker.revoke` | `workers/broker.py` | Task cancellation (`messaging.message.id`, `celery.revoke.terminate`) |
+
+#### Celery Tasks
+
+| Span name | Module | Purpose |
+| --- | --- | --- |
+| `extract_document` | `workers/tasks/extract_document.py` | Parent span for standalone extraction task |
+| `extraction.s3_download` | `workers/tasks/extract_document.py` | S3 download within extraction task |
+| `ingest_document` | `workers/tasks/ingest_document.py` | Parent span for full ingestion pipeline |
+| `ingestion.s3_download` | `workers/tasks/ingest_document.py` | S3 download of original document |
+| `ingestion.s3_upload` | `workers/tasks/ingest_document.py` | S3 upload of extracted.json / chunks.json |
+| `ingestion.db_lookup` | `workers/tasks/ingest_document.py` | Document + Matter metadata fetch |
+| `ingestion.chunk` | `workers/tasks/ingest_document.py` | Chunking stage of ingestion |
+| `ingestion.embed_upsert` | `workers/tasks/ingest_document.py` | Embedding + Qdrant upsert stage |
+| `chunk_document` | `workers/tasks/chunk_document.py` | Parent span for standalone chunking task |
+| `embed_chunks` | `workers/tasks/embed_chunks.py` | Parent span for standalone embed+upsert task |
+
+#### Service-Level Spans (with metrics)
+
+| Span name | Module | Attributes |
+| --- | --- | --- |
+| `extraction.extract_text` | `extraction/tika.py` | `extraction.filename`, `extraction.size_bytes`, `extraction.content_type`, `extraction.text_length`, `extraction.ocr_applied`, `extraction.detected_content_type`, `extraction.language` |
+| `chunking.chunk_text` | `chunking/service.py` | `chunking.document_id`, `chunking.text_length`, `chunking.chunk_count`, `chunking.strategy` |
+| `embedding.embed_chunks` | `embedding/service.py` | `embedding.chunk_count`, `embedding.model`, `embedding.batch_size`, `embedding.result_count`, `embedding.batch_count` |
+| `vectorstore.upsert_vectors` | `vectorstore/service.py` | `vectorstore.collection`, `vectorstore.point_count`, `vectorstore.batch_count` |
+| `vectorstore.delete_by_document` | `vectorstore/service.py` | `vectorstore.collection`, `vectorstore.document_id`, `vectorstore.deleted_count` |
 
 ### Metrics
 
@@ -68,16 +107,93 @@ Metrics are counters, histograms, and gauges exported via OTel's
 
 All metric instruments are defined in `backend/app/core/metrics.py`:
 
-| Metric | Type | Description |
-| --- | --- | --- |
-| `opencase.auth.login_attempts` | Counter | Login attempts by result (success/failure/locked) |
-| `opencase.auth.mfa_challenges` | Counter | MFA TOTP challenge outcomes |
-| `opencase.auth.token_refresh_attempts` | Counter | Token refresh attempts |
-| `opencase.auth.active_sessions` | UpDownCounter | Active sessions (issued minus logouts) |
-| `opencase.rbac.access_denied` | Counter | RBAC denials by reason (role/matter) and role |
-| `opencase.tasks.submitted` | Counter | Tasks submitted (API + broker level) |
-| `opencase.tasks.cancelled` | Counter | Tasks cancelled |
-| `opencase.tasks.status_queried` | Counter | Task status queries via broker |
+#### Auth
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.auth.login_attempts` | Counter | `result` | Login attempts (success/failure/locked) |
+| `opencase.auth.mfa_challenges` | Counter | `result` | MFA TOTP challenge outcomes |
+| `opencase.auth.token_refresh_attempts` | Counter | | Token refresh attempts |
+| `opencase.auth.active_sessions` | UpDownCounter | | Active sessions (issued minus logouts) |
+
+#### RBAC
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.rbac.access_denied` | Counter | `reason`, `role` | RBAC denials |
+
+#### Entity Management
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.users.created` | Counter | | Users created |
+| `opencase.users.updated` | Counter | | Users updated |
+| `opencase.matters.created` | Counter | | Matters created |
+| `opencase.matters.updated` | Counter | | Matters updated |
+| `opencase.matter_access.granted` | Counter | | Matter access grants |
+| `opencase.matter_access.revoked` | Counter | | Matter access revocations |
+
+#### Documents
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.documents.created` | Counter | | Documents created |
+| `opencase.documents.duplicates_rejected` | Counter | | Duplicate upload rejections |
+
+#### Prompts
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.prompts.created` | Counter | | Prompts submitted |
+
+#### Tasks
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.tasks.submitted` | Counter | `task_name` | Tasks submitted via API |
+| `opencase.tasks.cancelled` | Counter | | Tasks cancelled |
+| `opencase.tasks.status_queried` | Counter | `task_state` | Task status queries via broker |
+
+#### Extraction
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.extraction.completed` | Counter | `content_type`, `ocr_applied` | Successful extractions |
+| `opencase.extraction.failed` | Counter | `content_type`, `error_type` | Failed extractions |
+| `opencase.extraction.duration_seconds` | Histogram (s) | `content_type`, `ocr_applied` | Extraction latency |
+| `opencase.extraction.document_size_bytes` | Histogram (By) | `content_type`, `ocr_applied` | Input document size |
+| `opencase.extraction.text_length_chars` | Histogram ({char}) | `content_type`, `ocr_applied` | Extracted text length |
+
+#### Chunking
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.chunking.completed` | Counter | `strategy` | Successful chunk operations |
+| `opencase.chunking.failed` | Counter | `error_type` | Failed chunk operations |
+| `opencase.chunking.duration_seconds` | Histogram (s) | `strategy` | Chunking latency |
+| `opencase.chunking.text_length_chars` | Histogram ({char}) | `strategy` | Input text length |
+| `opencase.chunking.chunks_produced` | Histogram ({chunk}) | `strategy` | Chunks produced per document |
+
+#### Embedding
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.embedding.completed` | Counter | `model` | Successful embedding operations |
+| `opencase.embedding.failed` | Counter | `model`, `error_type` | Failed embedding operations |
+| `opencase.embedding.duration_seconds` | Histogram (s) | `model` | Embedding latency |
+| `opencase.embedding.chunks_processed` | Histogram ({chunk}) | `model` | Chunks embedded per call |
+| `opencase.embedding.batch_count` | Histogram ({batch}) | `model` | Batches per embedding call |
+
+#### Vectorstore
+
+| Metric | Type | Attrs | Description |
+| --- | --- | --- | --- |
+| `opencase.vectorstore.upsert.completed` | Counter | `collection` | Successful upserts |
+| `opencase.vectorstore.upsert.failed` | Counter | `collection`, `error_type` | Failed upserts |
+| `opencase.vectorstore.upsert.duration_seconds` | Histogram (s) | `collection` | Upsert latency |
+| `opencase.vectorstore.upsert.points` | Histogram ({point}) | `collection` | Points upserted per call |
+| `opencase.vectorstore.delete.completed` | Counter | `collection` | Successful deletes |
+| `opencase.vectorstore.delete.duration_seconds` | Histogram (s) | `collection` | Delete latency |
 
 New features should add their metrics to `metrics.py` following the
 `opencase.<domain>.<metric_name>` naming convention.

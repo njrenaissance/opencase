@@ -150,3 +150,104 @@ extraction_text_length_chars = meter.create_histogram(
     description="Extracted text length in characters",
     unit="{char}",
 )
+
+# ---------------------------------------------------------------------------
+# Chunking (Feature 5.6)
+# ---------------------------------------------------------------------------
+
+chunking_completed = meter.create_counter(
+    "opencase.chunking.completed",
+    description="Successful chunk operations",  # attrs: strategy
+)
+
+chunking_failed = meter.create_counter(
+    "opencase.chunking.failed",
+    description="Failed chunk operations",  # attrs: error_type
+)
+
+chunking_duration_seconds = meter.create_histogram(
+    "opencase.chunking.duration_seconds",
+    description="Chunking latency in seconds",
+    unit="s",
+)
+
+chunking_text_length_chars = meter.create_histogram(
+    "opencase.chunking.text_length_chars",
+    description="Input text length in characters",
+    unit="{char}",
+)
+
+chunking_chunks_produced = meter.create_histogram(
+    "opencase.chunking.chunks_produced",
+    description="Number of chunks produced per document",
+    unit="{chunk}",
+)
+
+# ---------------------------------------------------------------------------
+# Embedding (Feature 5.6)
+# ---------------------------------------------------------------------------
+
+embedding_completed = meter.create_counter(
+    "opencase.embedding.completed",
+    description="Successful embedding operations",  # attrs: model
+)
+
+embedding_failed = meter.create_counter(
+    "opencase.embedding.failed",
+    description="Failed embedding operations",  # attrs: model, error_type
+)
+
+embedding_duration_seconds = meter.create_histogram(
+    "opencase.embedding.duration_seconds",
+    description="Embedding latency in seconds",
+    unit="s",
+)
+
+embedding_chunks_processed = meter.create_histogram(
+    "opencase.embedding.chunks_processed",
+    description="Number of chunks embedded per call",
+    unit="{chunk}",
+)
+
+embedding_batch_count = meter.create_histogram(
+    "opencase.embedding.batch_count",
+    description="Number of batches per embedding call",
+    unit="{batch}",
+)
+
+# ---------------------------------------------------------------------------
+# Vectorstore (Feature 5.6)
+# ---------------------------------------------------------------------------
+
+vectorstore_upsert_completed = meter.create_counter(
+    "opencase.vectorstore.upsert.completed",
+    description="Successful vector upsert operations",  # attrs: collection
+)
+
+vectorstore_upsert_failed = meter.create_counter(
+    "opencase.vectorstore.upsert.failed",
+    description="Failed vector upsert operations",  # attrs: collection, error_type
+)
+
+vectorstore_upsert_duration_seconds = meter.create_histogram(
+    "opencase.vectorstore.upsert.duration_seconds",
+    description="Vector upsert latency in seconds",
+    unit="s",
+)
+
+vectorstore_upsert_points = meter.create_histogram(
+    "opencase.vectorstore.upsert.points",
+    description="Number of points upserted per call",
+    unit="{point}",
+)
+
+vectorstore_delete_completed = meter.create_counter(
+    "opencase.vectorstore.delete.completed",
+    description="Successful vector delete operations",  # attrs: collection
+)
+
+vectorstore_delete_duration_seconds = meter.create_histogram(
+    "opencase.vectorstore.delete.duration_seconds",
+    description="Vector delete latency in seconds",
+    unit="s",
+)

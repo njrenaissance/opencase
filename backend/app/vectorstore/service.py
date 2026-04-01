@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 import logging
+import math
+import time
 from typing import TYPE_CHECKING
 
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 from qdrant_client import AsyncQdrantClient, models
 
+from app.core.metrics import (
+    vectorstore_delete_completed,
+    vectorstore_delete_duration_seconds,
+    vectorstore_upsert_completed,
+    vectorstore_upsert_duration_seconds,
+    vectorstore_upsert_failed,
+    vectorstore_upsert_points,
+)
 from app.embedding.models import EmbeddingResult
 from app.vectorstore.models import (
     REQUIRED_METADATA_KEYS,
@@ -17,6 +29,7 @@ from app.vectorstore.models import (
 if TYPE_CHECKING:
     from app.core.config import EmbeddingSettings, QdrantSettings
 
+tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
 
 # Max points per Qdrant upsert call. Independent of EmbeddingSettings.batch_size
@@ -84,21 +97,57 @@ class QdrantVectorStore:
         if not embeddings:
             return 0
 
-        points = [self._build_point(emb, payload_metadata) for emb in embeddings]
+        with tracer.start_as_current_span(
+            "vectorstore.upsert_vectors",
+            attributes={
+                "vectorstore.collection": self._collection,
+                "vectorstore.point_count": len(embeddings),
+                "vectorstore.batch_count": math.ceil(
+                    len(embeddings) / _UPSERT_BATCH_SIZE
+                ),
+            },
+        ) as span:
+            start_time = time.monotonic()
+            try:
+                points = [
+                    self._build_point(emb, payload_metadata) for emb in embeddings
+                ]
 
-        for batch_start in range(0, len(points), _UPSERT_BATCH_SIZE):
-            batch = points[batch_start : batch_start + _UPSERT_BATCH_SIZE]
-            await self._client.upsert(
-                collection_name=self._collection,
-                points=batch,
-            )
+                for batch_start in range(0, len(points), _UPSERT_BATCH_SIZE):
+                    batch = points[batch_start : batch_start + _UPSERT_BATCH_SIZE]
+                    await self._client.upsert(
+                        collection_name=self._collection,
+                        points=batch,
+                    )
 
-        logger.info(
-            "Upserted %d points into collection %r",
-            len(points),
-            self._collection,
-        )
-        return len(points)
+                elapsed = time.monotonic() - start_time
+                attrs = {"collection": self._collection}
+                vectorstore_upsert_completed.add(1, attrs)
+                vectorstore_upsert_duration_seconds.record(elapsed, attrs)
+                vectorstore_upsert_points.record(len(points), attrs)
+
+                logger.info(
+                    "Upserted %d points into collection %r",
+                    len(points),
+                    self._collection,
+                )
+                return len(points)
+
+            except Exception as exc:
+                elapsed = time.monotonic() - start_time
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                vectorstore_upsert_failed.add(
+                    1,
+                    {
+                        "collection": self._collection,
+                        "error_type": type(exc).__name__,
+                    },
+                )
+                vectorstore_upsert_duration_seconds.record(
+                    elapsed, {"collection": self._collection}
+                )
+                raise
 
     async def delete_by_document(self, document_id: str) -> int:
         """Delete all points belonging to a document.
@@ -109,42 +158,67 @@ class QdrantVectorStore:
         Returns:
             Number of points deleted (best-effort count via scroll).
         """
-        # Count before delete so we can report how many were removed.
-        scroll_result = await self._client.scroll(
-            collection_name=self._collection,
-            scroll_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="document_id",
-                        match=models.MatchValue(value=document_id),
-                    )
-                ]
-            ),
-            limit=10_000,
-        )
-        count = len(scroll_result[0])
-
-        await self._client.delete(
-            collection_name=self._collection,
-            points_selector=models.FilterSelector(
-                filter=models.Filter(
-                    must=[
-                        models.FieldCondition(
-                            key="document_id",
-                            match=models.MatchValue(value=document_id),
-                        )
-                    ]
+        with tracer.start_as_current_span(
+            "vectorstore.delete_by_document",
+            attributes={
+                "vectorstore.collection": self._collection,
+                "vectorstore.document_id": document_id,
+            },
+        ) as span:
+            start_time = time.monotonic()
+            try:
+                # Count before delete so we can report how many were removed.
+                scroll_result = await self._client.scroll(
+                    collection_name=self._collection,
+                    scroll_filter=models.Filter(
+                        must=[
+                            models.FieldCondition(
+                                key="document_id",
+                                match=models.MatchValue(value=document_id),
+                            )
+                        ]
+                    ),
+                    limit=10_000,
                 )
-            ),
-        )
+                count = len(scroll_result[0])
 
-        logger.info(
-            "Deleted %d points for document %s from collection %r",
-            count,
-            document_id,
-            self._collection,
-        )
-        return count
+                await self._client.delete(
+                    collection_name=self._collection,
+                    points_selector=models.FilterSelector(
+                        filter=models.Filter(
+                            must=[
+                                models.FieldCondition(
+                                    key="document_id",
+                                    match=models.MatchValue(value=document_id),
+                                )
+                            ]
+                        )
+                    ),
+                )
+
+                span.set_attribute("vectorstore.deleted_count", count)
+
+                elapsed = time.monotonic() - start_time
+                attrs = {"collection": self._collection}
+                vectorstore_delete_completed.add(1, attrs)
+                vectorstore_delete_duration_seconds.record(elapsed, attrs)
+
+                logger.info(
+                    "Deleted %d points for document %s from collection %r",
+                    count,
+                    document_id,
+                    self._collection,
+                )
+                return count
+
+            except Exception as exc:
+                elapsed = time.monotonic() - start_time
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                vectorstore_delete_duration_seconds.record(
+                    elapsed, {"collection": self._collection}
+                )
+                raise
 
     async def close(self) -> None:
         """Close the underlying Qdrant client connection."""

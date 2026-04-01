@@ -3,14 +3,26 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import TYPE_CHECKING
+
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 
 from app.chunking.models import ChunkResult
 from app.chunking.strategies import ChunkingStrategy, RecursiveStrategy
+from app.core.metrics import (
+    chunking_chunks_produced,
+    chunking_completed,
+    chunking_duration_seconds,
+    chunking_failed,
+    chunking_text_length_chars,
+)
 
 if TYPE_CHECKING:
     from app.core.config import ChunkingSettings
 
+tracer = trace.get_tracer(__name__)
 logger = logging.getLogger(__name__)
 
 STRATEGY_MAP: dict[str, type[ChunkingStrategy]] = {
@@ -58,21 +70,54 @@ class ChunkingService:
         if not text or not text.strip():
             return []
 
-        meta = metadata or {}
-        chunks = self._strategy.split(text)
-        offsets = self._compute_offsets(text, chunks)
+        strategy_name = type(self._strategy).__name__
 
-        return [
-            ChunkResult(
-                document_id=document_id,
-                chunk_index=i,
-                text=chunk,
-                char_start=start,
-                char_end=end,
-                metadata=dict(meta),
-            )
-            for i, (chunk, (start, end)) in enumerate(zip(chunks, offsets, strict=True))
-        ]
+        with tracer.start_as_current_span(
+            "chunking.chunk_text",
+            attributes={
+                "chunking.document_id": document_id,
+                "chunking.text_length": len(text),
+            },
+        ) as span:
+            start_time = time.monotonic()
+            try:
+                meta = metadata or {}
+                chunks = self._strategy.split(text)
+                offsets = self._compute_offsets(text, chunks)
+
+                results = [
+                    ChunkResult(
+                        document_id=document_id,
+                        chunk_index=i,
+                        text=chunk,
+                        char_start=start,
+                        char_end=end,
+                        metadata=dict(meta),
+                    )
+                    for i, (chunk, (start, end)) in enumerate(
+                        zip(chunks, offsets, strict=True)
+                    )
+                ]
+
+                span.set_attribute("chunking.chunk_count", len(results))
+                span.set_attribute("chunking.strategy", strategy_name)
+
+                elapsed = time.monotonic() - start_time
+                attrs = {"strategy": strategy_name}
+                chunking_completed.add(1, attrs)
+                chunking_duration_seconds.record(elapsed, attrs)
+                chunking_text_length_chars.record(len(text), attrs)
+                chunking_chunks_produced.record(len(results), attrs)
+
+                return results
+
+            except Exception as exc:
+                elapsed = time.monotonic() - start_time
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                chunking_failed.add(1, {"error_type": type(exc).__name__})
+                chunking_duration_seconds.record(elapsed, {"strategy": "unknown"})
+                raise
 
     @staticmethod
     def _compute_offsets(text: str, chunks: list[str]) -> list[tuple[int, int]]:
