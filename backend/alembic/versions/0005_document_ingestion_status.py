@@ -42,4 +42,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    pass  # fix-forward — never roll back schema changes

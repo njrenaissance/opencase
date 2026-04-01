@@ -41,9 +41,25 @@ async def _update_ingestion_status(document_id: str, status: IngestionStatus) ->
     try:
         async with AsyncSession(engine) as session:
             doc = await session.get(Document, document_id)
-            if doc is not None:
-                doc.ingestion_status = status
-                await session.commit()
+            if doc is None:
+                logger.warning(
+                    "_update_ingestion_status: document %s not found",
+                    document_id,
+                )
+                return
+            if doc.ingestion_status in (
+                IngestionStatus.indexed,
+                IngestionStatus.failed,
+            ):
+                logger.warning(
+                    "_update_ingestion_status: refusing to regress %s from %s to %s",
+                    document_id,
+                    doc.ingestion_status,
+                    status,
+                )
+                return
+            doc.ingestion_status = status
+            await session.commit()
     finally:
         await engine.dispose()
 
