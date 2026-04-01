@@ -1,9 +1,14 @@
-"""Shared model factories for backend tests."""
+"""Shared test factories for backend tests.
+
+Plain functions (not fixtures) because they accept parameters.
+Import by name: ``from tests.factories import make_chunk``.
+"""
 
 from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 from shared.models.enums import (
     Classification,
@@ -12,6 +17,10 @@ from shared.models.enums import (
     Role,
     TaskState,
 )
+
+if TYPE_CHECKING:
+    from app.core.config import EmbeddingSettings, QdrantSettings
+    from app.embedding.models import EmbeddingResult
 
 from app.db.models.document import Document
 from app.db.models.firm import Firm
@@ -112,3 +121,97 @@ def make_matter_access(**kwargs: object) -> MatterAccess:
     }
     defaults.update(kwargs)
     return MatterAccess(**defaults)
+
+
+# ---------------------------------------------------------------------------
+# Embedding / vectorstore / pipeline factories
+# ---------------------------------------------------------------------------
+
+
+def fake_vector(dimensions: int = 768) -> list[float]:
+    """Return a deterministic embedding vector for testing."""
+    return [0.1] * dimensions
+
+
+def make_chunk(
+    document_id: str = "doc-1",
+    chunk_index: int = 0,
+    text: str = "hello world",
+    metadata: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build a chunk dict matching ChunkResult.to_dict() shape."""
+    return {
+        "document_id": document_id,
+        "chunk_index": chunk_index,
+        "text": text,
+        "char_start": 0,
+        "char_end": len(text),
+        "metadata": metadata or {},
+    }
+
+
+def make_embedding_result(
+    document_id: str = "doc-1",
+    chunk_index: int = 0,
+    text: str = "hello world",
+    dimensions: int = 768,
+    metadata: dict[str, object] | None = None,
+) -> EmbeddingResult:
+    """Build an EmbeddingResult with a fake vector."""
+    from app.embedding.models import EmbeddingResult as EmbResult
+
+    return EmbResult(
+        document_id=document_id,
+        chunk_index=chunk_index,
+        vector=fake_vector(dimensions),
+        text=text,
+        metadata=metadata or {},
+    )
+
+
+def make_payload_metadata(**overrides: Any) -> dict[str, object]:
+    """Build a Qdrant payload metadata dict with sensible defaults."""
+    defaults: dict[str, object] = {
+        "firm_id": "firm-aaa",
+        "matter_id": "matter-bbb",
+        "client_id": "client-ccc",
+        "classification": "unclassified",
+        "source": "government_production",
+        "bates_number": None,
+        "page_number": None,
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+def make_embedding_settings(**overrides: Any) -> EmbeddingSettings:
+    """Build EmbeddingSettings with sensible defaults."""
+    from app.core.config import EmbeddingSettings as EmbSettings
+
+    defaults: dict[str, Any] = {
+        "provider": "ollama",
+        "model": "nomic-embed-text",
+        "base_url": "http://ollama:11434",
+        "dimensions": 768,
+        "batch_size": 100,
+        "request_timeout": 120,
+    }
+    defaults.update(overrides)
+    return EmbSettings(**defaults)
+
+
+def make_qdrant_settings(**overrides: Any) -> QdrantSettings:
+    """Build QdrantSettings with sensible defaults."""
+    from app.core.config import QdrantSettings as QdSettings
+
+    defaults: dict[str, Any] = {
+        "host": "localhost",
+        "port": 6333,
+        "grpc_port": 6334,
+        "collection": "opencase_test",
+        "prefer_grpc": False,
+        "use_ssl": False,
+        "api_key": None,
+    }
+    defaults.update(overrides)
+    return QdSettings(**defaults)

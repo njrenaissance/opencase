@@ -14,9 +14,9 @@ import pytest
 from qdrant_client import AsyncQdrantClient, models
 
 from app.core.config import EmbeddingSettings, QdrantSettings
-from app.embedding.models import EmbeddingResult
 from app.vectorstore.models import VectorPayload
 from app.vectorstore.service import QdrantVectorStore
+from tests.factories import make_embedding_result, make_payload_metadata
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -26,36 +26,14 @@ _COLLECTION = "opencase_integration_test"
 _DIMENSIONS = 768
 
 
-def _fake_vector(dimensions: int = _DIMENSIONS) -> list[float]:
-    return [0.1] * dimensions
-
-
-def _make_embedding(
-    document_id: str = "doc-1",
-    chunk_index: int = 0,
-    text: str = "hello world",
-) -> EmbeddingResult:
-    return EmbeddingResult(
-        document_id=document_id,
-        chunk_index=chunk_index,
-        vector=_fake_vector(),
-        text=text,
-        metadata={},
+def _make_integration_payload(**overrides: Any) -> dict[str, object]:
+    """Payload with random UUIDs to avoid cross-test collisions."""
+    return make_payload_metadata(
+        firm_id=str(uuid.uuid4()),
+        matter_id=str(uuid.uuid4()),
+        client_id=str(uuid.uuid4()),
+        **overrides,
     )
-
-
-def _make_payload_metadata(**overrides: Any) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "firm_id": str(uuid.uuid4()),
-        "matter_id": str(uuid.uuid4()),
-        "client_id": str(uuid.uuid4()),
-        "classification": "unclassified",
-        "source": "government_production",
-        "bates_number": None,
-        "page_number": None,
-    }
-    defaults.update(overrides)
-    return defaults
 
 
 # ---------------------------------------------------------------------------
@@ -140,8 +118,8 @@ async def _clean_collection(qdrant_settings: QdrantSettings) -> Any:
 @pytest.mark.usefixtures("_clean_collection")
 class TestQdrantVectorStoreIntegration:
     async def test_upsert_and_scroll(self, store: QdrantVectorStore) -> None:
-        embeddings = [_make_embedding(chunk_index=i) for i in range(3)]
-        meta = _make_payload_metadata()
+        embeddings = [make_embedding_result(chunk_index=i) for i in range(3)]
+        meta = _make_integration_payload()
 
         count = await store.upsert_vectors(embeddings, meta)
 
@@ -164,8 +142,8 @@ class TestQdrantVectorStoreIntegration:
         assert len(points) == 3
 
     async def test_upsert_idempotent(self, store: QdrantVectorStore) -> None:
-        embeddings = [_make_embedding(chunk_index=i) for i in range(3)]
-        meta = _make_payload_metadata()
+        embeddings = [make_embedding_result(chunk_index=i) for i in range(3)]
+        meta = _make_integration_payload()
 
         await store.upsert_vectors(embeddings, meta)
         await store.upsert_vectors(embeddings, meta)
@@ -187,8 +165,8 @@ class TestQdrantVectorStoreIntegration:
         assert len(points) == 3
 
     async def test_delete_by_document(self, store: QdrantVectorStore) -> None:
-        embeddings = [_make_embedding(chunk_index=i) for i in range(3)]
-        meta = _make_payload_metadata()
+        embeddings = [make_embedding_result(chunk_index=i) for i in range(3)]
+        meta = _make_integration_payload()
 
         await store.upsert_vectors(embeddings, meta)
         deleted = await store.delete_by_document("doc-1")
@@ -218,8 +196,8 @@ class TestQdrantVectorStoreIntegration:
     async def test_payload_has_required_field(
         self, store: QdrantVectorStore, field: str
     ) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata(bates_number="GOV-001", page_number=42)
+        emb = make_embedding_result()
+        meta = _make_integration_payload(bates_number="GOV-001", page_number=42)
 
         await store.upsert_vectors([emb], meta)
 
@@ -241,8 +219,8 @@ class TestQdrantVectorStoreIntegration:
         assert field in points[0].payload
 
     async def test_bates_number_null(self, store: QdrantVectorStore) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata(bates_number=None)
+        emb = make_embedding_result()
+        meta = _make_integration_payload(bates_number=None)
 
         await store.upsert_vectors([emb], meta)
 
@@ -264,8 +242,8 @@ class TestQdrantVectorStoreIntegration:
         assert points[0].payload["bates_number"] is None
 
     async def test_bates_number_preserved(self, store: QdrantVectorStore) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata(bates_number="GOV-00142")
+        emb = make_embedding_result()
+        meta = _make_integration_payload(bates_number="GOV-00142")
 
         await store.upsert_vectors([emb], meta)
 

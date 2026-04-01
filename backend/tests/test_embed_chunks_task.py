@@ -7,58 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.embedding.models import EmbeddingResult
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _fake_vector(dimensions: int = 768) -> list[float]:
-    return [0.1] * dimensions
-
-
-def _make_chunk(
-    document_id: str = "doc-1",
-    chunk_index: int = 0,
-    text: str = "hello world",
-) -> dict[str, object]:
-    return {
-        "document_id": document_id,
-        "chunk_index": chunk_index,
-        "text": text,
-        "char_start": 0,
-        "char_end": len(text),
-        "metadata": {},
-    }
-
-
-def _make_payload_metadata(**overrides: Any) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "firm_id": "firm-aaa",
-        "matter_id": "matter-bbb",
-        "client_id": "client-ccc",
-        "classification": "unclassified",
-        "source": "government_production",
-        "bates_number": None,
-        "page_number": None,
-    }
-    defaults.update(overrides)
-    return defaults
-
-
-def _make_embedding_result(
-    document_id: str = "doc-1",
-    chunk_index: int = 0,
-) -> EmbeddingResult:
-    return EmbeddingResult(
-        document_id=document_id,
-        chunk_index=chunk_index,
-        vector=_fake_vector(),
-        text="hello world",
-        metadata={},
-    )
-
+from tests.factories import make_chunk, make_embedding_result, make_payload_metadata
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -99,13 +48,13 @@ class TestEmbedChunksTask:
         return asyncio.run(
             _embed(
                 document_id,
-                chunks or [_make_chunk()],
-                payload_metadata or _make_payload_metadata(),
+                chunks or [make_chunk()],
+                payload_metadata or make_payload_metadata(),
             )
         )
 
     def test_calls_embedding_then_upsert(self) -> None:
-        results = [_make_embedding_result()]
+        results = [make_embedding_result()]
         self.mock_embedding_svc.embed_chunks.return_value = results
         self.mock_vectorstore_svc.upsert_vectors.return_value = 1
 
@@ -118,7 +67,7 @@ class TestEmbedChunksTask:
         assert call_args.args[0] is results
 
     def test_returns_summary_without_raw_vectors(self) -> None:
-        self.mock_embedding_svc.embed_chunks.return_value = [_make_embedding_result()]
+        self.mock_embedding_svc.embed_chunks.return_value = [make_embedding_result()]
         self.mock_vectorstore_svc.upsert_vectors.return_value = 1
 
         result = self._run_task()
@@ -138,7 +87,7 @@ class TestEmbedChunksTask:
         self.mock_vectorstore_svc.upsert_vectors.assert_not_called()
 
     def test_upsert_error_propagates(self) -> None:
-        self.mock_embedding_svc.embed_chunks.return_value = [_make_embedding_result()]
+        self.mock_embedding_svc.embed_chunks.return_value = [make_embedding_result()]
         self.mock_vectorstore_svc.upsert_vectors.side_effect = RuntimeError(
             "Qdrant down"
         )
@@ -147,9 +96,9 @@ class TestEmbedChunksTask:
             self._run_task()
 
     def test_payload_metadata_passed_through(self) -> None:
-        self.mock_embedding_svc.embed_chunks.return_value = [_make_embedding_result()]
+        self.mock_embedding_svc.embed_chunks.return_value = [make_embedding_result()]
         self.mock_vectorstore_svc.upsert_vectors.return_value = 1
-        meta = _make_payload_metadata(bates_number="GOV-042", page_number=7)
+        meta = make_payload_metadata(bates_number="GOV-042", page_number=7)
 
         self._run_task(payload_metadata=meta)
 
@@ -157,8 +106,8 @@ class TestEmbedChunksTask:
         assert call_args.args[1] is meta
 
     def test_multiple_chunks(self) -> None:
-        chunks = [_make_chunk(chunk_index=i) for i in range(5)]
-        results = [_make_embedding_result(chunk_index=i) for i in range(5)]
+        chunks = [make_chunk(chunk_index=i) for i in range(5)]
+        results = [make_embedding_result(chunk_index=i) for i in range(5)]
         self.mock_embedding_svc.embed_chunks.return_value = results
         self.mock_vectorstore_svc.upsert_vectors.return_value = 5
 

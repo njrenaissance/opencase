@@ -230,6 +230,7 @@ class TestIngestDocumentSpans:
 
         mock_vectorstore = AsyncMock()
         mock_vectorstore.upsert_vectors.return_value = 1
+        mock_vectorstore.close = AsyncMock()
 
         # Mock DB session for metadata lookup
         mock_doc = SimpleNamespace(
@@ -242,11 +243,13 @@ class TestIngestDocumentSpans:
         mock_matter = SimpleNamespace(client_id="client-1")
         mock_session = AsyncMock()
         mock_session.get = AsyncMock(side_effect=[mock_doc, mock_matter])
-        mock_session_factory = MagicMock()
-        mock_session_factory.return_value.__aenter__ = AsyncMock(
-            return_value=mock_session
-        )
-        mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_session_ctx = AsyncMock()
+        mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_ctx.__aexit__ = AsyncMock(return_value=False)
+
+        # Mock engine that returns our mock session
+        mock_engine = AsyncMock()
+        mock_engine.dispose = AsyncMock()
 
         with (
             patch("app.storage.get_storage_service", return_value=mock_storage),
@@ -259,16 +262,20 @@ class TestIngestDocumentSpans:
                 return_value=mock_chunking,
             ),
             patch(
-                "app.embedding.get_embedding_service",
+                "app.workers.tasks.ingest_document.EmbeddingService",
                 return_value=mock_embedding_svc,
             ),
             patch(
-                "app.vectorstore.get_vectorstore_service",
+                "app.workers.tasks.ingest_document.QdrantVectorStore",
                 return_value=mock_vectorstore,
             ),
             patch(
-                "app.db.session.AsyncSessionLocal",
-                mock_session_factory,
+                "app.workers.tasks.ingest_document.create_async_engine",
+                return_value=mock_engine,
+            ),
+            patch(
+                "app.workers.tasks.ingest_document.AsyncSession",
+                return_value=mock_session_ctx,
             ),
             patch("app.workers.tasks.ingest_document.tracer", test_tracer),
         ):

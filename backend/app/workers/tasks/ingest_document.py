@@ -14,6 +14,11 @@ from typing import TYPE_CHECKING
 from celery import shared_task  # type: ignore[import-untyped]
 from opentelemetry import trace
 from opentelemetry.trace import StatusCode
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
+from app.core.config import settings
+from app.embedding.service import EmbeddingService
+from app.vectorstore.service import QdrantVectorStore
 
 if TYPE_CHECKING:
     from app.embedding.models import EmbeddingResult
@@ -111,22 +116,31 @@ async def _run_extract(
 
 
 async def _run_metadata_lookup(document_id: str) -> dict[str, object]:
-    """Query Document + Matter from DB to build the Qdrant payload metadata."""
+    """Query Document + Matter from DB to build the Qdrant payload metadata.
+
+    Creates a fresh async engine per call to avoid the "Future attached to a
+    different loop" error that occurs when Celery's ``asyncio.run()`` creates
+    a new event loop but the module-level engine is bound to an old one.
+    """
     from app.db.models.document import Document
     from app.db.models.matter import Matter
-    from app.db.session import AsyncSessionLocal
 
-    with tracer.start_as_current_span("ingestion.db_lookup"):
-        async with AsyncSessionLocal() as session:
-            doc = await session.get(Document, document_id)
-            if doc is None:
-                msg = f"Document {document_id} not found in database"
-                raise ValueError(msg)
+    engine = create_async_engine(settings.db.url, pool_pre_ping=True)
 
-            matter = await session.get(Matter, doc.matter_id)
-            if matter is None:
-                msg = f"Matter {doc.matter_id} not found in database"
-                raise ValueError(msg)
+    try:
+        with tracer.start_as_current_span("ingestion.db_lookup"):
+            async with AsyncSession(engine) as session:
+                doc = await session.get(Document, document_id)
+                if doc is None:
+                    msg = f"Document {document_id} not found in database"
+                    raise ValueError(msg)
+
+                matter = await session.get(Matter, doc.matter_id)
+                if matter is None:
+                    msg = f"Matter {doc.matter_id} not found in database"
+                    raise ValueError(msg)
+    finally:
+        await engine.dispose()
 
     return {
         "firm_id": str(doc.firm_id),
@@ -175,18 +189,24 @@ async def _run_embedding(
     payload_metadata: dict[str, object],
     span: trace.Span,
 ) -> int:
-    """Embed chunks via Ollama and upsert vectors to Qdrant."""
-    from app.embedding import get_embedding_service
-    from app.vectorstore import get_vectorstore_service
+    """Embed chunks via Ollama and upsert vectors to Qdrant.
 
+    Creates fresh service instances per call to avoid event-loop
+    conflicts in Celery workers (each ``asyncio.run()`` creates a
+    new loop, but singleton clients hold connections bound to
+    the previous one).
+    """
     with tracer.start_as_current_span("ingestion.embed_upsert"):
-        embedding_service = get_embedding_service()
+        embedding_service = EmbeddingService(settings.embedding)
         embeddings: list[EmbeddingResult] = await embedding_service.embed_chunks(
             chunks_data
         )
 
-        vectorstore = get_vectorstore_service()
-        point_count = await vectorstore.upsert_vectors(embeddings, payload_metadata)
+        vectorstore = QdrantVectorStore(settings.qdrant, settings.embedding)
+        try:
+            point_count = await vectorstore.upsert_vectors(embeddings, payload_metadata)
+        finally:
+            await vectorstore.close()
 
     span.set_attribute("embedding.result_count", len(embeddings))
     span.set_attribute("vectorstore.point_count", point_count)

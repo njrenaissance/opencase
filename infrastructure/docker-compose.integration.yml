@@ -58,9 +58,14 @@ services:
       - "9000:9000"
       - "9001:9001"
 
+  ollama:
+    ports:
+      - "11434:11434"
+
   qdrant:
     ports:
       - "6333:6333"
+      - "6334:6334"
 
   qdrant-init:
     environment:

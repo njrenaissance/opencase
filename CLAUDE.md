@@ -270,6 +270,13 @@ definitions live in matching subdirectories under
   reduce boilerplate. Repeated setup/teardown logic
   should be extracted into context managers or fixtures
   rather than duplicated in every test function.
+- **Pre-commit dedup check**: Before committing, review
+  all files in the changeset for functions that share
+  the same name, signature, and purpose. If duplicates
+  exist across files, collapse them into a single shared
+  function in the appropriate shared module (e.g.
+  `tests/factories.py` for test helpers). Do not commit
+  files containing duplicate function definitions.
 
 ---
 

@@ -7,33 +7,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.core.config import EmbeddingSettings
 from app.embedding.service import EmbeddingService
+from tests.factories import make_chunk, make_embedding_settings
 
 
 def _make_service(host: str, port: int) -> EmbeddingService:
-    settings = EmbeddingSettings(
-        provider="ollama",
-        model="nomic-embed-text",
-        base_url=f"http://{host}:{port}",
-        dimensions=768,
-        batch_size=10,
-        request_timeout=120,
+    return EmbeddingService(
+        make_embedding_settings(base_url=f"http://{host}:{port}", batch_size=10)
     )
-    return EmbeddingService(settings)
-
-
-def _make_chunk(
-    text: str, chunk_index: int = 0, document_id: str = "test-doc"
-) -> dict[str, object]:
-    return {
-        "document_id": document_id,
-        "chunk_index": chunk_index,
-        "text": text,
-        "char_start": 0,
-        "char_end": len(text),
-        "metadata": {"source": "integration_test"},
-    }
 
 
 @pytest.mark.integration
@@ -42,7 +23,11 @@ class TestOllamaEmbeddingLive:
     async def test_embed_single_chunk(self, ollama_service):
         host, port = ollama_service
         service = _make_service(host, port)
-        chunk = _make_chunk("Criminal defense discovery obligations under CPL 245")
+        chunk = make_chunk(
+            text="Criminal defense discovery obligations under CPL 245",
+            document_id="test-doc",
+            metadata={"source": "integration_test"},
+        )
 
         results = await service.embed_chunks([chunk])
 
@@ -57,9 +42,21 @@ class TestOllamaEmbeddingLive:
         host, port = ollama_service
         service = _make_service(host, port)
         chunks = [
-            _make_chunk("Brady material disclosure requirements", chunk_index=0),
-            _make_chunk("Giglio witness impeachment evidence", chunk_index=1),
-            _make_chunk("Jencks Act prior statements of witnesses", chunk_index=2),
+            make_chunk(
+                text="Brady material disclosure requirements",
+                chunk_index=0,
+                document_id="test-doc",
+            ),
+            make_chunk(
+                text="Giglio witness impeachment evidence",
+                chunk_index=1,
+                document_id="test-doc",
+            ),
+            make_chunk(
+                text="Jencks Act prior statements of witnesses",
+                chunk_index=2,
+                document_id="test-doc",
+            ),
         ]
 
         results = await service.embed_chunks(chunks)
@@ -74,7 +71,10 @@ class TestOllamaEmbeddingLive:
         """Verify deterministic output shape for identical input."""
         host, port = ollama_service
         service = _make_service(host, port)
-        chunk = _make_chunk("Speedy trial clock under CPL 30.30")
+        chunk = make_chunk(
+            text="Speedy trial clock under CPL 30.30",
+            document_id="test-doc",
+        )
 
         results1 = await service.embed_chunks([chunk])
         results2 = await service.embed_chunks([chunk])
@@ -85,7 +85,11 @@ class TestOllamaEmbeddingLive:
     async def test_metadata_passthrough(self, ollama_service):
         host, port = ollama_service
         service = _make_service(host, port)
-        chunk = _make_chunk("Test metadata passthrough")
+        chunk = make_chunk(
+            text="Test metadata passthrough",
+            document_id="test-doc",
+            metadata={"source": "integration_test"},
+        )
 
         results = await service.embed_chunks([chunk])
 

@@ -132,6 +132,9 @@ def seed_pipeline(
 class TestIngestionPipelineEndToEnd:
     """Upload a document via the API and verify vectors land in Qdrant."""
 
+    # TODO: Fails — pipeline times out. Celery worker likely errors during
+    # ingest_document (DB lookup or embed step). Investigate worker logs with
+    # stack running: docker logs opencase-test-celery-worker-1
     def test_upload_triggers_full_pipeline(
         self,
         fastapi_service: str,

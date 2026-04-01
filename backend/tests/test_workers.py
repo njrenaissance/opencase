@@ -155,6 +155,7 @@ def test_ingest_document_full_pipeline():
 
     mock_vectorstore = AsyncMock()
     mock_vectorstore.upsert_vectors.return_value = 1
+    mock_vectorstore.close = AsyncMock()
 
     # Mock the DB session to return document + matter
     mock_doc = SimpleNamespace(
@@ -168,9 +169,12 @@ def test_ingest_document_full_pipeline():
 
     mock_session = AsyncMock()
     mock_session.get = AsyncMock(side_effect=[mock_doc, mock_matter])
-    mock_session_factory = MagicMock()
-    mock_session_factory.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-    mock_session_factory.return_value.__aexit__ = AsyncMock(return_value=False)
+    mock_session_ctx = AsyncMock()
+    mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    mock_engine = AsyncMock()
+    mock_engine.dispose = AsyncMock()
 
     s3_key = "firm-1/matter-1/doc-1/original.pdf"
 
@@ -185,16 +189,20 @@ def test_ingest_document_full_pipeline():
             return_value=mock_chunking,
         ),
         patch(
-            "app.embedding.get_embedding_service",
+            "app.workers.tasks.ingest_document.EmbeddingService",
             return_value=mock_embedding_svc,
         ),
         patch(
-            "app.vectorstore.get_vectorstore_service",
+            "app.workers.tasks.ingest_document.QdrantVectorStore",
             return_value=mock_vectorstore,
         ),
         patch(
-            "app.db.session.AsyncSessionLocal",
-            mock_session_factory,
+            "app.workers.tasks.ingest_document.create_async_engine",
+            return_value=mock_engine,
+        ),
+        patch(
+            "app.workers.tasks.ingest_document.AsyncSession",
+            return_value=mock_session_ctx,
         ),
     ):
         from app.workers.tasks.ingest_document import ingest_document
