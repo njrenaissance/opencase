@@ -43,7 +43,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 # ---------------------------------------------------------------------------
 from app.core.auth import hash_password
 from app.core.config import settings
+from app.core.constants import (
+    GLOBAL_KNOWLEDGE_MATTER_ID,
+    GLOBAL_KNOWLEDGE_MATTER_NAME,
+    SYSTEM_CLIENT_ID,
+)
 from app.db.models.firm import Firm
+from app.db.models.matter import Matter
 from app.db.models.user import User
 
 
@@ -105,6 +111,29 @@ async def _seed_with_session(  # noqa: PLR0913
     else:
         print(f"Firm already exists: {firm_name} (id={firm.id})")  # noqa: T201
 
+    # Seed the Global Knowledge matter (system matter for shared legal references).
+    result = await session.execute(
+        select(Matter).where(Matter.id == GLOBAL_KNOWLEDGE_MATTER_ID)
+    )
+    gk_matter = result.scalar_one_or_none()
+    if gk_matter is None:
+        gk_matter = Matter(
+            id=GLOBAL_KNOWLEDGE_MATTER_ID,
+            firm_id=firm.id,
+            name=GLOBAL_KNOWLEDGE_MATTER_NAME,
+            client_id=SYSTEM_CLIENT_ID,
+        )
+        session.add(gk_matter)
+        await session.flush()
+        print(  # noqa: T201
+            f"Created system matter: {GLOBAL_KNOWLEDGE_MATTER_NAME} (id={gk_matter.id})"
+        )
+    else:
+        print(  # noqa: T201
+            f"System matter already exists: {GLOBAL_KNOWLEDGE_MATTER_NAME}"
+            f" (id={gk_matter.id})"
+        )
+
     # Check if the user already exists.
     result = await session.execute(
         select(User).where(User.email == email, User.firm_id == firm.id)
@@ -112,6 +141,7 @@ async def _seed_with_session(  # noqa: PLR0913
     existing = result.scalar_one_or_none()
 
     if existing is not None:
+        await session.commit()
         print(f"Admin user already exists: {email} (id={existing.id})")  # noqa: T201
         return
 
