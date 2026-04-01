@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID
 from app.core.metrics import access_denied
 from app.db import get_db
 from app.db.models.matter import Matter
@@ -42,10 +43,14 @@ class PermissionFilter:
     Converted to ``qdrant_client.models.Filter`` in the RAG layer
     (Feature 5). Keeping it abstract here makes it testable without
     a Qdrant dependency.
+
+    ``matter_ids`` always includes both the requested matter and the
+    global knowledge matter so that shared legal references are
+    returned alongside case-specific results.
     """
 
     firm_id: uuid.UUID
-    matter_id: uuid.UUID
+    matter_ids: frozenset[uuid.UUID]
     excluded_classifications: frozenset[str]
 
 
@@ -124,7 +129,7 @@ async def build_qdrant_filter(
         if user.role == Role.admin:
             return PermissionFilter(
                 firm_id=user.firm_id,
-                matter_id=matter_id,
+                matter_ids=frozenset({matter_id, GLOBAL_KNOWLEDGE_MATTER_ID}),
                 excluded_classifications=frozenset(excluded),
             )
 
@@ -144,7 +149,7 @@ async def build_qdrant_filter(
 
         return PermissionFilter(
             firm_id=user.firm_id,
-            matter_id=matter_id,
+            matter_ids=frozenset({matter_id, GLOBAL_KNOWLEDGE_MATTER_ID}),
             excluded_classifications=frozenset(excluded),
         )
 
