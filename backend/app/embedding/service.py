@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import httpx
@@ -56,6 +57,13 @@ class EmbeddingService:
         if not chunks:
             return []
 
+        _required_keys = {"document_id", "chunk_index", "text"}
+        for i, chunk in enumerate(chunks):
+            missing = _required_keys - chunk.keys()
+            if missing:
+                msg = f"Chunk at index {i} missing keys: {sorted(missing)}"
+                raise ValueError(msg)
+
         results: list[EmbeddingResult] = []
         batch_size = self._settings.batch_size
 
@@ -104,7 +112,7 @@ class EmbeddingService:
         logger.info(
             "Embedded %d chunks in %d batch(es) using %s",
             len(results),
-            -(-len(chunks) // batch_size),  # ceiling division
+            math.ceil(len(chunks) / batch_size),
             self._settings.model,
         )
         return results

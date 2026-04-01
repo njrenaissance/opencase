@@ -19,6 +19,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Max points per Qdrant upsert call. Independent of EmbeddingSettings.batch_size
+# (which controls Ollama HTTP request batching). Qdrant handles larger batches
+# efficiently, but 100 keeps memory usage bounded during serialization.
 _UPSERT_BATCH_SIZE = 100
 
 

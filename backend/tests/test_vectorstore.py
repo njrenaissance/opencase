@@ -44,6 +44,10 @@ class TestVectorPayload:
 
 
 class TestPointId:
+    def test_namespace_uuid_is_pinned(self) -> None:
+        """Changing POINT_ID_NAMESPACE breaks point deduplication."""
+        assert uuid.UUID("b6e7f2a1-4c3d-4e8f-9a1b-2d3e4f5a6b7c") == POINT_ID_NAMESPACE
+
     def test_deterministic(self) -> None:
         id1 = make_point_id("doc-1", 0)
         id2 = make_point_id("doc-1", 0)
