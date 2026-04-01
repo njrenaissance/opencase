@@ -409,10 +409,13 @@ async def list_documents(
         if classification is not None:
             stmt = stmt.where(Document.classification == classification)
         if filename is not None:
-            safe = filename.replace("%", r"\%").replace("_", r"\_")
-            stmt = stmt.where(Document.filename.ilike(f"%{safe}%", escape="\\"))
+            escaped_filename = filename.replace("%", r"\%").replace("_", r"\_")
+            stmt = stmt.where(
+                Document.filename.ilike(f"%{escaped_filename}%", escape="\\")
+            )
 
-        # Count total before pagination
+        # Count total before pagination (must run before ORDER BY is applied
+        # to avoid PostgreSQL requiring ORDER BY expressions in the SELECT list)
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await db.execute(count_stmt)).scalar_one()
 
@@ -528,7 +531,26 @@ async def re_ingest_document(
         "documents.re_ingest",
         attributes={"user.id": str(user.id), "document.id": str(document_id)},
     ):
-        doc = await _get_document_with_access(document_id, user, db)
+        # Re-ingest is a write operation — restrict to admin and attorney
+        if user.role not in (Role.admin, Role.attorney):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins and attorneys can re-ingest documents",
+            )
+
+        # Lock the row to prevent concurrent re-ingest races
+        result = await db.execute(
+            select(Document)
+            .where(
+                Document.id == document_id,
+                Document.firm_id == user.firm_id,
+            )
+            .with_for_update()
+        )
+        doc = result.scalar_one_or_none()
+        if doc is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        await _verify_matter_access(doc.matter_id, user, db)
 
         if doc.legal_hold:
             raise HTTPException(

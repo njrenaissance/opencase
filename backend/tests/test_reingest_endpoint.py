@@ -139,6 +139,20 @@ class TestReIngest:
 
         assert resp.status_code == 500
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("role", [Role.paralegal, Role.investigator])
+    async def test_re_ingest_forbidden_for_non_admin_attorney(self, role: Role) -> None:
+        user = make_user(firm_id=_FIRM_ID, role=role)
+        fake = FakeSession()
+
+        async with api_client(user, fake) as ac:
+            resp = await ac.post(
+                f"/documents/{uuid.uuid4()}/re-ingest",
+                headers=auth_header(user),
+            )
+
+        assert resp.status_code == 403
+
 
 # ---------------------------------------------------------------------------
 # Legal hold guard in ingest_document task
