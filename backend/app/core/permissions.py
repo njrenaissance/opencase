@@ -20,7 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
-from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID
+from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID, is_system_matter
 from app.core.metrics import access_denied
 from app.db import get_db
 from app.db.models.matter import Matter
@@ -123,6 +123,15 @@ async def build_qdrant_filter(
         "permissions.build_qdrant_filter",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
     ):
+        # Reject direct queries against system matters — they are
+        # included automatically via matter_ids and must not be
+        # queried as a standalone matter.
+        if is_system_matter(matter_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="System matters cannot be queried directly.",
+            )
+
         excluded: set[str] = set()
 
         # Admin: full access, no MatterAccess check required.

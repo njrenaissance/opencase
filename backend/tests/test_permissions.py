@@ -10,7 +10,7 @@ import pytest
 from fastapi import HTTPException
 from shared.models.enums import Role
 
-from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID
+from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID, is_system_matter
 from app.core.permissions import (
     PermissionFilter,
     build_qdrant_filter,
@@ -110,6 +110,30 @@ async def test_investigator_excludes_work_product_and_jencks() -> None:
     result = await build_qdrant_filter(user, _MATTER_ID, db)
 
     assert result.excluded_classifications == frozenset({"work_product", "jencks"})
+
+
+@pytest.mark.asyncio
+async def test_non_admin_matter_ids_include_global_knowledge() -> None:
+    """Non-admin filters should also include the global knowledge matter."""
+    user = make_user(role=Role.attorney, firm_id=_FIRM_ID)
+    access = _make_access(user.id)
+    db = _mock_db(access)
+
+    result = await build_qdrant_filter(user, _MATTER_ID, db)
+
+    assert result.matter_ids == frozenset({_MATTER_ID, GLOBAL_KNOWLEDGE_MATTER_ID})
+
+
+@pytest.mark.asyncio
+async def test_system_matter_rejected_as_direct_query() -> None:
+    """Passing a system matter as matter_id should raise 400."""
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
+    db = _mock_db()
+
+    with pytest.raises(HTTPException) as exc_info:
+        await build_qdrant_filter(user, GLOBAL_KNOWLEDGE_MATTER_ID, db)
+
+    assert exc_info.value.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -269,3 +293,16 @@ async def test_matter_access_returns_row() -> None:
 
     assert result is not None
     assert result.view_work_product is True
+
+
+# ---------------------------------------------------------------------------
+# is_system_matter tests
+# ---------------------------------------------------------------------------
+
+
+def test_is_system_matter_recognises_global_knowledge() -> None:
+    assert is_system_matter(GLOBAL_KNOWLEDGE_MATTER_ID) is True
+
+
+def test_is_system_matter_rejects_regular_uuid() -> None:
+    assert is_system_matter(uuid.uuid4()) is False
