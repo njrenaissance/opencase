@@ -324,7 +324,7 @@ def qdrant_service(docker_ip, docker_services):
 def ollama_service(docker_ip, docker_services):
     """Ensure Ollama is up and return (host, port)."""
     docker_services.wait_until_responsive(
-        timeout=300.0,
+        timeout=120.0,
         pause=1.0,
         check=lambda: _ollama_ready(docker_ip, _OLLAMA_PORT),
     )
@@ -365,33 +365,52 @@ def _sync_db_url() -> str:
 
 @pytest.fixture
 def seed_admin(postgres_service):
-    """Insert an admin user into the test DB, yield credentials, then clean up.
+    """Ensure an admin user exists in the test DB and yield credentials.
 
-    Connects directly to the test database (opencase_test) — never touches
-    the dev database.
+    If the admin bootstrap already created the user (same email from
+    .env.test), reuse it and update the password. Otherwise insert a
+    fresh user. Teardown only removes rows this fixture created.
     """
+    from sqlalchemy import select as sa_select
+
     engine = create_engine(_sync_db_url())
-    firm_id = uuid.uuid4()
-    user_id = uuid.uuid4()
+    created_firm = False
+    created_user = False
 
     with Session(engine) as session:
-        session.add(Firm(id=firm_id, name="Test Firm"))
-        session.flush()
-        session.add(
-            User(
-                id=user_id,
-                firm_id=firm_id,
-                email=_SEED_ADMIN_EMAIL,
-                hashed_password=hash_password(_SEED_ADMIN_PASSWORD),
-                first_name="Admin",
-                last_name="Test",
-                role=Role.admin,
-                is_active=True,
-                created_at=datetime.now(UTC),
-                updated_at=datetime.now(UTC),
+        existing = session.execute(
+            sa_select(User).where(User.email == _SEED_ADMIN_EMAIL)
+        ).scalar_one_or_none()
+
+        if existing is not None:
+            # Reuse bootstrap user — update password so tests can log in
+            existing.hashed_password = hash_password(_SEED_ADMIN_PASSWORD)
+            user_id = existing.id
+            firm_id = existing.firm_id
+            session.commit()
+        else:
+            # No bootstrap user — create from scratch
+            firm_id = uuid.uuid4()
+            user_id = uuid.uuid4()
+            session.add(Firm(id=firm_id, name="Test Firm"))
+            session.flush()
+            session.add(
+                User(
+                    id=user_id,
+                    firm_id=firm_id,
+                    email=_SEED_ADMIN_EMAIL,
+                    hashed_password=hash_password(_SEED_ADMIN_PASSWORD),
+                    first_name="Admin",
+                    last_name="Test",
+                    role=Role.admin,
+                    is_active=True,
+                    created_at=datetime.now(UTC),
+                    updated_at=datetime.now(UTC),
+                )
             )
-        )
-        session.commit()
+            session.commit()
+            created_firm = True
+            created_user = True
 
     yield {
         "user_id": user_id,
@@ -400,12 +419,14 @@ def seed_admin(postgres_service):
         "password": _SEED_ADMIN_PASSWORD,
     }
 
-    # Teardown — remove all traces.
+    # Teardown — only remove rows we created (don't delete bootstrap user)
     with Session(engine) as session:
-        session.execute(delete(TaskSubmission).where(TaskSubmission.user_id == user_id))
         session.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
-        session.execute(delete(User).where(User.id == user_id))
-        session.execute(delete(Firm).where(Firm.id == firm_id))
+        session.execute(delete(TaskSubmission).where(TaskSubmission.user_id == user_id))
+        if created_user:
+            session.execute(delete(User).where(User.id == user_id))
+        if created_firm:
+            session.execute(delete(Firm).where(Firm.id == firm_id))
         session.commit()
 
     engine.dispose()

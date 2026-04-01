@@ -22,6 +22,8 @@ def _make_service(host: str, port: int) -> TikaExtractionService:
     return TikaExtractionService(settings)
 
 
+# TODO: All tests in TestTikaLive fail — TikaExtractionService has no .close() method.
+# Remove the await svc.close() calls or add a close() method to the service.
 @pytest.mark.integration
 class TestTikaLive:
     @pytest.mark.asyncio

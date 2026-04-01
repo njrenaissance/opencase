@@ -258,9 +258,9 @@ services:
   # --- Vector Store -----------------------------------------
   qdrant:
     image: qdrant/qdrant:latest
-    expose:
-      - "6333"
-      - "6334"
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:

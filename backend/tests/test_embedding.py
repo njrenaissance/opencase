@@ -8,50 +8,17 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from app.core.config import EmbeddingSettings
 from app.embedding.models import EmbeddingResult
 from app.embedding.service import EmbeddingDimensionError, EmbeddingService
+from tests.factories import fake_vector, make_chunk, make_embedding_settings
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helpers (test-local — only used in this file)
 # ---------------------------------------------------------------------------
-
-
-def _make_settings(**overrides: Any) -> EmbeddingSettings:
-    defaults: dict[str, Any] = {
-        "provider": "ollama",
-        "model": "nomic-embed-text",
-        "base_url": "http://ollama:11434",
-        "dimensions": 768,
-        "batch_size": 100,
-        "request_timeout": 120,
-    }
-    defaults.update(overrides)
-    return EmbeddingSettings(**defaults)
 
 
 def _make_service(**overrides: Any) -> EmbeddingService:
-    return EmbeddingService(_make_settings(**overrides))
-
-
-def _make_chunk(
-    document_id: str = "doc-1",
-    chunk_index: int = 0,
-    text: str = "hello world",
-    metadata: dict[str, object] | None = None,
-) -> dict[str, object]:
-    return {
-        "document_id": document_id,
-        "chunk_index": chunk_index,
-        "text": text,
-        "char_start": 0,
-        "char_end": len(text),
-        "metadata": metadata or {},
-    }
-
-
-def _fake_vector(dimensions: int = 768) -> list[float]:
-    return [0.1] * dimensions
+    return EmbeddingService(make_embedding_settings(**overrides))
 
 
 def _mock_response(
@@ -124,8 +91,8 @@ class TestEmbeddingServiceEmpty:
 class TestEmbeddingServiceSuccess:
     @pytest.mark.asyncio
     async def test_single_chunk(self):
-        chunk = _make_chunk(text="test text")
-        vector = _fake_vector()
+        chunk = make_chunk(text="test text")
+        vector = fake_vector()
         mock_resp = _mock_response([vector])
 
         service = _make_service()
@@ -142,8 +109,8 @@ class TestEmbeddingServiceSuccess:
 
     @pytest.mark.asyncio
     async def test_multiple_chunks(self):
-        chunks = [_make_chunk(chunk_index=i, text=f"text {i}") for i in range(5)]
-        vectors = [_fake_vector() for _ in range(5)]
+        chunks = [make_chunk(chunk_index=i, text=f"text {i}") for i in range(5)]
+        vectors = [fake_vector() for _ in range(5)]
         mock_resp = _mock_response(vectors)
 
         service = _make_service()
@@ -160,8 +127,8 @@ class TestEmbeddingServiceSuccess:
     @pytest.mark.asyncio
     async def test_metadata_passthrough(self):
         meta = {"firm_id": "f1", "matter_id": "m1", "source": "defense"}
-        chunk = _make_chunk(metadata=meta)
-        mock_resp = _mock_response([_fake_vector()])
+        chunk = make_chunk(metadata=meta)
+        mock_resp = _mock_response([fake_vector()])
 
         service = _make_service()
         with patch.object(
@@ -181,7 +148,7 @@ class TestEmbeddingServiceBatching:
     @pytest.mark.asyncio
     async def test_batching_respects_batch_size(self):
         """10 chunks with batch_size=3 should produce 4 HTTP calls."""
-        chunks = [_make_chunk(chunk_index=i, text=f"t{i}") for i in range(10)]
+        chunks = [make_chunk(chunk_index=i, text=f"t{i}") for i in range(10)]
         service = _make_service(batch_size=3)
 
         call_count = 0
@@ -192,7 +159,7 @@ class TestEmbeddingServiceBatching:
             call_count += 1
             inputs = kwargs["json"]["input"]
             batch_sizes.append(len(inputs))
-            vectors = [_fake_vector() for _ in inputs]
+            vectors = [fake_vector() for _ in inputs]
             return _mock_response(vectors)
 
         with patch.object(httpx.AsyncClient, "post", side_effect=mock_post):
@@ -205,7 +172,7 @@ class TestEmbeddingServiceBatching:
     @pytest.mark.asyncio
     async def test_single_batch_when_under_limit(self):
         """3 chunks with batch_size=100 should produce 1 HTTP call."""
-        chunks = [_make_chunk(chunk_index=i) for i in range(3)]
+        chunks = [make_chunk(chunk_index=i) for i in range(3)]
         service = _make_service(batch_size=100)
 
         call_count = 0
@@ -214,7 +181,7 @@ class TestEmbeddingServiceBatching:
             nonlocal call_count
             call_count += 1
             inputs = kwargs["json"]["input"]
-            return _mock_response([_fake_vector() for _ in inputs])
+            return _mock_response([fake_vector() for _ in inputs])
 
         with patch.object(httpx.AsyncClient, "post", side_effect=mock_post):
             results = await service.embed_chunks(chunks)
@@ -231,7 +198,7 @@ class TestEmbeddingServiceBatching:
 class TestEmbeddingServiceErrors:
     @pytest.mark.asyncio
     async def test_dimension_mismatch_raises(self):
-        chunk = _make_chunk()
+        chunk = make_chunk()
         wrong_vector = [0.1] * 512  # expected 768
         mock_resp = _mock_response([wrong_vector])
 
@@ -249,9 +216,9 @@ class TestEmbeddingServiceErrors:
 
     @pytest.mark.asyncio
     async def test_vector_count_mismatch_raises(self):
-        chunks = [_make_chunk(chunk_index=i) for i in range(3)]
+        chunks = [make_chunk(chunk_index=i) for i in range(3)]
         # Return only 2 vectors for 3 chunks
-        mock_resp = _mock_response([_fake_vector(), _fake_vector()])
+        mock_resp = _mock_response([fake_vector(), fake_vector()])
 
         service = _make_service()
         with (
@@ -267,7 +234,7 @@ class TestEmbeddingServiceErrors:
 
     @pytest.mark.asyncio
     async def test_ollama_connection_error_raises(self):
-        chunk = _make_chunk()
+        chunk = make_chunk()
         service = _make_service()
 
         with (
@@ -283,7 +250,7 @@ class TestEmbeddingServiceErrors:
 
     @pytest.mark.asyncio
     async def test_ollama_http_error_raises(self):
-        chunk = _make_chunk()
+        chunk = make_chunk()
         error_resp = httpx.Response(
             status_code=500,
             json={"error": "model not found"},

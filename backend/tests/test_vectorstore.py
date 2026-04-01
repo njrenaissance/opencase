@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.config import EmbeddingSettings, QdrantSettings
-from app.embedding.models import EmbeddingResult
 from app.vectorstore.models import (
     POINT_ID_NAMESPACE,
     REQUIRED_METADATA_KEYS,
@@ -17,72 +14,12 @@ from app.vectorstore.models import (
     make_point_id,
 )
 from app.vectorstore.service import QdrantVectorStore
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_qdrant_settings(**overrides: Any) -> QdrantSettings:
-    defaults: dict[str, Any] = {
-        "host": "localhost",
-        "port": 6333,
-        "grpc_port": 6334,
-        "collection": "opencase_test",
-        "prefer_grpc": False,
-        "use_ssl": False,
-        "api_key": None,
-    }
-    defaults.update(overrides)
-    return QdrantSettings(**defaults)
-
-
-def _make_embedding_settings(**overrides: Any) -> EmbeddingSettings:
-    defaults: dict[str, Any] = {
-        "provider": "ollama",
-        "model": "nomic-embed-text",
-        "base_url": "http://ollama:11434",
-        "dimensions": 768,
-        "batch_size": 100,
-        "request_timeout": 120,
-    }
-    defaults.update(overrides)
-    return EmbeddingSettings(**defaults)
-
-
-def _fake_vector(dimensions: int = 768) -> list[float]:
-    return [0.1] * dimensions
-
-
-def _make_embedding(
-    document_id: str = "doc-1",
-    chunk_index: int = 0,
-    text: str = "hello world",
-    dimensions: int = 768,
-    metadata: dict[str, object] | None = None,
-) -> EmbeddingResult:
-    return EmbeddingResult(
-        document_id=document_id,
-        chunk_index=chunk_index,
-        vector=_fake_vector(dimensions),
-        text=text,
-        metadata=metadata or {},
-    )
-
-
-def _make_payload_metadata(**overrides: Any) -> dict[str, object]:
-    defaults: dict[str, object] = {
-        "firm_id": "firm-aaa",
-        "matter_id": "matter-bbb",
-        "client_id": "client-ccc",
-        "classification": "unclassified",
-        "source": "government_production",
-        "bates_number": None,
-        "page_number": None,
-    }
-    defaults.update(overrides)
-    return defaults
-
+from tests.factories import (
+    make_embedding_result,
+    make_embedding_settings,
+    make_payload_metadata,
+    make_qdrant_settings,
+)
 
 # ---------------------------------------------------------------------------
 # TestVectorPayload
@@ -147,8 +84,8 @@ class TestQdrantVectorStoreUpsert:
 
     @pytest.fixture()
     def store(self, mock_client: AsyncMock) -> QdrantVectorStore:
-        qs = _make_qdrant_settings()
-        es = _make_embedding_settings()
+        qs = make_qdrant_settings()
+        es = make_embedding_settings()
         svc = QdrantVectorStore(qs, es)
         svc._client = mock_client
         return svc
@@ -157,8 +94,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_single_embedding(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata()
+        emb = make_embedding_result()
+        meta = make_payload_metadata()
 
         count = await store.upsert_vectors([emb], meta)
 
@@ -173,8 +110,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_point_has_correct_id(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        emb = _make_embedding(document_id="doc-42", chunk_index=7)
-        meta = _make_payload_metadata()
+        emb = make_embedding_result(document_id="doc-42", chunk_index=7)
+        meta = make_payload_metadata()
 
         await store.upsert_vectors([emb], meta)
 
@@ -186,8 +123,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_point_has_correct_payload(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        emb = _make_embedding(document_id="doc-1", chunk_index=3)
-        meta = _make_payload_metadata(
+        emb = make_embedding_result(document_id="doc-1", chunk_index=3)
+        meta = make_payload_metadata(
             firm_id="firm-x",
             matter_id="matter-y",
             client_id="client-z",
@@ -214,8 +151,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_point_has_vector(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata()
+        emb = make_embedding_result()
+        meta = make_payload_metadata()
 
         await store.upsert_vectors([emb], meta)
 
@@ -226,7 +163,7 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_empty_list(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        count = await store.upsert_vectors([], _make_payload_metadata())
+        count = await store.upsert_vectors([], make_payload_metadata())
         assert count == 0
         mock_client.upsert.assert_not_called()
 
@@ -234,8 +171,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_bates_number_null(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        emb = _make_embedding()
-        meta = _make_payload_metadata(bates_number=None)
+        emb = make_embedding_result()
+        meta = make_payload_metadata(bates_number=None)
 
         await store.upsert_vectors([emb], meta)
 
@@ -246,8 +183,8 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_batches_large_sets(
         self, store: QdrantVectorStore, mock_client: AsyncMock
     ) -> None:
-        embeddings = [_make_embedding(chunk_index=i) for i in range(250)]
-        meta = _make_payload_metadata()
+        embeddings = [make_embedding_result(chunk_index=i) for i in range(250)]
+        meta = make_payload_metadata()
 
         count = await store.upsert_vectors(embeddings, meta)
 
@@ -260,9 +197,9 @@ class TestQdrantVectorStoreUpsert:
     async def test_upsert_missing_required_key_raises(
         self, store: QdrantVectorStore, missing_key: str
     ) -> None:
-        meta = _make_payload_metadata()
+        meta = make_payload_metadata()
         del meta[missing_key]
-        emb = _make_embedding()
+        emb = make_embedding_result()
 
         with pytest.raises(ValueError, match="missing required keys"):
             await store.upsert_vectors([emb], meta)
@@ -284,8 +221,8 @@ class TestQdrantVectorStoreDelete:
 
     @pytest.fixture()
     def store(self, mock_client: AsyncMock) -> QdrantVectorStore:
-        qs = _make_qdrant_settings()
-        es = _make_embedding_settings()
+        qs = make_qdrant_settings()
+        es = make_embedding_settings()
         svc = QdrantVectorStore(qs, es)
         svc._client = mock_client
         return svc
@@ -327,8 +264,8 @@ class TestFactory:
         mod._service = None  # reset
 
         mock_settings = MagicMock()
-        mock_settings.qdrant = _make_qdrant_settings()
-        mock_settings.embedding = _make_embedding_settings()
+        mock_settings.qdrant = make_qdrant_settings()
+        mock_settings.embedding = make_embedding_settings()
 
         with patch("app.core.config.settings", mock_settings):
             from app.vectorstore import get_vectorstore_service

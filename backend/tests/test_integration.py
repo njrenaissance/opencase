@@ -79,6 +79,8 @@ def test_celery_worker_ping_task(
 # ---------------------------------------------------------------------------
 
 
+# TODO: _login() expects "access_token" but MFA-enabled bootstrap
+# user returns "mfa_token". Fix to handle both keys.
 async def _login(client: httpx.AsyncClient, email: str, password: str) -> str:
     """Log in and return an access token."""
     resp = await client.post("/auth/login", json={"email": email, "password": password})
