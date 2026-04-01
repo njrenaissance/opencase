@@ -17,7 +17,11 @@ import pytest
 
 
 def _login(base: str, email: str, password: str) -> dict[str, str]:
-    """Login and return auth headers."""
+    """Login and return auth headers.
+
+    NOTE: Does not handle MFA flow — MFA-enabled users return ``mfa_token``
+    instead of ``access_token``, causing a KeyError.
+    """
     resp = httpx.post(
         f"{base}/auth/login",
         json={"email": email, "password": password},
@@ -237,7 +241,10 @@ def test_attorney_cannot_manage_access(fastapi_service: str, seed_demo: dict) ->
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(reason="_login() needs MFA flow support for MFA-enabled admin user")
+@pytest.mark.xfail(
+    reason="_login() needs MFA flow support for MFA-enabled admin user",
+    strict=True,
+)
 @pytest.mark.integration
 def test_admin_can_list_access_and_create_user(
     fastapi_service: str, seed_admin: dict, seed_demo: dict

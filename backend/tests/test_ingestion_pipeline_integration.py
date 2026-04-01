@@ -134,6 +134,8 @@ class TestIngestionPipelineEndToEnd:
 
     @pytest.mark.xfail(
         reason="Pipeline times out — Celery worker errors during ingest_document",
+        strict=True,
+        raises=AssertionError,
     )
     def test_upload_triggers_full_pipeline(
         self,
