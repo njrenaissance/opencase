@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from celery import shared_task  # type: ignore[import-untyped]
 from opentelemetry import trace
 from opentelemetry.trace import StatusCode
+from shared.models.enums import IngestionStatus
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from app.core.config import settings
@@ -26,6 +27,25 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+async def _update_ingestion_status(document_id: str, status: IngestionStatus) -> None:
+    """Persist ingestion status to the database.
+
+    Creates a fresh async engine per call (same pattern as
+    ``_run_metadata_lookup``) to avoid event-loop conflicts.
+    """
+    from app.db.models.document import Document
+
+    engine = create_async_engine(settings.db.url, pool_pre_ping=True)
+    try:
+        async with AsyncSession(engine) as session:
+            doc = await session.get(Document, document_id)
+            if doc is not None:
+                doc.ingestion_status = status
+                await session.commit()
+    finally:
+        await engine.dispose()
 
 
 @shared_task(name="opencase.ingest_document")  # type: ignore[untyped-decorator]
@@ -55,10 +75,17 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, object]:
         try:
             s3_prefix = s3_key.rsplit("/", 1)[0]
 
+            await _update_ingestion_status(document_id, IngestionStatus.extracting)
             result = await _run_extract(document_id, s3_key, s3_prefix, span)
             payload_metadata = await _run_metadata_lookup(document_id)
+
+            await _update_ingestion_status(document_id, IngestionStatus.chunking)
             chunks_data = await _run_chunking(document_id, result.text, s3_prefix, span)
+
+            await _update_ingestion_status(document_id, IngestionStatus.embedding)
             point_count = await _run_embedding(chunks_data, payload_metadata, span)
+
+            await _update_ingestion_status(document_id, IngestionStatus.indexed)
 
             logger.info(
                 "ingest_document done: %s (%d chunks, %d points)",
@@ -77,6 +104,13 @@ async def _ingest(document_id: str, s3_key: str) -> dict[str, object]:
         except Exception as exc:
             span.set_status(StatusCode.ERROR, str(exc))
             span.record_exception(exc)
+            try:
+                await _update_ingestion_status(document_id, IngestionStatus.failed)
+            except Exception:
+                logger.exception(
+                    "Failed to update ingestion status to 'failed' for %s",
+                    document_id,
+                )
             raise
 
 

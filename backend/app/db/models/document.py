@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from shared.models.enums import Classification, DocumentSource
+from shared.models.enums import Classification, DocumentSource, IngestionStatus
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -52,6 +52,13 @@ class Document(Base):
         Enum(Classification, name="classification"),
         nullable=False,
         default=Classification.unclassified,
+    )
+    ingestion_status: Mapped[IngestionStatus] = mapped_column(
+        Enum(IngestionStatus, name="ingestion_status"),
+        nullable=False,
+        default=IngestionStatus.pending,
+        server_default="pending",
+        index=True,
     )
     bates_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     legal_hold: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

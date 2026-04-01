@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 from shared.models.enums import (
     Classification,
     DocumentSource,
+    IngestionStatus,
     MatterStatus,
     Role,
     TaskState,
@@ -102,6 +103,7 @@ def make_document(**kwargs: object) -> Document:
         "size_bytes": 1024,
         "source": DocumentSource.defense,
         "classification": Classification.unclassified,
+        "ingestion_status": IngestionStatus.pending,
         "bates_number": None,
         "legal_hold": False,
         "uploaded_by": uuid.uuid4(),

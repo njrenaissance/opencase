@@ -56,7 +56,7 @@
 | 6.5 | Bulk upload CLI command (`opencase document bulk-ingest` — walk directory, client-side pre-hash dedup, per-file upload, progress summary) | Done |
 | 6.9 | Configuration + env vars (S3Settings: `max_upload_bytes`, `spool_threshold_bytes`) | Done |
 | 6.14 | Configuration + env vars (IngestionSettings: `allowed_types_file`, `allowed_content_types`, `allowed_extensions`, ingestion-config API endpoint) | Done |
-| 6.1 | DB models + migration (documents table — metadata, SHA-256 hash, matter association, MinIO path, ingestion status; seed global knowledge matter) | Pending |
+| 6.1 | DB models + migration (documents table — metadata, SHA-256 hash, matter association, MinIO path, ingestion status; seed global knowledge matter) | Done |
 | 6.2 | Global knowledge matter (well-known system matter_id for CPL, case law, court rules — accessible to all users) | Done |
 | 6.3 | Manual upload Celery task (SHA-256 dedup, legal hold, store to MinIO, trigger extraction) | Pending |
 | 6.6 | Document listing/status API endpoint (read-only — query documents by matter, ingestion status, metadata) | Pending |

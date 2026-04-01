@@ -41,3 +41,12 @@ class Classification(enum.StrEnum):
     work_product = "work_product"
     inculpatory = "inculpatory"
     unclassified = "unclassified"
+
+
+class IngestionStatus(enum.StrEnum):
+    pending = "pending"
+    extracting = "extracting"
+    chunking = "chunking"
+    embedding = "embedding"
+    indexed = "indexed"
+    failed = "failed"

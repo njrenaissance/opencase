@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from shared.models.enums import Classification, DocumentSource
+from shared.models.enums import Classification, DocumentSource, IngestionStatus
 
 # ---------------------------------------------------------------------------
 # Responses
@@ -21,6 +21,7 @@ class DocumentSummary(BaseModel):
     size_bytes: int
     source: DocumentSource
     classification: Classification
+    ingestion_status: IngestionStatus
     legal_hold: bool
     matter_id: UUID
 

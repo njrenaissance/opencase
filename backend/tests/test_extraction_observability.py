@@ -232,17 +232,29 @@ class TestIngestDocumentSpans:
         mock_vectorstore.upsert_vectors.return_value = 1
         mock_vectorstore.close = AsyncMock()
 
-        # Mock DB session for metadata lookup
+        # Mock DB session for metadata lookup and status updates
         mock_doc = SimpleNamespace(
             firm_id="firm-1",
             matter_id="matter-1",
             classification="unclassified",
             source="defense",
             bates_number=None,
+            ingestion_status="pending",
         )
         mock_matter = SimpleNamespace(client_id="client-1")
+
+        async def _mock_get(model: type, pk: object) -> object:
+            from app.db.models.document import Document
+            from app.db.models.matter import Matter
+
+            if model is Document:
+                return mock_doc
+            if model is Matter:
+                return mock_matter
+            return None
+
         mock_session = AsyncMock()
-        mock_session.get = AsyncMock(side_effect=[mock_doc, mock_matter])
+        mock_session.get = AsyncMock(side_effect=_mock_get)
         mock_session_ctx = AsyncMock()
         mock_session_ctx.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_ctx.__aexit__ = AsyncMock(return_value=False)

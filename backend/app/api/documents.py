@@ -26,7 +26,7 @@ from shared.models.document import (
     DuplicateCheckResponse,
     IngestionConfigResponse,
 )
-from shared.models.enums import Classification, DocumentSource, Role
+from shared.models.enums import Classification, DocumentSource, IngestionStatus, Role
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -88,6 +88,7 @@ def _doc_to_response(doc: Document) -> DocumentResponse:
         size_bytes=doc.size_bytes,
         source=doc.source,
         classification=doc.classification,
+        ingestion_status=doc.ingestion_status,
         legal_hold=doc.legal_hold,
         file_hash=doc.file_hash,
         bates_number=doc.bates_number,
@@ -105,6 +106,7 @@ def _doc_to_summary(doc: Document) -> DocumentSummary:
         size_bytes=doc.size_bytes,
         source=doc.source,
         classification=doc.classification,
+        ingestion_status=doc.ingestion_status,
         legal_hold=doc.legal_hold,
         matter_id=doc.matter_id,
     )
@@ -226,6 +228,7 @@ async def create_document(
                 size_bytes=size_bytes,
                 source=source,
                 classification=classification,
+                ingestion_status=IngestionStatus.pending,
                 bates_number=bates_number,
                 legal_hold=False,
                 uploaded_by=user.id,
