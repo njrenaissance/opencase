@@ -1,12 +1,17 @@
-# OpenCase — Claude Code Context
+# Gideon — Claude Code Context
 
 ## Project Mission
 
-OpenCase is a free, fully self-hostable, AI-powered
+Gideon is a free, fully self-hostable, AI-powered
 discovery platform for solo and small criminal defense
 practitioners. It runs entirely on-premise with no
 third-party LLM API calls, protecting client
 confidentiality under ABA Rules 1.6 and 1.1.
+
+The project is named after *Gideon v. Wainwright* (1963),
+the Supreme Court decision establishing the right to
+counsel for criminal defendants who cannot afford an
+attorney.
 
 Primary design partner: **Virginia Cora, Cora Firm**
 (solo criminal defense, New York).
@@ -19,7 +24,7 @@ License: **Apache 2.0**
 
 ### Deployment Model
 
-- **Single-tenant**: one OpenCase instance per firm
+- **Single-tenant**: one Gideon instance per firm
 - **Two modes**:
   - *Air-gapped*: manual upload only, no external
     network calls

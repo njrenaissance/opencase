@@ -1,4 +1,4 @@
-# OpenCase
+# Gideon
 
 **Open source criminal defense discovery platform.**
 
@@ -8,12 +8,24 @@ practitioners. Runs entirely on-premise with no
 third-party LLM API calls, protecting client
 confidentiality under ABA Rules 1.6 and 1.1.
 
-## Why OpenCase?
+Named after *Gideon v. Wainwright* (1963) — the Supreme
+Court decision establishing the right to counsel for
+criminal defendants who cannot afford an attorney.
+
+## Release Naming Convention
+
+Major releases are named after famous jurists:
+
+| Version | Codename | Jurist |
+| --- | --- | --- |
+| v1 | Ginsburg | Ruth Bader Ginsburg |
+
+## Why Gideon?
 
 Solo and small-firm criminal defense attorneys face
 massive government discovery productions without access
 to the enterprise eDiscovery tooling available to large
-firms. OpenCase levels the playing field with:
+firms. Gideon levels the playing field with:
 
 - **Semantic search** across entire discovery productions
 - **AI-powered Q&A** with citations to source documents
