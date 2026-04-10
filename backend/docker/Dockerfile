@@ -55,6 +55,9 @@ COPY --from=builder /app/backend/scripts /app/scripts
 COPY backend/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
+# Copy editable system prompt (overridable via OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE)
+COPY backend/SYSTEM_PROMPT.md /app/SYSTEM_PROMPT.md
+
 # Put venv on PATH
 ENV PATH="/app/.venv/bin:$PATH"
 

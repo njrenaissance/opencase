@@ -79,8 +79,13 @@ services:
       - OPENCASE_QDRANT_HOST=${OPENCASE_QDRANT_HOST:-qdrant}
       - OPENCASE_QDRANT_PORT=${OPENCASE_QDRANT_PORT:-6333}
       - OPENCASE_QDRANT_COLLECTION=${OPENCASE_QDRANT_COLLECTION:-opencase}
-      # LLM (future settings class)
-      - OLLAMA_LLM_MODEL=${OLLAMA_LLM_MODEL:-llama3:8b}
+      # Chatbot / LLM inference
+      - OPENCASE_CHATBOT_MODEL=${OPENCASE_CHATBOT_MODEL:-llama3}
+      - OPENCASE_CHATBOT_BASE_URL=${OPENCASE_CHATBOT_BASE_URL:-http://ollama:11434}
+      - OPENCASE_CHATBOT_TEMPERATURE=${OPENCASE_CHATBOT_TEMPERATURE:-0.1}
+      - OPENCASE_CHATBOT_MAX_TOKENS=${OPENCASE_CHATBOT_MAX_TOKENS:-4096}
+      - OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT=${OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT:-5}
+      - OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE=${OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE:-/app/SYSTEM_PROMPT.md}
       - OPENCASE_S3_ENDPOINT=${OPENCASE_S3_ENDPOINT:-minio:9000}
       - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
       - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
@@ -214,8 +219,7 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  # One-shot init: pull the embedding model if not already present.
-  # LLM model pull is skipped for now (too large for dev/test).
+  # One-shot init: pull the embedding model and LLM inference model.
   ollama-init:
     image: ollama/ollama:latest
     depends_on:
@@ -224,11 +228,15 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - EMBEDDING_MODEL=${OPENCASE_EMBEDDING_MODEL:-nomic-embed-text}
+      - CHATBOT_MODEL=${OPENCASE_CHATBOT_MODEL:-llama3}
     entrypoint: >
       /bin/sh -c "
       echo 'Pulling embedding model $$EMBEDDING_MODEL...';
       ollama pull $$EMBEDDING_MODEL;
-      echo 'Model pull complete.';
+      echo 'Embedding model pull complete.';
+      echo 'Pulling LLM model $$CHATBOT_MODEL...';
+      ollama pull $$CHATBOT_MODEL;
+      echo 'LLM model pull complete.';
       "
     networks:
       - opencase

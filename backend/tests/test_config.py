@@ -19,6 +19,7 @@ from app.core.config import (
     ApiSettings,
     AuthSettings,
     CelerySettings,
+    ChatbotSettings,
     ChunkingSettings,
     DbSettings,
     EmbeddingSettings,
@@ -147,6 +148,23 @@ DEFAULTS = {
         "base_url": "http://localhost:11434",
         "dimensions": 768,
         "batch_size": 100,
+        "request_timeout": 120,
+    },
+    "chatbot": {
+        "system_prompt_file": None,
+        "system_prompt": (
+            "You are Gideon, a legal discovery assistant for criminal defense"
+            " attorneys. "
+            "Answer questions based only on the documents retrieved for this"
+            " matter. "
+            "If the answer is not in the provided context, say so clearly. "
+            "Always cite your sources."
+        ),
+        "model": "llama3",
+        "temperature": 0.1,
+        "max_tokens": 4096,
+        "retrieval_chunk_count": 5,
+        "base_url": "http://localhost:11434",
         "request_timeout": 120,
     },
     "qdrant": {
@@ -654,6 +672,111 @@ def test_embedding_prefix_isolation(monkeypatch):
     monkeypatch.setenv("OPENCASE_MODEL", "wrong")
     cfg = EmbeddingSettings()
     assert cfg.model == "nomic-embed-text"
+
+
+# ---------------------------------------------------------------------------
+# ChatbotSettings — tested directly
+# ---------------------------------------------------------------------------
+
+
+def test_chatbot_defaults():
+    cfg = ChatbotSettings()
+    assert cfg.model_dump() == DEFAULTS["chatbot"]
+
+
+def test_chatbot_env_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHATBOT_MODEL", "mistral")
+    cfg = ChatbotSettings()
+    assert cfg.model == "mistral"
+
+
+def test_chatbot_prefix_isolation(monkeypatch):
+    # OPENCASE_MODEL (wrong prefix) must not override OPENCASE_CHATBOT_MODEL
+    monkeypatch.setenv("OPENCASE_MODEL", "wrong")
+    cfg = ChatbotSettings()
+    assert cfg.model == "llama3"
+
+
+def test_chatbot_system_prompt_override(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT", "Custom legal prompt.")
+    cfg = ChatbotSettings()
+    assert cfg.system_prompt == "Custom legal prompt."
+
+
+def test_chatbot_system_prompt_file_loads_content(tmp_path, monkeypatch):
+    prompt_file = tmp_path / "system_prompt.md"
+    prompt_file.write_text("Custom prompt from file.", encoding="utf-8")
+    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
+    cfg = ChatbotSettings()
+    assert cfg.system_prompt == "Custom prompt from file."
+    assert cfg.system_prompt_file == prompt_file
+
+
+def test_chatbot_system_prompt_file_missing_raises(tmp_path, monkeypatch):
+    monkeypatch.setenv(
+        "OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(tmp_path / "nonexistent.md")
+    )
+    with pytest.raises(ValidationError, match="non-existent"):
+        ChatbotSettings()
+
+
+def test_chatbot_system_prompt_file_empty_raises(tmp_path, monkeypatch):
+    prompt_file = tmp_path / "empty.md"
+    prompt_file.write_text("   \n\n", encoding="utf-8")
+    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
+    with pytest.raises(ValidationError, match="empty"):
+        ChatbotSettings()
+
+
+def test_chatbot_temperature_boundaries_valid(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHATBOT_TEMPERATURE", "0.0")
+    cfg = ChatbotSettings()
+    assert cfg.temperature == pytest.approx(0.0)
+
+    monkeypatch.setenv("OPENCASE_CHATBOT_TEMPERATURE", "2.0")
+    cfg2 = ChatbotSettings()
+    assert cfg2.temperature == pytest.approx(2.0)
+
+
+def test_chatbot_chunk_count_boundaries_valid(monkeypatch):
+    monkeypatch.setenv("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "1")
+    cfg = ChatbotSettings()
+    assert cfg.retrieval_chunk_count == 1
+
+    monkeypatch.setenv("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "20")
+    cfg2 = ChatbotSettings()
+    assert cfg2.retrieval_chunk_count == 20
+
+
+@pytest.mark.parametrize(
+    "env_var,value",
+    [
+        ("OPENCASE_CHATBOT_TEMPERATURE", "-0.1"),
+        ("OPENCASE_CHATBOT_TEMPERATURE", "2.1"),
+        ("OPENCASE_CHATBOT_MAX_TOKENS", "0"),
+        ("OPENCASE_CHATBOT_MAX_TOKENS", "-1"),
+        ("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "0"),
+        ("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "21"),
+    ],
+    ids=[
+        "temperature-below-min",
+        "temperature-above-max",
+        "max_tokens-zero",
+        "max_tokens-negative",
+        "chunk_count-zero",
+        "chunk_count-above-max",
+    ],
+)
+def test_chatbot_validation_failures(monkeypatch, env_var, value):
+    monkeypatch.setenv(env_var, value)
+    with pytest.raises(ValidationError):
+        ChatbotSettings()
+
+
+def test_chatbot_present_on_settings():
+    cfg = Settings()
+    assert isinstance(cfg.chatbot, ChatbotSettings)
+    assert cfg.chatbot.model == "llama3"
 
 
 # ---------------------------------------------------------------------------

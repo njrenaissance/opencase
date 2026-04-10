@@ -255,6 +255,63 @@ class EmbeddingSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="OPENCASE_EMBEDDING_")
 
 
+_CHATBOT_DEFAULT_SYSTEM_PROMPT = (
+    "You are Gideon, a legal discovery assistant for criminal defense attorneys. "
+    "Answer questions based only on the documents retrieved for this matter. "
+    "If the answer is not in the provided context, say so clearly. "
+    "Always cite your sources."
+)
+
+
+class ChatbotSettings(BaseSettings):
+    """Chatbot / LLM inference sub-config (OPENCASE_CHATBOT_ prefix).
+
+    Configures the inference model and generation parameters used by the
+    RAG chatbot.  The model name is the single source of truth for which
+    Ollama model is pulled at container startup (ollama-init service).
+
+    Temperature is intentionally low (0.1) — legal Q&A requires deterministic,
+    consistent answers, not creative variation.
+
+    System prompt loading priority:
+      1. OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE — path to a Markdown file (richest option)
+      2. OPENCASE_CHATBOT_SYSTEM_PROMPT — inline string override
+      3. Built-in default (_CHATBOT_DEFAULT_SYSTEM_PROMPT)
+
+    The canonical editable prompt lives at backend/SYSTEM_PROMPT.md.
+    In production, set OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE=/app/SYSTEM_PROMPT.md.
+    """
+
+    system_prompt_file: Path | None = None
+    system_prompt: str = _CHATBOT_DEFAULT_SYSTEM_PROMPT
+    model: str = "llama3"
+    temperature: float = Field(0.1, ge=0.0, le=2.0)
+    max_tokens: int = Field(4096, gt=0)
+    retrieval_chunk_count: int = Field(5, ge=1, le=20)
+    base_url: str = "http://ollama:11434"
+    request_timeout: int = Field(120, gt=0)
+
+    model_config = SettingsConfigDict(env_prefix="OPENCASE_CHATBOT_", extra="ignore")
+
+    @model_validator(mode="after")
+    def _load_system_prompt_from_file(self) -> "ChatbotSettings":
+        """If system_prompt_file is set, read the file and use its content."""
+        if self.system_prompt_file is not None:
+            path = self.system_prompt_file
+            if not path.exists():
+                raise ValueError(
+                    f"OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE points to a non-existent "
+                    f"file: {path}"
+                )
+            content = path.read_text(encoding="utf-8").strip()
+            if not content:
+                raise ValueError(
+                    f"OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE is empty: {path}"
+                )
+            object.__setattr__(self, "system_prompt", content)
+        return self
+
+
 class QdrantSettings(BaseSettings):
     """Qdrant vector store sub-config (OPENCASE_QDRANT_ prefix).
 
@@ -495,6 +552,7 @@ class Settings(BaseSettings):
     ingestion: IngestionSettings = Field(default_factory=IngestionSettings)
     chunking: ChunkingSettings = Field(default_factory=ChunkingSettings)  # type: ignore[arg-type]
     embedding: EmbeddingSettings = Field(default_factory=EmbeddingSettings)  # type: ignore[arg-type]
+    chatbot: ChatbotSettings = Field(default_factory=ChatbotSettings)  # type: ignore[arg-type]
     qdrant: QdrantSettings = Field(default_factory=QdrantSettings)
 
     @model_validator(mode="after")

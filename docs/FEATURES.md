@@ -65,7 +65,7 @@
 | 6.10 | Observability (ingestion spans/metrics) | Pending |
 | **7.0** | **Chatbot / Q&A** | **Pending** |
 | 7.1 | DB models + migration (chat_sessions, chat_queries, chat_feedback tables) | Done |
-| 7.2 | LLM inference model setup (Ollama model pull — Llama 3 8B / Mistral 7B, health check) | Pending |
+| 7.2 | LLM inference model setup (Ollama model pull — Llama 3 8B / Mistral 7B, health check) + Configuration (ChatbotSettings — system prompt, model selection, temperature, max tokens, chunk retrieval count) — **combined with 7.10** | Done |
 | 7.3 | Matter-scoped RAG query API endpoint (LangChain + Qdrant retrieval + Ollama inference, wired up via FastAPI) | Pending |
 | 7.4 | Minimal chat interface (CLI command or lightweight web UI for testing/demo) | Pending |
 | 7.5 | Citation assembly | Pending |
@@ -73,7 +73,6 @@
 | 7.7 | Conversation history | Pending |
 | 7.8 | Audit logging of queries (metadata + reference ID → audit log, full query/response → chat_queries table) | Pending |
 | 7.9 | User feedback API endpoints (submit: thumbs up/down, flag bad citations; query: filter by matter/date for analysis) | Pending |
-| 7.10 | Configuration + env vars (ChatbotSettings — system prompt, model selection, temperature, max tokens, chunk retrieval count) | Pending |
 | 7.11 | Observability (RAG query times, LLM response times, failed queries) | Pending |
 | **8.0** | **Audit Logging** | **Pending** |
 | 8.1 | DB models + migration (audit_log table — hash-chained entries) | Pending |

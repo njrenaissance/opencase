@@ -12,6 +12,11 @@ from shared.models.auth import (
     TokenResponse,
 )
 from shared.models.base import MessageResponse
+from shared.models.chat import (
+    ChatQueryResponse,
+    ChatSessionResponse,
+    SubmitQueryRequest,
+)
 from shared.models.document import (
     DocumentResponse,
     DocumentSummary,
@@ -36,7 +41,6 @@ from shared.models.matter_access import (
     MatterAccessResponse,
     RevokeAccessRequest,
 )
-from shared.models.prompt import CreatePromptRequest, PromptResponse, PromptSummary
 from shared.models.task import (
     SubmitTaskRequest,
     TaskResponse,
@@ -54,7 +58,9 @@ from shared.models.user import (
 __all__ = [
     "Classification",
     "CreateMatterRequest",
-    "CreatePromptRequest",
+    "ChatQueryResponse",
+    "ChatSessionResponse",
+    "SubmitQueryRequest",
     "CreateUserRequest",
     "DocumentResponse",
     "DocumentSource",
@@ -74,8 +80,6 @@ __all__ = [
     "MfaSetupResponse",
     "MfaStatusResponse",
     "MfaVerifyRequest",
-    "PromptResponse",
-    "PromptSummary",
     "ReadinessResponse",
     "RefreshRequest",
     "RevokeAccessRequest",

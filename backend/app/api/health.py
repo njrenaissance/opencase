@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.request import urlopen
 
+import httpx
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
@@ -57,6 +58,36 @@ async def check_minio() -> str:
         return "error"
 
 
+async def check_ollama() -> str:
+    """Check that Ollama is reachable and the configured LLM model is available.
+
+    Calls GET /api/tags on the Ollama REST API and verifies that
+    settings.chatbot.model appears in the returned model list.
+    Tag-less model names (e.g. "llama3") match any tag variant (e.g. "llama3:8b").
+    """
+    try:
+        async with httpx.AsyncClient(
+            base_url=settings.chatbot.base_url,
+            timeout=httpx.Timeout(5.0),
+        ) as client:
+            response = await client.get("/api/tags")
+            response.raise_for_status()
+            data = response.json()
+            available = [m["name"] for m in data.get("models", [])]
+            configured = settings.chatbot.model
+            model_found = any(
+                m == configured or m.startswith(f"{configured}:") for m in available
+            )
+            if not model_found:
+                logger.warning(
+                    "Ollama model %r not in available models: %s", configured, available
+                )
+                return "error"
+            return "ok"
+    except Exception:  # noqa: BLE001
+        return "error"
+
+
 # Registry of zero-argument readiness checks: (service_name, check_callable).
 # Postgres is excluded — it requires the injected DB session and is called
 # directly in the readiness_check endpoint.
@@ -64,7 +95,7 @@ READINESS_CHECKS: list[tuple[str, Callable[[], Awaitable[str]]]] = [
     ("redis", check_redis),
     # ("qdrant", check_qdrant),
     ("minio", check_minio),
-    # ("ollama", check_ollama),
+    ("ollama", check_ollama),
 ]
 
 

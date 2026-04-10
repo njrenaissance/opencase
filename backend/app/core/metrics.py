@@ -100,6 +100,11 @@ prompts_created = meter.create_counter(
     description="Prompts submitted",
 )
 
+chat_queries_created = meter.create_counter(
+    "opencase.chat.queries.created",
+    description="Chat queries submitted",
+)
+
 # ---------------------------------------------------------------------------
 # Tasks (Feature 2.5–2.6)
 # ---------------------------------------------------------------------------
