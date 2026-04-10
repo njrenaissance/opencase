@@ -84,7 +84,8 @@ async def check_ollama() -> str:
                 )
                 return "error"
             return "ok"
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Ollama health check failed: %s", exc)
         return "error"
 
 

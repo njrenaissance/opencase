@@ -12,11 +12,10 @@ from shared.models.chat import (
     ChatSessionResponse,
     SubmitQueryRequest,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
+from app.core.config import settings
 from app.core.metrics import chat_queries_created
-from app.db import get_db
 from app.db.models.user import User
 
 tracer = trace.get_tracer(__name__)
@@ -43,7 +42,6 @@ _STUB_RESPONSE = (
 async def submit_query(
     body: SubmitQueryRequest,
     user: User = Depends(get_current_user),  # noqa: B008
-    db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> ChatQueryResponse:
     """Stub — accepts a query and returns a canned response.
 
@@ -64,7 +62,7 @@ async def submit_query(
             matter_id=body.matter_id,
             query=body.query,
             response=_STUB_RESPONSE,
-            model_name=None,
+            model_name=settings.chatbot.model,
             created_at=now,
         )
 
@@ -77,7 +75,6 @@ async def submit_query(
 @router.get("/sessions", response_model=list[ChatSessionResponse])
 async def list_sessions(
     user: User = Depends(get_current_user),  # noqa: B008
-    db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> list[ChatSessionResponse]:
     """Stub — returns an empty list.
 

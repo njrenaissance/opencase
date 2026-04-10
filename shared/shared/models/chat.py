@@ -1,9 +1,17 @@
 """Pydantic request/response models for chat endpoints."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+__all__ = [
+    "ChatQueryResponse",
+    "ChatSessionResponse",
+    "SubmitQueryRequest",
+]
 
 # ---------------------------------------------------------------------------
 # Requests
