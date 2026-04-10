@@ -33,6 +33,11 @@ def extract_zips(src_dir: Path, dest_dir: Path) -> None:
             print(f"Extracting {zf_path.name} -> {folder_name}/")
 
             with zipfile.ZipFile(zf_path, "r") as zf:
+                resolved_dest = extract_to.resolve()
+                for member in zf.namelist():
+                    member_path = (extract_to / member).resolve()
+                    if not str(member_path).startswith(str(resolved_dest)):
+                        raise ValueError(f"Attempted path traversal in ZIP: {member}")
                 zf.extractall(extract_to)
 
         # Merge all extracted folders into dest, skipping collisions

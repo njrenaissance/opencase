@@ -14,6 +14,8 @@ import argparse
 import json
 import time
 
+POLL_TIMEOUT_SECONDS = 300
+
 import dotenv
 from minio import Minio
 from opencase import Client
@@ -48,11 +50,18 @@ def main() -> None:
     parser.add_argument("--env-file", default=".env", help="Path to .env file")
     args = parser.parse_args()
 
-    s3_access_key = dotenv.get_key(args.env_file, "OPENCASE_S3_ACCESS_KEY") or "opencase"
-    s3_secret_key = dotenv.get_key(args.env_file, "OPENCASE_S3_SECRET_KEY") or "changeme"
+    s3_access_key = dotenv.get_key(args.env_file, "OPENCASE_S3_ACCESS_KEY")
+    s3_secret_key = dotenv.get_key(args.env_file, "OPENCASE_S3_SECRET_KEY")
     s3_bucket = dotenv.get_key(args.env_file, "OPENCASE_S3_BUCKET") or "opencase"
     admin_email = dotenv.get_key(args.env_file, "OPENCASE_ADMIN_EMAIL")
     admin_password = dotenv.get_key(args.env_file, "OPENCASE_ADMIN_PASSWORD")
+
+    if not s3_access_key:
+        raise SystemExit("OPENCASE_S3_ACCESS_KEY is required")
+    if not s3_secret_key:
+        raise SystemExit("OPENCASE_S3_SECRET_KEY is required")
+    if not admin_email or not admin_password:
+        raise SystemExit("OPENCASE_ADMIN_EMAIL and OPENCASE_ADMIN_PASSWORD are required")
 
     minio_client = Minio(
         "localhost:9000",
@@ -118,7 +127,8 @@ def main() -> None:
         # Poll for completion
         print(f"\nWaiting for {len(task_ids)} task(s)...\n")
         for filename, task_id in task_ids:
-            while True:
+            deadline = time.time() + POLL_TIMEOUT_SECONDS
+            while time.time() < deadline:
                 task = client.get_task(task_id)
                 if task.status in ("completed", "SUCCESS"):
                     chunk_count = (
@@ -131,6 +141,8 @@ def main() -> None:
                     break
                 else:
                     time.sleep(2)
+            else:
+                print(f"  [{filename}] TIMEOUT after {POLL_TIMEOUT_SECONDS}s")
 
         client.logout()
 
