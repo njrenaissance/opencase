@@ -64,7 +64,7 @@
 | 6.8 | Cloud ingestion Beat schedule (15-min polling interval) | Pending |
 | 6.10 | Observability (ingestion spans/metrics) | Pending |
 | **7.0** | **Chatbot / Q&A** | **Pending** |
-| 7.1 | DB models + migration (chat_queries, conversation_history, feedback tables) | Pending |
+| 7.1 | DB models + migration (chat_sessions, chat_queries, chat_feedback tables) | Done |
 | 7.2 | LLM inference model setup (Ollama model pull — Llama 3 8B / Mistral 7B, health check) | Pending |
 | 7.3 | Matter-scoped RAG query API endpoint (LangChain + Qdrant retrieval + Ollama inference, wired up via FastAPI) | Pending |
 | 7.4 | Minimal chat interface (CLI command or lightweight web UI for testing/demo) | Pending |

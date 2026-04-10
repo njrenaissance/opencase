@@ -446,6 +446,32 @@ mixed types (strings, lists, numbers) in its metadata response.
 
 ---
 
+## 2026-04-10 — Chat schema
+
+*~1 hour (single session)*
+
+**Chat schema (Feature 7.1):** Replaced the `prompts` stub with three
+purpose-built chat tables. `chat_sessions` models named conversation threads
+within a matter. `chat_queries` records individual query/response turns with
+a JSONB `retrieval_context` column for citation explainability and nullable
+`response` for future streaming support. `chat_feedback` captures per-query
+thumbs-up/thumbs-down ratings with a bad-citation flag and free-text comment
+for future RAG/prompt tuning analysis. The schema is fully normalized —
+`firm_id`/`matter_id` are not denormalized onto `chat_queries` (derivable
+via join to `chat_sessions`), and `user_id` is not denormalized onto
+`chat_feedback` (derivable via join to `chat_queries`).
+
+Alembic migration `0006_chat_schema` drops `prompts` and creates the three
+new tables in dependency order. The `prompt.py` model file is deleted;
+`__init__.py` exports the three new model classes. Split `ERD.md` into three
+separate diagrams: Core Schema, Worker Queue Schema, and Chat Schema. Also
+corrected the ERD to include `ingestion_status` on `documents` (added in
+migration `0005` but missing from the diagram).
+
+**Commits:** Feature 7.1
+
+---
+
 ## Running Total
 
 | Date | Est. Hours |
@@ -463,7 +489,8 @@ mixed types (strings, lists, numbers) in its metadata response.
 | Mar 27 | ~3 |
 | Mar 28 | ~8 |
 | Mar 30 | ~3 |
-| **Total to date** | **~59 ± 7 hours** |
+| Apr 10 | ~1 |
+| **Total to date** | **~60 ± 7 hours** |
 
 **Estimated remaining (critical path to MVP — Features 5–9):**
 
