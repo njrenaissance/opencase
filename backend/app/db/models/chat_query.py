@@ -26,11 +26,14 @@ class ChatQuery(Base):
         ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     query: Mapped[str] = mapped_column(Text, nullable=False)
     response: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # shape: {"chunks": [{"document_id": "...", "chunk_index": 0,
+    #                      "text": "...", "score": 0.87}]}
+    # exact structure finalized in Feature 7.5 (citation assembly)
     retrieval_context: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, nullable=True
     )
@@ -43,6 +46,6 @@ class ChatQuery(Base):
 
     session: Mapped[ChatSession] = relationship(back_populates="queries")
     user: Mapped[User] = relationship()
-    feedback: Mapped[list[ChatFeedback]] = relationship(
-        back_populates="query", passive_deletes=True
+    feedback: Mapped[ChatFeedback | None] = relationship(
+        back_populates="chat_query", passive_deletes=True, uselist=False
     )

@@ -28,8 +28,9 @@ class ChatFeedback(Base):
     __tablename__ = "chat_feedback"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    # no index=True — UniqueConstraint below creates the implicit index in PG
     query_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("chat_queries.id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("chat_queries.id", ondelete="CASCADE"), nullable=False
     )
     rating: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     flag_bad_citation: Mapped[bool] = mapped_column(
@@ -41,7 +42,7 @@ class ChatFeedback(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    query: Mapped[ChatQuery] = relationship(back_populates="feedback")
+    chat_query: Mapped[ChatQuery] = relationship(back_populates="feedback")
 
     __table_args__ = (
         UniqueConstraint("query_id", name="uq_chat_feedback_query_id"),

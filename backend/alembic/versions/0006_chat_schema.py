@@ -108,6 +108,7 @@ def upgrade() -> None:
         ),
     )
     op.create_index("ix_chat_queries_session_id", "chat_queries", ["session_id"])
+    op.create_index("ix_chat_queries_user_id", "chat_queries", ["user_id"])
 
     # --- chat_feedback ---
     op.create_table(
@@ -137,8 +138,8 @@ def upgrade() -> None:
         ),
         sa.UniqueConstraint("query_id", name="uq_chat_feedback_query_id"),
         sa.CheckConstraint("rating IN (-1, 1)", name="ck_chat_feedback_rating"),
+        # uq_chat_feedback_query_id creates the implicit index on query_id
     )
-    op.create_index("ix_chat_feedback_query_id", "chat_feedback", ["query_id"])
 
 
 def downgrade() -> None:
