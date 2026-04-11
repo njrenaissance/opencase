@@ -1,11 +1,11 @@
-# opencase-sdk
+# gideon-sdk
 
-Python REST client for the OpenCase API.
+Python REST client for the Gideon API.
 
 ## Usage
 
 ```python
-from opencase import Client
+from gideon import Client
 
 client = Client(base_url="http://localhost:8000")
 client.login(email="user@firm.com", password="secret")

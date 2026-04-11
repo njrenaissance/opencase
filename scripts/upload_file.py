@@ -23,7 +23,7 @@ from pathlib import Path
 import dotenv
 import httpx
 from minio import Minio
-from opencase import Client
+from gideon import Client
 
 BASE_URL = "http://127.0.0.1:8000"
 MINIO_ENDPOINT = "localhost:9000"
@@ -56,8 +56,8 @@ def prepare_file(file_path: Path | None) -> tuple[Path, str, bool]:
             sys.exit(1)
         cleanup = False
     else:
-        f = tempfile.NamedTemporaryFile(suffix=".txt", prefix="opencase_", delete=False)  # noqa: SIM115
-        f.write(f"OpenCase upload test — {uuid.uuid4()}\n".encode())
+        f = tempfile.NamedTemporaryFile(suffix=".txt", prefix="gideon_", delete=False)  # noqa: SIM115
+        f.write(f"Gideon upload test — {uuid.uuid4()}\n".encode())
         f.close()
         file_path = Path(f.name)
         cleanup = True
@@ -145,14 +145,14 @@ def verify_download(client: Client, doc_id: str, local_hash: str) -> None:
 
 
 def main(config_file: str, file_path: Path | None = None) -> None:
-    admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
-    admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
-    s3_access = dotenv.get_key(config_file, "OPENCASE_S3_ACCESS_KEY") or "opencase"
-    s3_secret = dotenv.get_key(config_file, "OPENCASE_S3_SECRET_KEY") or "changeme"
-    s3_bucket = dotenv.get_key(config_file, "OPENCASE_S3_BUCKET") or "opencase"
+    admin_email = dotenv.get_key(config_file, "GIDEON_ADMIN_EMAIL")
+    admin_password = dotenv.get_key(config_file, "GIDEON_ADMIN_PASSWORD")
+    s3_access = dotenv.get_key(config_file, "GIDEON_S3_ACCESS_KEY") or "gideon"
+    s3_secret = dotenv.get_key(config_file, "GIDEON_S3_SECRET_KEY") or "changeme"
+    s3_bucket = dotenv.get_key(config_file, "GIDEON_S3_BUCKET") or "gideon"
 
     if not admin_email or not admin_password:
-        print("ERROR: OPENCASE_ADMIN_EMAIL / OPENCASE_ADMIN_PASSWORD not set")  # noqa: T201
+        print("ERROR: GIDEON_ADMIN_EMAIL / GIDEON_ADMIN_PASSWORD not set")  # noqa: T201
         sys.exit(1)
 
     with Client(base_url=BASE_URL) as client:

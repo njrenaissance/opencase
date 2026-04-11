@@ -1,4 +1,4 @@
-# OpenCase — Entity Relationship Diagram
+# Gideon — Entity Relationship Diagram
 
 Covers tables through Feature 7.1. Tables from later features
 (audit_log, witnesses, disclosure_checklist, etc.) will be added

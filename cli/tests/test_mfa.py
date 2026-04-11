@@ -9,11 +9,11 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import MFA_DISABLED, MFA_ENABLED, MFA_SETUP
 
-_PATCH_GET_CLIENT = "opencase_cli.commands.mfa.get_client"
+_PATCH_GET_CLIENT = "gideon_cli.commands.mfa.get_client"
 
 
 class TestMfaSetup:
@@ -21,7 +21,7 @@ class TestMfaSetup:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_setup.return_value = MFA_SETUP
@@ -34,7 +34,7 @@ class TestMfaSetup:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_setup.return_value = MFA_SETUP
@@ -45,7 +45,7 @@ class TestMfaSetup:
         assert data["totp_secret"] == "JBSWY3DPEHPK3PXP"
 
     def test_setup_not_authenticated(
-        self, runner: CliRunner, tmp_opencase_dir: Path
+        self, runner: CliRunner, tmp_gideon_dir: Path
     ) -> None:
         result = runner.invoke(app, ["mfa", "setup"])
         assert result.exit_code == 1
@@ -56,7 +56,7 @@ class TestMfaConfirm:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_confirm.return_value = MFA_ENABLED
@@ -69,7 +69,7 @@ class TestMfaConfirm:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_confirm.return_value = MFA_ENABLED
@@ -87,7 +87,7 @@ class TestMfaDisable:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_disable.return_value = MFA_DISABLED
@@ -100,7 +100,7 @@ class TestMfaDisable:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.mfa_disable.return_value = MFA_DISABLED
@@ -113,7 +113,7 @@ class TestMfaDisable:
         assert data["enabled"] is False
 
     def test_disable_not_authenticated(
-        self, runner: CliRunner, tmp_opencase_dir: Path
+        self, runner: CliRunner, tmp_gideon_dir: Path
     ) -> None:
         result = runner.invoke(app, ["mfa", "disable", "--totp-code", "123456"])
         assert result.exit_code == 1

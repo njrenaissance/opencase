@@ -9,7 +9,7 @@ from collections.abc import Callable
 
 import httpx
 
-from opencase import Client
+from gideon import Client
 
 Handler = Callable[[httpx.Request], httpx.Response]
 

@@ -1,4 +1,4 @@
-# OpenCase Documentation
+# Gideon Documentation
 
 ## Table of Contents
 

@@ -29,7 +29,7 @@ repos:
 
       - id: mypy-sdk
         name: mypy (sdk)
-        entry: bash -c 'unset VIRTUAL_ENV && cd sdk && uv run mypy opencase/'
+        entry: bash -c 'unset VIRTUAL_ENV && cd sdk && uv run mypy gideon/'
         language: system
         pass_filenames: false
         files: ^sdk/
@@ -52,14 +52,14 @@ repos:
 
       - id: pytest-sdk
         name: pytest (sdk)
-        entry: bash -c 'unset VIRTUAL_ENV && cd sdk && uv run python -m pytest -x -q --cov=opencase --cov-report=term-missing'
+        entry: bash -c 'unset VIRTUAL_ENV && cd sdk && uv run python -m pytest -x -q --cov=gideon --cov-report=term-missing'
         language: system
         pass_filenames: false
         files: ^sdk/
 
       - id: mypy-cli
         name: mypy (cli)
-        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run mypy opencase_cli/'
+        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run mypy gideon_cli/'
         language: system
         pass_filenames: false
         files: ^cli/
@@ -67,7 +67,7 @@ repos:
 
       - id: pytest-cli
         name: pytest (cli)
-        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run python -m pytest -x -q --cov=opencase_cli --cov-report=term-missing'
+        entry: bash -c 'unset VIRTUAL_ENV && cd cli && uv run python -m pytest -x -q --cov=gideon_cli --cov-report=term-missing'
         language: system
         pass_filenames: false
         files: ^cli/

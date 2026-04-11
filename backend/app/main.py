@@ -1,6 +1,6 @@
 # Configure logging before any other app imports.
 # session.py and other modules emit logger.debug() at import time;
-# setup_logging() must run first so those messages respect OPENCASE_LOG_LEVEL.
+# setup_logging() must run first so those messages respect GIDEON_LOG_LEVEL.
 from app.core.config import redact_settings, settings
 from app.core.logging import setup_logging
 
@@ -53,7 +53,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             logger.exception("Admin seed failed — continuing startup")
     elif settings.admin.email and not settings.admin.password:
         logger.error(
-            "OPENCASE_ADMIN_EMAIL is set but OPENCASE_ADMIN_PASSWORD is missing "
+            "GIDEON_ADMIN_EMAIL is set but GIDEON_ADMIN_PASSWORD is missing "
             "— skipping admin seed"
         )
     yield

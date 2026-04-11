@@ -1,13 +1,13 @@
 Feature: Document storage in MinIO S3
   As the ingestion pipeline
   I want to store original files in S3-compatible object storage
-  So that originals are preserved and OpenCase controls document lifecycle
+  So that originals are preserved and Gideon controls document lifecycle
 
   # All original files are stored in MinIO regardless of ingestion
   # source (manual upload or cloud poll). SharePoint is
-  # read-only — OpenCase never writes back to cloud storage.
+  # read-only — Gideon never writes back to cloud storage.
   #
-  # Bucket layout: opencase/{firm_id}/{matter_id}/{document_id}/original.{ext}
+  # Bucket layout: gideon/{firm_id}/{matter_id}/{document_id}/original.{ext}
 
   Background:
     Given a firm "Cora Firm" exists

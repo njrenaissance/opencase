@@ -7,10 +7,10 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 
 import httpx
-from opencase import (
+from gideon import (
     AuthenticationError,
     AuthorizationError,
-    OpenCaseError,
+    GideonError,
 )
 from pydantic import BaseModel
 from rich.console import Console
@@ -90,11 +90,11 @@ def handle_errors() -> Iterator[None]:
     except AuthorizationError as exc:
         print_error(f"Access denied: {exc}")
         raise SystemExit(1) from None
-    except OpenCaseError as exc:
+    except GideonError as exc:
         print_error(f"API error: {exc}")
         raise SystemExit(1) from None
     except httpx.ConnectError:
-        print_error("Cannot connect to OpenCase server. Is it running?")
+        print_error("Cannot connect to Gideon server. Is it running?")
         raise SystemExit(1) from None
     except httpx.TimeoutException:
         print_error("Request timed out. Try increasing --timeout.")

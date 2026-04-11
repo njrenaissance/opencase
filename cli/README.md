@@ -1,7 +1,7 @@
-# opencase-cli
+# gideon-cli
 
-Command-line interface for the OpenCase API, built on the
-[opencase-sdk](../sdk/) Python client.
+Command-line interface for the Gideon API, built on the
+[gideon-sdk](../sdk/) Python client.
 
 ## Installation
 
@@ -12,7 +12,7 @@ uv sync
 ## Usage
 
 ```bash
-opencase --help
-opencase health
-opencase login --email user@firm.com
+gideon --help
+gideon health
+gideon login --email user@firm.com
 ```

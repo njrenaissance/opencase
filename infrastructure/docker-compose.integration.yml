@@ -4,9 +4,9 @@
 # Do NOT use this file for normal development — use docker-compose.yml only.
 #
 # Changes from base:
-#   - Points FastAPI at opencase_test database (created by postgres/init.sql)
+#   - Points FastAPI at gideon_test database (created by postgres/init.sql)
 #   - Exposes Redis port for host-side test access
-#   - Points celery-worker result backend at opencase_tasks_test database
+#   - Points celery-worker result backend at gideon_tasks_test database
 #   - Disables services not needed for tests (nextjs)
 #     so pytest-docker starts postgres + redis + minio + qdrant + ollama + fastapi + workers + grafana
 #   - Tears down with -v so the test database is wiped between runs
@@ -14,14 +14,14 @@
 services:
   fastapi:
     environment:
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
-      - OPENCASE_QDRANT_COLLECTION=opencase_test
-      - OPENCASE_OTEL_ENABLED=true
-      - OPENCASE_OTEL_EXPORTER=otlp
-      - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
-      - OPENCASE_OTEL_SERVICE_NAME=opencase-api
-      - OPENCASE_OTEL_SAMPLE_RATE=1.0
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_test
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks_test
+      - GIDEON_QDRANT_COLLECTION=gideon_test
+      - GIDEON_OTEL_ENABLED=true
+      - GIDEON_OTEL_EXPORTER=otlp
+      - GIDEON_OTEL_ENDPOINT=http://grafana:4318
+      - GIDEON_OTEL_SERVICE_NAME=gideon-api
+      - GIDEON_OTEL_SAMPLE_RATE=1.0
 
   redis:
     ports:
@@ -29,14 +29,14 @@ services:
 
   celery-worker:
     environment:
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_test
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
-      - OPENCASE_EXTRACTION_TIKA_URL=http://tika:9998
-      - OPENCASE_QDRANT_COLLECTION=opencase_test
-      - OPENCASE_OTEL_ENABLED=true
-      - OPENCASE_OTEL_EXPORTER=otlp
-      - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
-      - OPENCASE_OTEL_SERVICE_NAME=opencase-worker
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_test
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks_test
+      - GIDEON_EXTRACTION_TIKA_URL=http://tika:9998
+      - GIDEON_QDRANT_COLLECTION=gideon_test
+      - GIDEON_OTEL_ENABLED=true
+      - GIDEON_OTEL_EXPORTER=otlp
+      - GIDEON_OTEL_ENDPOINT=http://grafana:4318
+      - GIDEON_OTEL_SERVICE_NAME=gideon-worker
     depends_on:
       tika:
         condition: service_healthy
@@ -47,11 +47,11 @@ services:
 
   celery-beat:
     environment:
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks_test
-      - OPENCASE_OTEL_ENABLED=true
-      - OPENCASE_OTEL_EXPORTER=otlp
-      - OPENCASE_OTEL_ENDPOINT=http://grafana:4318
-      - OPENCASE_OTEL_SERVICE_NAME=opencase-beat
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks_test
+      - GIDEON_OTEL_ENABLED=true
+      - GIDEON_OTEL_EXPORTER=otlp
+      - GIDEON_OTEL_ENDPOINT=http://grafana:4318
+      - GIDEON_OTEL_SERVICE_NAME=gideon-beat
 
   minio:
     ports:
@@ -69,7 +69,7 @@ services:
 
   qdrant-init:
     environment:
-      - COLLECTION_NAME=opencase_test
+      - COLLECTION_NAME=gideon_test
 
   # nextjs is disabled via profiles in the base docker-compose.yml.
   # Flower is disabled for tests only.

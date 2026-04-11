@@ -18,7 +18,7 @@ POLL_TIMEOUT_SECONDS = 300
 
 import dotenv
 from minio import Minio
-from opencase import Client
+from gideon import Client
 
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -50,18 +50,18 @@ def main() -> None:
     parser.add_argument("--env-file", default=".env", help="Path to .env file")
     args = parser.parse_args()
 
-    s3_access_key = dotenv.get_key(args.env_file, "OPENCASE_S3_ACCESS_KEY")
-    s3_secret_key = dotenv.get_key(args.env_file, "OPENCASE_S3_SECRET_KEY")
-    s3_bucket = dotenv.get_key(args.env_file, "OPENCASE_S3_BUCKET") or "opencase"
-    admin_email = dotenv.get_key(args.env_file, "OPENCASE_ADMIN_EMAIL")
-    admin_password = dotenv.get_key(args.env_file, "OPENCASE_ADMIN_PASSWORD")
+    s3_access_key = dotenv.get_key(args.env_file, "GIDEON_S3_ACCESS_KEY")
+    s3_secret_key = dotenv.get_key(args.env_file, "GIDEON_S3_SECRET_KEY")
+    s3_bucket = dotenv.get_key(args.env_file, "GIDEON_S3_BUCKET") or "gideon"
+    admin_email = dotenv.get_key(args.env_file, "GIDEON_ADMIN_EMAIL")
+    admin_password = dotenv.get_key(args.env_file, "GIDEON_ADMIN_PASSWORD")
 
     if not s3_access_key:
-        raise SystemExit("OPENCASE_S3_ACCESS_KEY is required")
+        raise SystemExit("GIDEON_S3_ACCESS_KEY is required")
     if not s3_secret_key:
-        raise SystemExit("OPENCASE_S3_SECRET_KEY is required")
+        raise SystemExit("GIDEON_S3_SECRET_KEY is required")
     if not admin_email or not admin_password:
-        raise SystemExit("OPENCASE_ADMIN_EMAIL and OPENCASE_ADMIN_PASSWORD are required")
+        raise SystemExit("GIDEON_ADMIN_EMAIL and GIDEON_ADMIN_PASSWORD are required")
 
     minio_client = Minio(
         "localhost:9000",

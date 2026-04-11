@@ -1,4 +1,4 @@
-# OpenCase — Infrastructure Reference
+# Gideon — Infrastructure Reference
 
 Documents the Docker Compose setup in `infrastructure/`. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the high-level service topology and
@@ -12,7 +12,7 @@ Documents the Docker Compose setup in `infrastructure/`. See
 | --- | --- |
 | `infrastructure/docker-compose.yml` | Full development stack |
 | `infrastructure/docker-compose.integration.yml` | Override for integration test runs |
-| `infrastructure/postgres/init.sql` | Creates `opencase_tasks`, `opencase_test`, and `opencase_tasks_test` DBs on first startup |
+| `infrastructure/postgres/init.sql` | Creates `gideon_tasks`, `gideon_test`, and `gideon_tasks_test` DBs on first startup |
 
 ---
 
@@ -42,9 +42,9 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env down -v
 ```
 
 Copy `.env.example` to `.env` and fill in the required values before first run.
-At minimum, set `OPENCASE_AUTH_SECRET_KEY`, `POSTGRES_USER`,
-`POSTGRES_PASSWORD`, `OPENCASE_S3_ACCESS_KEY`, and
-`OPENCASE_S3_SECRET_KEY`.
+At minimum, set `GIDEON_AUTH_SECRET_KEY`, `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, `GIDEON_S3_ACCESS_KEY`, and
+`GIDEON_S3_SECRET_KEY`.
 
 To enable the frontend when ready:
 
@@ -57,8 +57,8 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env --profile fr
 
 The test stack uses `backend/.env.test` and is managed automatically by
 `pytest-docker`. It overlays `docker-compose.integration.yml` on top of the
-base compose file, which points FastAPI and Celery at the `opencase_test`
-and `opencase_tasks_test` databases (created by `postgres/init.sql`).
+base compose file, which points FastAPI and Celery at the `gideon_test`
+and `gideon_tasks_test` databases (created by `postgres/init.sql`).
 
 Flower is additionally disabled for tests. Volumes are wiped on teardown
 so each run starts from a clean database.
@@ -75,7 +75,7 @@ uv run pytest -m integration tests/test_document_upload_integration.py -v
 
 You do not need to start or stop Docker manually — `pytest-docker`
 handles the full lifecycle. The test stack uses a separate project name
-(`opencase-test`) so it does not conflict with a running dev stack.
+(`gideon-test`) so it does not conflict with a running dev stack.
 
 ---
 
@@ -132,7 +132,7 @@ does not stay running.
 | Restart | `no` |
 
 Admin user seeding was previously handled by this container. It has moved to
-the FastAPI lifespan hook (see `OPENCASE_ADMIN_*` env vars in
+the FastAPI lifespan hook (see `GIDEON_ADMIN_*` env vars in
 [SETTINGS.md](SETTINGS.md)).
 
 ---
@@ -154,7 +154,7 @@ integration tests. In production it should be removed — all external traffic
 must route through Next.js.
 
 On startup the lifespan hook seeds the initial admin user if
-`OPENCASE_ADMIN_EMAIL` and `OPENCASE_ADMIN_PASSWORD` are set. The seed is
+`GIDEON_ADMIN_EMAIL` and `GIDEON_ADMIN_PASSWORD` are set. The seed is
 idempotent and reuses the app's existing database connection pool.
 
 ---
@@ -168,12 +168,12 @@ Flower — Celery monitoring web UI for real-time task and worker visibility.
 | Build context | `..` (repo root) |
 | Dockerfile | `backend/docker/Dockerfile` |
 | Command | `celery -A app.workers flower --port=5555 --url_prefix=/flower` |
-| Public port | `${OPENCASE_FLOWER_PORT:-5555}:5555` |
+| Public port | `${GIDEON_FLOWER_PORT:-5555}:5555` |
 | Depends on | `redis` (healthy) |
 
 Provides a dashboard showing queue depth, worker status, active/completed
 tasks, and task details. Basic auth is configurable via
-`OPENCASE_FLOWER_BASIC_AUTH` (format: `user:password`). OTel is disabled
+`GIDEON_FLOWER_BASIC_AUTH` (format: `user:password`). OTel is disabled
 for Flower — it is a monitoring UI, not a task producer.
 
 ---
@@ -193,8 +193,8 @@ single container. Receives all three OTLP signals.
 | Volume | `grafana-data` |
 | Healthcheck | `wget -qO- http://localhost:3000/api/health` |
 
-Enabled by setting `OPENCASE_OTEL_ENABLED=true` and
-`OPENCASE_OTEL_EXPORTER=otlp` on the `fastapi` service. The Grafana UI is
+Enabled by setting `GIDEON_OTEL_ENABLED=true` and
+`GIDEON_OTEL_EXPORTER=otlp` on the `fastapi` service. The Grafana UI is
 available at `http://localhost:3001`. Pre-configured datasources for Tempo,
 Prometheus, and Loki are available out of the box.
 
@@ -212,9 +212,9 @@ MinIO S3-compatible object store for original documents.
 | Volume | `minio-data` |
 | Healthcheck | `mc ready local` |
 
-Configured via `OPENCASE_S3_*` environment variables (see
-[SETTINGS.md](SETTINGS.md#s3settings-opencase_s3_-prefix)). The
-`OPENCASE_S3_ACCESS_KEY` and `OPENCASE_S3_SECRET_KEY` values are mapped
+Configured via `GIDEON_S3_*` environment variables (see
+[SETTINGS.md](SETTINGS.md#s3settings-gideon_s3_-prefix)). The
+`GIDEON_S3_ACCESS_KEY` and `GIDEON_S3_SECRET_KEY` values are mapped
 to `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` in docker-compose so a
 single `.env` entry drives both the application and the storage server.
 
@@ -251,7 +251,7 @@ Ollama local LLM and embedding server.
 | Healthcheck | `ollama list` |
 
 Default LLM: `OLLAMA_LLM_MODEL` (default: `llama3.1:8b`).
-Default embed model: `OPENCASE_EMBEDDING_MODEL` (default: `nomic-embed-text`).
+Default embed model: `GIDEON_EMBEDDING_MODEL` (default: `nomic-embed-text`).
 
 The `ollama-init` sidecar service pulls both the embedding model and the LLM
 automatically on first run using `ollama pull`. FastAPI and celery-worker depend
@@ -292,9 +292,9 @@ PostgreSQL 17 relational database.
 | Healthcheck | `pg_isready -U <user>` |
 
 The init script runs once on first container startup and creates three
-additional databases alongside the default `opencase` database:
-`opencase_tasks` (Celery result backend), `opencase_test` (integration
-tests), and `opencase_tasks_test` (integration test result backend).
+additional databases alongside the default `gideon` database:
+`gideon_tasks` (Celery result backend), `gideon_test` (integration
+tests), and `gideon_tasks_test` (integration test result backend).
 
 ---
 
@@ -311,7 +311,7 @@ Qdrant vector store (single collection, permission-filtered on every query).
 | Healthcheck | `bash -c 'echo > /dev/tcp/localhost/6333'` |
 
 Only accessible from within the Docker network. Collection name is
-controlled by `OPENCASE_QDRANT_COLLECTION` (default: `opencase`).
+controlled by `GIDEON_QDRANT_COLLECTION` (default: `gideon`).
 
 The `qdrant-init` sidecar service creates the collection automatically on first
 run via the Qdrant REST API. FastAPI and celery-worker depend on `qdrant-init`
@@ -393,8 +393,8 @@ host ports.
 ### Admin Seed (automatic)
 
 The FastAPI lifespan hook automatically seeds an admin user on startup
-when `OPENCASE_ADMIN_EMAIL` and `OPENCASE_ADMIN_PASSWORD` are set.
-See [SETTINGS.md](SETTINGS.md) for the full list of `OPENCASE_ADMIN_*`
+when `GIDEON_ADMIN_EMAIL` and `GIDEON_ADMIN_PASSWORD` are set.
+See [SETTINGS.md](SETTINGS.md) for the full list of `GIDEON_ADMIN_*`
 variables.
 
 ### Demo Seed (manual)
@@ -424,15 +424,15 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 
 **Changes from base stack:**
 
-- `fastapi` points at `opencase_test` database (created by `init.sql`)
+- `fastapi` points at `gideon_test` database (created by `init.sql`)
 - `fastapi` has OTel enabled (`EXPORTER=otlp`, targeting `grafana:4318`)
 - `redis` exposes port `6379` to the host for test access
-- `celery-worker` result backend points at `opencase_tasks_test`
+- `celery-worker` result backend points at `gideon_tasks_test`
 - `minio` exposes ports `9000` and `9001` to the host for test access
 - `flower` is disabled (not needed for tests)
 - `nextjs` is disabled via profiles in the base compose file
 - `qdrant` exposes port `6333` to the host for test access
-- `qdrant-init` overrides collection name to `opencase_test`
+- `qdrant-init` overrides collection name to `gideon_test`
 - Active services: `postgres` + `redis` + `minio` + `qdrant` + `ollama` +
   `fastapi` + `celery-worker` + `celery-beat` + `grafana`
 

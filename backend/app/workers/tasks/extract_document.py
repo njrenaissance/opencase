@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 
-@shared_task(name="opencase.extract_document")  # type: ignore[untyped-decorator]
+@shared_task(name="gideon.extract_document")  # type: ignore[untyped-decorator]
 def extract_document(document_id: str, s3_key: str) -> dict[str, object]:
     """Extract text from a document stored in S3.
 

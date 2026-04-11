@@ -1,7 +1,7 @@
 # Load environment from project root:
 #   docker compose -f infrastructure/docker-compose.yml --env-file .env up
 
-name: opencase
+name: gideon
 
 services:
 
@@ -23,30 +23,30 @@ services:
     depends_on:
       - fastapi
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Database Migrations ------------------------------------
   # Runs `alembic upgrade head` then exits. Admin seeding has moved
-  # to the FastAPI lifespan hook (OPENCASE_ADMIN_* env vars).
+  # to the FastAPI lifespan hook (GIDEON_ADMIN_* env vars).
   db-migrate:
     build:
       context: ..
       dockerfile: backend/docker/Dockerfile
     command: ["true"]
     environment:
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # AUTH_SECRET_KEY and S3 credentials are required because importing
       # app.core.config validates them, even though this container only
       # runs migrations.
-      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
-      - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
+      - GIDEON_AUTH_SECRET_KEY=${GIDEON_AUTH_SECRET_KEY}
+      - GIDEON_S3_ACCESS_KEY=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - GIDEON_S3_SECRET_KEY=${GIDEON_S3_SECRET_KEY:-changeme}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - opencase
+      - gideon
     restart: "no"
 
   # --- API Layer --------------------------------------------
@@ -62,47 +62,47 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OPENCASE_API_HOST=${OPENCASE_API_HOST:-0.0.0.0}
-      - OPENCASE_API_PORT=${OPENCASE_API_PORT:-8000}
-      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
-      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
-      - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
-      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
+      - GIDEON_API_HOST=${GIDEON_API_HOST:-0.0.0.0}
+      - GIDEON_API_PORT=${GIDEON_API_PORT:-8000}
+      - GIDEON_LOG_LEVEL=${GIDEON_LOG_LEVEL:-INFO}
+      - GIDEON_LOG_OUTPUT=${GIDEON_LOG_OUTPUT:-stdout}
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GIDEON_AUTH_SECRET_KEY=${GIDEON_AUTH_SECRET_KEY}
+      - GIDEON_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
+      - GIDEON_CELERY_BROKER_URL=redis://redis:6379/0
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks
       - REDIS_URL=redis://redis:6379/0
       # Embedding
-      - OPENCASE_EMBEDDING_MODEL=${OPENCASE_EMBEDDING_MODEL:-nomic-embed-text}
-      - OPENCASE_EMBEDDING_BASE_URL=${OPENCASE_EMBEDDING_BASE_URL:-http://ollama:11434}
+      - GIDEON_EMBEDDING_MODEL=${GIDEON_EMBEDDING_MODEL:-nomic-embed-text}
+      - GIDEON_EMBEDDING_BASE_URL=${GIDEON_EMBEDDING_BASE_URL:-http://ollama:11434}
       # Qdrant
-      - OPENCASE_QDRANT_HOST=${OPENCASE_QDRANT_HOST:-qdrant}
-      - OPENCASE_QDRANT_PORT=${OPENCASE_QDRANT_PORT:-6333}
-      - OPENCASE_QDRANT_COLLECTION=${OPENCASE_QDRANT_COLLECTION:-opencase}
+      - GIDEON_QDRANT_HOST=${GIDEON_QDRANT_HOST:-qdrant}
+      - GIDEON_QDRANT_PORT=${GIDEON_QDRANT_PORT:-6333}
+      - GIDEON_QDRANT_COLLECTION=${GIDEON_QDRANT_COLLECTION:-gideon}
       # Chatbot / LLM inference
-      - OPENCASE_CHATBOT_MODEL=${OPENCASE_CHATBOT_MODEL:-llama3}
-      - OPENCASE_CHATBOT_BASE_URL=${OPENCASE_CHATBOT_BASE_URL:-http://ollama:11434}
-      - OPENCASE_CHATBOT_TEMPERATURE=${OPENCASE_CHATBOT_TEMPERATURE:-0.1}
-      - OPENCASE_CHATBOT_MAX_TOKENS=${OPENCASE_CHATBOT_MAX_TOKENS:-4096}
-      - OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT=${OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT:-5}
-      - OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE=${OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE:-/app/SYSTEM_PROMPT.md}
-      - OPENCASE_S3_ENDPOINT=${OPENCASE_S3_ENDPOINT:-minio:9000}
-      - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
-      - OPENCASE_S3_BUCKET=${OPENCASE_S3_BUCKET:-opencase}
-      - OPENCASE_S3_USE_SSL=${OPENCASE_S3_USE_SSL:-false}
-      - OPENCASE_S3_REGION=${OPENCASE_S3_REGION:-us-east-1}
-      - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
-      - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
-      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
-      - OPENCASE_OTEL_SERVICE_NAME=${OPENCASE_OTEL_SERVICE_NAME:-opencase-api}
-      - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
+      - GIDEON_CHATBOT_MODEL=${GIDEON_CHATBOT_MODEL:-llama3}
+      - GIDEON_CHATBOT_BASE_URL=${GIDEON_CHATBOT_BASE_URL:-http://ollama:11434}
+      - GIDEON_CHATBOT_TEMPERATURE=${GIDEON_CHATBOT_TEMPERATURE:-0.1}
+      - GIDEON_CHATBOT_MAX_TOKENS=${GIDEON_CHATBOT_MAX_TOKENS:-4096}
+      - GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT=${GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT:-5}
+      - GIDEON_CHATBOT_SYSTEM_PROMPT_FILE=${GIDEON_CHATBOT_SYSTEM_PROMPT_FILE:-/app/SYSTEM_PROMPT.md}
+      - GIDEON_S3_ENDPOINT=${GIDEON_S3_ENDPOINT:-minio:9000}
+      - GIDEON_S3_ACCESS_KEY=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - GIDEON_S3_SECRET_KEY=${GIDEON_S3_SECRET_KEY:-changeme}
+      - GIDEON_S3_BUCKET=${GIDEON_S3_BUCKET:-gideon}
+      - GIDEON_S3_USE_SSL=${GIDEON_S3_USE_SSL:-false}
+      - GIDEON_S3_REGION=${GIDEON_S3_REGION:-us-east-1}
+      - GIDEON_OTEL_ENABLED=${GIDEON_OTEL_ENABLED:-false}
+      - GIDEON_OTEL_EXPORTER=${GIDEON_OTEL_EXPORTER:-console}
+      - GIDEON_OTEL_ENDPOINT=${GIDEON_OTEL_ENDPOINT:-http://grafana:4318}
+      - GIDEON_OTEL_SERVICE_NAME=${GIDEON_OTEL_SERVICE_NAME:-gideon-api}
+      - GIDEON_OTEL_SAMPLE_RATE=${GIDEON_OTEL_SAMPLE_RATE:-1.0}
       # Admin seed (lifespan hook — runs once on startup, idempotent)
-      - OPENCASE_ADMIN_EMAIL=${OPENCASE_ADMIN_EMAIL:-}
-      - OPENCASE_ADMIN_PASSWORD=${OPENCASE_ADMIN_PASSWORD:-}
-      - OPENCASE_ADMIN_FIRST_NAME=${OPENCASE_ADMIN_FIRST_NAME:-Admin}
-      - OPENCASE_ADMIN_LAST_NAME=${OPENCASE_ADMIN_LAST_NAME:-User}
-      - OPENCASE_ADMIN_FIRM_NAME=${OPENCASE_ADMIN_FIRM_NAME:-Default Firm}
+      - GIDEON_ADMIN_EMAIL=${GIDEON_ADMIN_EMAIL:-}
+      - GIDEON_ADMIN_PASSWORD=${GIDEON_ADMIN_PASSWORD:-}
+      - GIDEON_ADMIN_FIRST_NAME=${GIDEON_ADMIN_FIRST_NAME:-Admin}
+      - GIDEON_ADMIN_LAST_NAME=${GIDEON_ADMIN_LAST_NAME:-User}
+      - GIDEON_ADMIN_FIRM_NAME=${GIDEON_ADMIN_FIRM_NAME:-Default Firm}
     depends_on:
       db-migrate:
         condition: service_completed_successfully
@@ -115,7 +115,7 @@ services:
       ollama-init:
         condition: service_completed_successfully
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Observability (traces + metrics + logs) -------------
@@ -133,7 +133,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Document Object Storage ------------------------------
@@ -147,8 +147,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - MINIO_ROOT_PASSWORD=${OPENCASE_S3_SECRET_KEY:-changeme}
+      - MINIO_ROOT_USER=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - MINIO_ROOT_PASSWORD=${GIDEON_S3_SECRET_KEY:-changeme}
     volumes:
       - minio-data:/data
     healthcheck:
@@ -157,7 +157,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # One-shot init: create the default bucket if it does not exist.
@@ -167,16 +167,16 @@ services:
       minio:
         condition: service_healthy
     environment:
-      - MINIO_ROOT_USER=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - MINIO_ROOT_PASSWORD=${OPENCASE_S3_SECRET_KEY:-changeme}
-      - MINIO_BUCKET=${OPENCASE_S3_BUCKET:-opencase}
+      - MINIO_ROOT_USER=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - MINIO_ROOT_PASSWORD=${GIDEON_S3_SECRET_KEY:-changeme}
+      - MINIO_BUCKET=${GIDEON_S3_BUCKET:-gideon}
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
       mc mb --ignore-existing local/$$MINIO_BUCKET;
       "
     networks:
-      - opencase
+      - gideon
     restart: "no"
 
   # --- Document Text Extraction -------------------------------
@@ -191,7 +191,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Local LLM + Embeddings ------------------------------
@@ -208,7 +208,7 @@ services:
       retries: 5
       start_period: 15s
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
     # GPU support: uncomment below for NVIDIA GPU acceleration
     # deploy:
@@ -227,8 +227,8 @@ services:
         condition: service_healthy
     environment:
       - OLLAMA_HOST=http://ollama:11434
-      - EMBEDDING_MODEL=${OPENCASE_EMBEDDING_MODEL:-nomic-embed-text}
-      - CHATBOT_MODEL=${OPENCASE_CHATBOT_MODEL:-llama3}
+      - EMBEDDING_MODEL=${GIDEON_EMBEDDING_MODEL:-nomic-embed-text}
+      - CHATBOT_MODEL=${GIDEON_CHATBOT_MODEL:-llama3}
     entrypoint: >
       /bin/sh -c "
       echo 'Pulling embedding model $$EMBEDDING_MODEL...';
@@ -239,7 +239,7 @@ services:
       echo 'LLM model pull complete.';
       "
     networks:
-      - opencase
+      - gideon
     restart: "no"
 
   # --- Relational Database ----------------------------------
@@ -248,19 +248,19 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-opencase}
+      - POSTGRES_USER=${POSTGRES_USER:-gideon}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
-      - POSTGRES_DB=${POSTGRES_DB:-opencase}
+      - POSTGRES_DB=${POSTGRES_DB:-gideon}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opencase}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gideon}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Vector Store -----------------------------------------
@@ -278,7 +278,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # One-shot init: create the default Qdrant collection if it does not exist.
@@ -290,8 +290,8 @@ services:
     environment:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
-      - COLLECTION_NAME=${OPENCASE_QDRANT_COLLECTION:-opencase}
-      - EMBEDDING_DIMENSIONS=${OPENCASE_EMBEDDING_DIMENSIONS:-768}
+      - COLLECTION_NAME=${GIDEON_QDRANT_COLLECTION:-gideon}
+      - EMBEDDING_DIMENSIONS=${GIDEON_EMBEDDING_DIMENSIONS:-768}
     entrypoint:
       - /bin/sh
       - -c
@@ -305,7 +305,7 @@ services:
         curl -sf -X PUT "http://$$QDRANT_HOST:$$QDRANT_PORT/collections/$$COLLECTION_NAME" -H "Content-Type: application/json" -d "{\"vectors\":{\"size\":$$EMBEDDING_DIMENSIONS,\"distance\":\"Cosine\"}}" || exit 1
         echo "Done."
     networks:
-      - opencase
+      - gideon
     restart: "no"
 
   # --- Task Queue Broker ------------------------------------
@@ -321,7 +321,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Background Workers -----------------------------------
@@ -332,41 +332,41 @@ services:
     command: celery -A app.workers worker -l info
     environment:
       - SKIP_MIGRATIONS=true
-      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
-      - OPENCASE_CELERY_TASK_SOFT_TIME_LIMIT=${OPENCASE_CELERY_TASK_SOFT_TIME_LIMIT:-300}
-      - OPENCASE_CELERY_TASK_HARD_TIME_LIMIT=${OPENCASE_CELERY_TASK_HARD_TIME_LIMIT:-600}
-      - OPENCASE_CELERY_WORKER_CONCURRENCY=${OPENCASE_CELERY_WORKER_CONCURRENCY:-2}
-      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
-      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
-      - OPENCASE_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
+      - GIDEON_AUTH_SECRET_KEY=${GIDEON_AUTH_SECRET_KEY}
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GIDEON_CELERY_BROKER_URL=redis://redis:6379/0
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks
+      - GIDEON_CELERY_TASK_SOFT_TIME_LIMIT=${GIDEON_CELERY_TASK_SOFT_TIME_LIMIT:-300}
+      - GIDEON_CELERY_TASK_HARD_TIME_LIMIT=${GIDEON_CELERY_TASK_HARD_TIME_LIMIT:-600}
+      - GIDEON_CELERY_WORKER_CONCURRENCY=${GIDEON_CELERY_WORKER_CONCURRENCY:-2}
+      - GIDEON_LOG_LEVEL=${GIDEON_LOG_LEVEL:-INFO}
+      - GIDEON_LOG_OUTPUT=${GIDEON_LOG_OUTPUT:-stdout}
+      - GIDEON_DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-airgapped}
       # Embedding
-      - OPENCASE_EMBEDDING_MODEL=${OPENCASE_EMBEDDING_MODEL:-nomic-embed-text}
-      - OPENCASE_EMBEDDING_BASE_URL=${OPENCASE_EMBEDDING_BASE_URL:-http://ollama:11434}
+      - GIDEON_EMBEDDING_MODEL=${GIDEON_EMBEDDING_MODEL:-nomic-embed-text}
+      - GIDEON_EMBEDDING_BASE_URL=${GIDEON_EMBEDDING_BASE_URL:-http://ollama:11434}
       # Qdrant
-      - OPENCASE_QDRANT_HOST=${OPENCASE_QDRANT_HOST:-qdrant}
-      - OPENCASE_QDRANT_PORT=${OPENCASE_QDRANT_PORT:-6333}
-      - OPENCASE_QDRANT_COLLECTION=${OPENCASE_QDRANT_COLLECTION:-opencase}
-      - OPENCASE_S3_ENDPOINT=${OPENCASE_S3_ENDPOINT:-minio:9000}
-      - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
-      - OPENCASE_S3_BUCKET=${OPENCASE_S3_BUCKET:-opencase}
-      - OPENCASE_S3_USE_SSL=${OPENCASE_S3_USE_SSL:-false}
-      - OPENCASE_S3_REGION=${OPENCASE_S3_REGION:-us-east-1}
+      - GIDEON_QDRANT_HOST=${GIDEON_QDRANT_HOST:-qdrant}
+      - GIDEON_QDRANT_PORT=${GIDEON_QDRANT_PORT:-6333}
+      - GIDEON_QDRANT_COLLECTION=${GIDEON_QDRANT_COLLECTION:-gideon}
+      - GIDEON_S3_ENDPOINT=${GIDEON_S3_ENDPOINT:-minio:9000}
+      - GIDEON_S3_ACCESS_KEY=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - GIDEON_S3_SECRET_KEY=${GIDEON_S3_SECRET_KEY:-changeme}
+      - GIDEON_S3_BUCKET=${GIDEON_S3_BUCKET:-gideon}
+      - GIDEON_S3_USE_SSL=${GIDEON_S3_USE_SSL:-false}
+      - GIDEON_S3_REGION=${GIDEON_S3_REGION:-us-east-1}
       # Document extraction (Tika)
-      - OPENCASE_EXTRACTION_TIKA_URL=${OPENCASE_EXTRACTION_TIKA_URL:-http://tika:9998}
+      - GIDEON_EXTRACTION_TIKA_URL=${GIDEON_EXTRACTION_TIKA_URL:-http://tika:9998}
       # Cloud ingestion (internet mode only)
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
       # Observability
-      - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
-      - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
-      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
-      - OPENCASE_OTEL_SERVICE_NAME=opencase-worker
-      - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
+      - GIDEON_OTEL_ENABLED=${GIDEON_OTEL_ENABLED:-false}
+      - GIDEON_OTEL_EXPORTER=${GIDEON_OTEL_EXPORTER:-console}
+      - GIDEON_OTEL_ENDPOINT=${GIDEON_OTEL_ENDPOINT:-http://grafana:4318}
+      - GIDEON_OTEL_SERVICE_NAME=gideon-worker
+      - GIDEON_OTEL_SAMPLE_RATE=${GIDEON_OTEL_SAMPLE_RATE:-1.0}
     volumes:
       - celery-tmp:/tmp/celery
     depends_on:
@@ -383,7 +383,7 @@ services:
       ollama-init:
         condition: service_completed_successfully
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   celery-beat:
@@ -393,23 +393,23 @@ services:
     command: celery -A app.workers beat -l info --schedule /tmp/celery/celerybeat-schedule
     environment:
       - SKIP_MIGRATIONS=true
-      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
-      # OPENCASE_DB_URL and S3 credentials are required because importing
+      - GIDEON_AUTH_SECRET_KEY=${GIDEON_AUTH_SECRET_KEY}
+      # GIDEON_DB_URL and S3 credentials are required because importing
       # app.core.config validates them, even though Beat only uses
       # broker_url and result_backend.
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
-      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
-      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
-      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GIDEON_S3_ACCESS_KEY=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - GIDEON_S3_SECRET_KEY=${GIDEON_S3_SECRET_KEY:-changeme}
+      - GIDEON_CELERY_BROKER_URL=redis://redis:6379/0
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks
+      - GIDEON_LOG_LEVEL=${GIDEON_LOG_LEVEL:-INFO}
+      - GIDEON_LOG_OUTPUT=${GIDEON_LOG_OUTPUT:-stdout}
       # Observability
-      - OPENCASE_OTEL_ENABLED=${OPENCASE_OTEL_ENABLED:-false}
-      - OPENCASE_OTEL_EXPORTER=${OPENCASE_OTEL_EXPORTER:-console}
-      - OPENCASE_OTEL_ENDPOINT=${OPENCASE_OTEL_ENDPOINT:-http://grafana:4318}
-      - OPENCASE_OTEL_SERVICE_NAME=opencase-beat
-      - OPENCASE_OTEL_SAMPLE_RATE=${OPENCASE_OTEL_SAMPLE_RATE:-1.0}
+      - GIDEON_OTEL_ENABLED=${GIDEON_OTEL_ENABLED:-false}
+      - GIDEON_OTEL_EXPORTER=${GIDEON_OTEL_EXPORTER:-console}
+      - GIDEON_OTEL_ENDPOINT=${GIDEON_OTEL_ENDPOINT:-http://grafana:4318}
+      - GIDEON_OTEL_SERVICE_NAME=gideon-beat
+      - GIDEON_OTEL_SAMPLE_RATE=${GIDEON_OTEL_SAMPLE_RATE:-1.0}
     volumes:
       - celery-tmp:/tmp/celery
     depends_on:
@@ -418,7 +418,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
   # --- Monitoring --------------------------------------------
@@ -430,31 +430,31 @@ services:
         INSTALL_EXTRAS: monitoring
     command: celery -A app.workers flower --port=5555 --url_prefix=/flower --broker_api=redis://redis:6379/0
     ports:
-      - "${OPENCASE_FLOWER_PORT:-5555}:5555"
+      - "${GIDEON_FLOWER_PORT:-5555}:5555"
     environment:
       - SKIP_MIGRATIONS=true
-      - OPENCASE_AUTH_SECRET_KEY=${OPENCASE_AUTH_SECRET_KEY}
+      - GIDEON_AUTH_SECRET_KEY=${GIDEON_AUTH_SECRET_KEY}
       # Required by app.core.config validation even though Flower only
       # uses broker_url and result_backend.
-      - OPENCASE_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - OPENCASE_S3_ACCESS_KEY=${OPENCASE_S3_ACCESS_KEY:-opencase}
-      - OPENCASE_S3_SECRET_KEY=${OPENCASE_S3_SECRET_KEY:-changeme}
-      - OPENCASE_CELERY_BROKER_URL=redis://redis:6379/0
-      - OPENCASE_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/opencase_tasks
-      - OPENCASE_FLOWER_PORT=5555
-      - OPENCASE_FLOWER_BASIC_AUTH=${OPENCASE_FLOWER_BASIC_AUTH:-}
-      - OPENCASE_FLOWER_URL_PREFIX=/flower
-      - OPENCASE_LOG_LEVEL=${OPENCASE_LOG_LEVEL:-INFO}
-      - OPENCASE_LOG_OUTPUT=${OPENCASE_LOG_OUTPUT:-stdout}
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - GIDEON_S3_ACCESS_KEY=${GIDEON_S3_ACCESS_KEY:-gideon}
+      - GIDEON_S3_SECRET_KEY=${GIDEON_S3_SECRET_KEY:-changeme}
+      - GIDEON_CELERY_BROKER_URL=redis://redis:6379/0
+      - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks
+      - GIDEON_FLOWER_PORT=5555
+      - GIDEON_FLOWER_BASIC_AUTH=${GIDEON_FLOWER_BASIC_AUTH:-}
+      - GIDEON_FLOWER_URL_PREFIX=/flower
+      - GIDEON_LOG_LEVEL=${GIDEON_LOG_LEVEL:-INFO}
+      - GIDEON_LOG_OUTPUT=${GIDEON_LOG_OUTPUT:-stdout}
       # Flower is a monitoring UI — no task telemetry to emit.
-      - OPENCASE_OTEL_ENABLED=false
+      - GIDEON_OTEL_ENABLED=false
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
     networks:
-      - opencase
+      - gideon
     restart: unless-stopped
 
 volumes:
@@ -467,5 +467,5 @@ volumes:
   grafana-data:
 
 networks:
-  opencase:
+  gideon:
     driver: bridge

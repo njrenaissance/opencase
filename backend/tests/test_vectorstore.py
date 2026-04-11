@@ -106,7 +106,7 @@ class TestQdrantVectorStoreUpsert:
         assert count == 1
         mock_client.upsert.assert_called_once()
         call_kwargs = mock_client.upsert.call_args
-        assert call_kwargs.kwargs["collection_name"] == "opencase_test"
+        assert call_kwargs.kwargs["collection_name"] == "gideon_test"
         points = call_kwargs.kwargs["points"]
         assert len(points) == 1
 

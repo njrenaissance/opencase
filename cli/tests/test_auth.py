@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from opencase import AuthenticationError
+from gideon import AuthenticationError
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
-from opencase_cli.tokens import load_tokens
+from gideon_cli.main import app
+from gideon_cli.tokens import load_tokens
 
 from .conftest import (
     LOGOUT_RESPONSE,
@@ -20,12 +20,12 @@ from .conftest import (
     USER_RESPONSE,
 )
 
-_PATCH_GET_CLIENT = "opencase_cli.commands.auth.get_client"
+_PATCH_GET_CLIENT = "gideon_cli.commands.auth.get_client"
 
 
 class TestLogin:
     def test_login_success(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Path
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Path
     ) -> None:
         mock_client.login.return_value = TOKEN_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -37,7 +37,7 @@ class TestLogin:
         assert load_tokens() is not None
 
     def test_login_json(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Path
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Path
     ) -> None:
         mock_client.login.return_value = TOKEN_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -49,7 +49,7 @@ class TestLogin:
         assert data["authenticated"] is True
 
     def test_login_mfa_flow(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Path
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Path
     ) -> None:
         mock_client.login.return_value = MFA_REQUIRED
         mock_client.verify_mfa.return_value = TOKEN_RESPONSE
@@ -72,7 +72,7 @@ class TestLogin:
         )
 
     def test_login_invalid_credentials(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Path
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Path
     ) -> None:
         mock_client.login.side_effect = AuthenticationError(
             "bad creds", status_code=401
@@ -89,18 +89,18 @@ class TestLogout:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.logout.return_value = LOGOUT_RESPONSE
-        with patch("opencase_cli.commands.auth.get_client", return_value=mock_client):
+        with patch("gideon_cli.commands.auth.get_client", return_value=mock_client):
             result = runner.invoke(app, ["logout"])
         assert result.exit_code == 0
         assert "Logged out" in result.output
         assert load_tokens() is None
 
     def test_logout_not_logged_in(
-        self, runner: CliRunner, tmp_opencase_dir: Path
+        self, runner: CliRunner, tmp_gideon_dir: Path
     ) -> None:
         result = runner.invoke(app, ["logout"])
         assert result.exit_code == 1
@@ -111,11 +111,11 @@ class TestWhoami:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_current_user.return_value = USER_RESPONSE
-        with patch("opencase_cli.commands.auth.get_client", return_value=mock_client):
+        with patch("gideon_cli.commands.auth.get_client", return_value=mock_client):
             result = runner.invoke(app, ["whoami"])
         assert result.exit_code == 0
         assert "user@firm.com" in result.output
@@ -124,11 +124,11 @@ class TestWhoami:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_current_user.return_value = USER_RESPONSE
-        with patch("opencase_cli.commands.auth.get_client", return_value=mock_client):
+        with patch("gideon_cli.commands.auth.get_client", return_value=mock_client):
             result = runner.invoke(app, ["whoami", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -136,7 +136,7 @@ class TestWhoami:
         assert data["role"] == "attorney"
 
     def test_whoami_not_logged_in(
-        self, runner: CliRunner, tmp_opencase_dir: Path
+        self, runner: CliRunner, tmp_gideon_dir: Path
     ) -> None:
         result = runner.invoke(app, ["whoami"])
         assert result.exit_code == 1

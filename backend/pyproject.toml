@@ -1,11 +1,11 @@
 [project]
-name = "opencase"
+name = "gideon"
 version = "0.1.0"
 description = "AI-powered criminal defense discovery platform"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
-authors = [{ name = "OpenCase Contributors" }]
+authors = [{ name = "Gideon Contributors" }]
 keywords = ["legal", "discovery", "criminal-defense", "rag"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -17,7 +17,7 @@ classifiers = [
 
 dependencies = [
     # Shared models
-    "opencase-shared",
+    "gideon-shared",
     # API
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
@@ -103,7 +103,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-opencase-shared = { workspace = true }
+gideon-shared = { workspace = true }
 
 [tool.ruff]
 target-version = "py312"

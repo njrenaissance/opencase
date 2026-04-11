@@ -1,4 +1,4 @@
-"""Alembic environment — async engine wired to OpenCase models."""
+"""Alembic environment — async engine wired to Gideon models."""
 
 import asyncio
 from logging.config import fileConfig

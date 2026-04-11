@@ -1,13 +1,13 @@
-# Contributing to OpenCase
+# Contributing to Gideon
 
-Thank you for your interest in contributing to OpenCase.
+Thank you for your interest in contributing to Gideon.
 This project serves criminal defense attorneys who need
 privacy-first discovery tooling, and every contribution
 helps level the playing field.
 
 ## Who Can Contribute
 
-OpenCase welcomes contributors of all kinds:
+Gideon welcomes contributors of all kinds:
 
 - **Developers** — Python, TypeScript, DevOps
 - **Legal professionals** — domain knowledge, workflow
@@ -69,7 +69,7 @@ If you discover a security vulnerability, **do not open
 a public issue.** Instead, email the maintainers
 directly. Details in SECURITY.md (coming soon).
 
-Given the sensitivity of the data OpenCase handles
+Given the sensitivity of the data Gideon handles
 (criminal defense discovery materials), security review
 of all contributions is thorough and non-negotiable.
 

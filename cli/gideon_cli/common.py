@@ -5,20 +5,20 @@ from __future__ import annotations
 from typing import Annotated
 
 import typer
-from opencase import Client
+from gideon import Client
 
-from opencase_cli.config import load_config
-from opencase_cli.output import print_error
-from opencase_cli.tokens import load_tokens
+from gideon_cli.config import load_config
+from gideon_cli.output import print_error
+from gideon_cli.tokens import load_tokens
 
 # Re-usable Annotated types for common CLI options.
 BaseUrlOption = Annotated[
     str | None,
-    typer.Option("--base-url", envvar="OPENCASE_BASE_URL", help="API base URL."),
+    typer.Option("--base-url", envvar="GIDEON_BASE_URL", help="API base URL."),
 ]
 TimeoutOption = Annotated[
     float | None,
-    typer.Option("--timeout", envvar="OPENCASE_TIMEOUT", help="Timeout in seconds."),
+    typer.Option("--timeout", envvar="GIDEON_TIMEOUT", help="Timeout in seconds."),
 ]
 JsonOption = Annotated[
     bool,
@@ -39,7 +39,7 @@ def get_client(
     if authenticated:
         tokens = load_tokens()
         if tokens is None:
-            print_error("Not logged in. Run 'opencase login' first.")
+            print_error("Not logged in. Run 'gideon login' first.")
             raise SystemExit(1)
         client._auth.store_tokens(tokens[0], tokens[1])  # noqa: SLF001
 

@@ -15,14 +15,14 @@ _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_TIMEOUT = 30.0
 
 
-def opencase_dir() -> Path:
-    """Return ``~/.opencase/``, the CLI data directory."""
-    return Path.home() / ".opencase"
+def gideon_dir() -> Path:
+    """Return ``~/.gideon/``, the CLI data directory."""
+    return Path.home() / ".gideon"
 
 
 def config_path() -> Path:
     """Return the path to the CLI config file."""
-    return opencase_dir() / "config.toml"
+    return gideon_dir() / "config.toml"
 
 
 @dataclass(frozen=True)
@@ -56,8 +56,8 @@ def load_config(
             file_timeout = float(raw_timeout)
 
     # Layer 2: env vars
-    env_base_url = os.environ.get("OPENCASE_BASE_URL")
-    env_timeout_raw = os.environ.get("OPENCASE_TIMEOUT")
+    env_base_url = os.environ.get("GIDEON_BASE_URL")
+    env_timeout_raw = os.environ.get("GIDEON_TIMEOUT")
     env_timeout = float(env_timeout_raw) if env_timeout_raw else None
 
     # Merge: flags > env > file > defaults (use is not None, not truthiness)
@@ -84,8 +84,8 @@ def load_config(
 
 
 def save_config(config: CLIConfig) -> None:
-    """Write configuration to ``~/.opencase/config.toml``."""
-    directory = opencase_dir()
+    """Write configuration to ``~/.gideon/config.toml``."""
+    directory = gideon_dir()
     directory.mkdir(parents=True, exist_ok=True)
     if sys.platform != "win32":
         directory.chmod(stat.S_IRWXU)

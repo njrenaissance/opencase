@@ -6,8 +6,8 @@ from typing import Annotated
 
 import typer
 
-from opencase_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
-from opencase_cli.output import handle_errors, print_model, print_success
+from gideon_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
+from gideon_cli.output import handle_errors, print_model, print_success
 
 app = typer.Typer(help="Manage multi-factor authentication.", no_args_is_help=True)
 

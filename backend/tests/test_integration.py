@@ -22,7 +22,7 @@ async def test_health_endpoint_live(fastapi_service: str) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["app"] == "OpenCase"
+    assert data["app"] == "Gideon"
 
 
 @pytest.mark.integration
@@ -70,7 +70,7 @@ def test_celery_worker_ping_task(
         broker=f"redis://{host}:{port}/0",
         backend=settings.celery.result_backend,
     )
-    result = app.send_task("opencase.ping")
+    result = app.send_task("gideon.ping")
     assert result.get(timeout=15) == "pong"
 
 

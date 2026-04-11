@@ -19,7 +19,7 @@ def s3_settings() -> MagicMock:
     settings.secret_key = "testsecret"  # noqa: S105
     settings.use_ssl = False
     settings.region = "us-east-1"
-    settings.bucket = "opencase"
+    settings.bucket = "gideon"
     return settings
 
 
@@ -78,7 +78,7 @@ class TestUploadDocument:
 
         mock_minio.put_object.assert_called_once()
         call_args = mock_minio.put_object.call_args
-        assert call_args[0][0] == "opencase"  # bucket
+        assert call_args[0][0] == "gideon"  # bucket
         assert call_args[0][1] == expected_key  # key
 
     @pytest.mark.asyncio
@@ -135,4 +135,4 @@ class TestDeleteDocument:
     ) -> None:
         key = "firm/matter/doc/original.pdf"
         await service.delete_document(key)
-        mock_minio.remove_object.assert_called_once_with("opencase", key)
+        mock_minio.remove_object.assert_called_once_with("gideon", key)

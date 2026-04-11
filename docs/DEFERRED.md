@@ -1,4 +1,4 @@
-# OpenCase Deferred Features
+# Gideon Deferred Features
 
 Features deferred to V1.1 or later.
 

@@ -6,8 +6,8 @@
 # in isolation for smoke tests without a live database).
 #
 # Bind address and port are read from environment variables:
-#   OPENCASE_API_HOST  (default: 0.0.0.0)
-#   OPENCASE_API_PORT  (default: 8000)
+#   GIDEON_API_HOST  (default: 0.0.0.0)
+#   GIDEON_API_PORT  (default: 8000)
 set -e
 
 if [ "${SKIP_MIGRATIONS:-false}" != "true" ]; then
@@ -20,5 +20,5 @@ if [ $# -gt 0 ]; then
 fi
 
 exec uvicorn app.main:app \
-    --host "${OPENCASE_API_HOST:-0.0.0.0}" \
-    --port "${OPENCASE_API_PORT:-8000}"
+    --host "${GIDEON_API_HOST:-0.0.0.0}" \
+    --port "${GIDEON_API_PORT:-8000}"

@@ -9,11 +9,11 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import FIRM_RESPONSE
 
-_PATCH = "opencase_cli.commands.firms.get_client"
+_PATCH = "gideon_cli.commands.firms.get_client"
 
 
 class TestGetFirm:
@@ -21,7 +21,7 @@ class TestGetFirm:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_firm.return_value = FIRM_RESPONSE
@@ -34,7 +34,7 @@ class TestGetFirm:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_firm.return_value = FIRM_RESPONSE
@@ -44,6 +44,6 @@ class TestGetFirm:
         data = json.loads(result.output)
         assert data["name"] == "Cora Firm"
 
-    def test_not_authenticated(self, runner: CliRunner, tmp_opencase_dir: Path) -> None:
+    def test_not_authenticated(self, runner: CliRunner, tmp_gideon_dir: Path) -> None:
         result = runner.invoke(app, ["firm", "get"])
         assert result.exit_code == 1

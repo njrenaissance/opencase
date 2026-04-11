@@ -22,7 +22,7 @@ from tests.factories import make_embedding_result, make_payload_metadata
 # Helpers
 # ---------------------------------------------------------------------------
 
-_COLLECTION = "opencase_integration_test"
+_COLLECTION = "gideon_integration_test"
 _DIMENSIONS = 768
 
 

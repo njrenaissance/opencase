@@ -30,7 +30,7 @@ class IngestionService:
         from app.workers import celery_app
 
         celery_app.send_task(
-            "opencase.ingest_document",
+            "gideon.ingest_document",
             args=[str(document_id), s3_key],
         )
         logger.info(

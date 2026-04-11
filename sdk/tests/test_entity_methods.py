@@ -16,7 +16,7 @@ from shared.models.matter import MatterResponse, MatterSummary
 from shared.models.matter_access import MatterAccessResponse
 from shared.models.user import UserResponse, UserSummary
 
-from opencase.exceptions import OpenCaseError
+from gideon.exceptions import GideonError
 from tests.conftest import build_authenticated_client
 
 # ---------------------------------------------------------------------------
@@ -329,7 +329,7 @@ def test_upload_document_multipart(tmp_path) -> None:
 
 
 def test_upload_document_409_raises(tmp_path) -> None:
-    """upload_document raises OpenCaseError on 409 (duplicate)."""
+    """upload_document raises GideonError on 409 (duplicate)."""
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -341,7 +341,7 @@ def test_upload_document_409_raises(tmp_path) -> None:
     f = tmp_path / "dup.pdf"
     f.write_bytes(b"duplicate content")
 
-    with pytest.raises(OpenCaseError):
+    with pytest.raises(GideonError):
         client.upload_document(file_path=f, matter_id=_MATTER_ID)
 
 

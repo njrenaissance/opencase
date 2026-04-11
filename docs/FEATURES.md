@@ -1,4 +1,4 @@
-# OpenCase Feature Roadmap
+# Gideon Feature Roadmap
 
 | ID | Feature | Status |
 | --- | --- | --- |
@@ -21,13 +21,13 @@
 | 1.6 | Python REST client SDK + shared models (sdk/, shared/) | Done |
 | 1.8 | Core business endpoints (matters, prompt stub, documents stub) | Done |
 | 1.7 | CLI (built on SDK) | Done |
-| 1.6.1 | SDK: rename `OpenCaseClient` → `Client` (backwards-compat alias kept) | Done |
+| 1.6.1 | SDK: rename `GideonClient` → `Client` (backwards-compat alias kept) | Done |
 | 1.6.2 | SDK: `Session` context manager — auto login/logout, credential scrubbing | Done |
 | **2.0** | **Worker Queue** | **Done** |
 | 2.1 | Configuration + env vars (CelerySettings, RedisSettings, FlowerSettings) | Done |
 | 2.2 | Redis broker + Celery worker + Beat containers (Dockerfile, health checks, env wiring) | Done |
 | 2.3 | Celery app + task definitions (app/workers/) | Done |
-| 2.4 | Task result persistence (opencase_tasks DB on shared Postgres, Celery DB backend) | Done |
+| 2.4 | Task result persistence (gideon_tasks DB on shared Postgres, Celery DB backend) | Done |
 | 2.5 | API integration (Celery client, task.delay() submission) | Done |
 | 2.6 | Task status API endpoint (read-only — query task progress/result by task ID for API-triggered tasks) | Done |
 | 2.7 | Observability (Flower container + OTel Celery instrumentation) | Done |
@@ -53,7 +53,7 @@
 | 6.11 | Duplicate-check API endpoint (`GET /documents/check-duplicate` — lightweight pre-upload hash check) | Done |
 | 6.12 | Disk-buffered hashing (SpooledTemporaryFile — small files in RAM, large files spill to disk) | Done |
 | 6.13 | SDK multipart upload + client-side hashing (`upload_document`, `check_duplicate`, `hash_file`) | Done |
-| 6.5 | Bulk upload CLI command (`opencase document bulk-ingest` — walk directory, client-side pre-hash dedup, per-file upload, progress summary) | Done |
+| 6.5 | Bulk upload CLI command (`gideon document bulk-ingest` — walk directory, client-side pre-hash dedup, per-file upload, progress summary) | Done |
 | 6.9 | Configuration + env vars (S3Settings: `max_upload_bytes`, `spool_threshold_bytes`) | Done |
 | 6.14 | Configuration + env vars (IngestionSettings: `allowed_types_file`, `allowed_content_types`, `allowed_extensions`, ingestion-config API endpoint) | Done |
 | 6.1 | DB models + migration (documents table — metadata, SHA-256 hash, matter association, MinIO path, ingestion status; seed global knowledge matter) | Done |

@@ -15,22 +15,22 @@ Usage::
 from app.core.telemetry import meter
 
 login_attempts = meter.create_counter(
-    "opencase.auth.login_attempts",
+    "gideon.auth.login_attempts",
     description="Login attempts by result",  # attrs: result=(success|failure|locked)
 )
 
 mfa_challenges = meter.create_counter(
-    "opencase.auth.mfa_challenges",
+    "gideon.auth.mfa_challenges",
     description="MFA TOTP challenge outcomes",  # attrs: result=(success|failure)
 )
 
 token_refresh_attempts = meter.create_counter(
-    "opencase.auth.token_refresh_attempts",
+    "gideon.auth.token_refresh_attempts",
     description="Token refresh attempts",
 )
 
 active_sessions = meter.create_up_down_counter(
-    "opencase.auth.active_sessions",
+    "gideon.auth.active_sessions",
     description="Currently active sessions (access tokens issued minus logouts)",
 )
 
@@ -39,7 +39,7 @@ active_sessions = meter.create_up_down_counter(
 # ---------------------------------------------------------------------------
 
 access_denied = meter.create_counter(
-    "opencase.rbac.access_denied",
+    "gideon.rbac.access_denied",
     description="RBAC access denials",  # attrs: reason=(role|matter), role=<role>
 )
 
@@ -48,32 +48,32 @@ access_denied = meter.create_counter(
 # ---------------------------------------------------------------------------
 
 users_created = meter.create_counter(
-    "opencase.users.created",
+    "gideon.users.created",
     description="Users created",
 )
 
 users_updated = meter.create_counter(
-    "opencase.users.updated",
+    "gideon.users.updated",
     description="Users updated",
 )
 
 matters_created = meter.create_counter(
-    "opencase.matters.created",
+    "gideon.matters.created",
     description="Matters created",
 )
 
 matters_updated = meter.create_counter(
-    "opencase.matters.updated",
+    "gideon.matters.updated",
     description="Matters updated",
 )
 
 matter_access_granted = meter.create_counter(
-    "opencase.matter_access.granted",
+    "gideon.matter_access.granted",
     description="Matter access grants",
 )
 
 matter_access_revoked = meter.create_counter(
-    "opencase.matter_access.revoked",
+    "gideon.matter_access.revoked",
     description="Matter access revocations",
 )
 
@@ -82,12 +82,12 @@ matter_access_revoked = meter.create_counter(
 # ---------------------------------------------------------------------------
 
 documents_created = meter.create_counter(
-    "opencase.documents.created",
+    "gideon.documents.created",
     description="Documents created",
 )
 
 documents_duplicates_rejected = meter.create_counter(
-    "opencase.documents.duplicates_rejected",
+    "gideon.documents.duplicates_rejected",
     description="Duplicate document upload rejections",
 )
 
@@ -96,12 +96,12 @@ documents_duplicates_rejected = meter.create_counter(
 # ---------------------------------------------------------------------------
 
 prompts_created = meter.create_counter(
-    "opencase.prompts.created",
+    "gideon.prompts.created",
     description="Prompts submitted",
 )
 
 chat_queries_created = meter.create_counter(
-    "opencase.chat.queries.created",
+    "gideon.chat.queries.created",
     description="Chat queries submitted",
 )
 
@@ -110,17 +110,17 @@ chat_queries_created = meter.create_counter(
 # ---------------------------------------------------------------------------
 
 tasks_submitted = meter.create_counter(
-    "opencase.tasks.submitted",
+    "gideon.tasks.submitted",
     description="Tasks submitted via API",
 )
 
 tasks_cancelled = meter.create_counter(
-    "opencase.tasks.cancelled",
+    "gideon.tasks.cancelled",
     description="Tasks cancelled via API",
 )
 
 tasks_status_queried = meter.create_counter(
-    "opencase.tasks.status_queried",
+    "gideon.tasks.status_queried",
     description="Task status queries via broker",
 )
 
@@ -129,29 +129,29 @@ tasks_status_queried = meter.create_counter(
 # ---------------------------------------------------------------------------
 
 extraction_completed = meter.create_counter(
-    "opencase.extraction.completed",
+    "gideon.extraction.completed",
     description="Successful text extractions",  # attrs: content_type, ocr_applied
 )
 
 extraction_failed = meter.create_counter(
-    "opencase.extraction.failed",
+    "gideon.extraction.failed",
     description="Failed text extractions",  # attrs: content_type, error_type
 )
 
 extraction_duration_seconds = meter.create_histogram(
-    "opencase.extraction.duration_seconds",
+    "gideon.extraction.duration_seconds",
     description="Extraction latency in seconds",
     unit="s",
 )
 
 extraction_document_size_bytes = meter.create_histogram(
-    "opencase.extraction.document_size_bytes",
+    "gideon.extraction.document_size_bytes",
     description="Input document size in bytes",
     unit="By",
 )
 
 extraction_text_length_chars = meter.create_histogram(
-    "opencase.extraction.text_length_chars",
+    "gideon.extraction.text_length_chars",
     description="Extracted text length in characters",
     unit="{char}",
 )
@@ -161,29 +161,29 @@ extraction_text_length_chars = meter.create_histogram(
 # ---------------------------------------------------------------------------
 
 chunking_completed = meter.create_counter(
-    "opencase.chunking.completed",
+    "gideon.chunking.completed",
     description="Successful chunk operations",  # attrs: strategy
 )
 
 chunking_failed = meter.create_counter(
-    "opencase.chunking.failed",
+    "gideon.chunking.failed",
     description="Failed chunk operations",  # attrs: error_type
 )
 
 chunking_duration_seconds = meter.create_histogram(
-    "opencase.chunking.duration_seconds",
+    "gideon.chunking.duration_seconds",
     description="Chunking latency in seconds",
     unit="s",
 )
 
 chunking_text_length_chars = meter.create_histogram(
-    "opencase.chunking.text_length_chars",
+    "gideon.chunking.text_length_chars",
     description="Input text length in characters",
     unit="{char}",
 )
 
 chunking_chunks_produced = meter.create_histogram(
-    "opencase.chunking.chunks_produced",
+    "gideon.chunking.chunks_produced",
     description="Number of chunks produced per document",
     unit="{chunk}",
 )
@@ -193,29 +193,29 @@ chunking_chunks_produced = meter.create_histogram(
 # ---------------------------------------------------------------------------
 
 embedding_completed = meter.create_counter(
-    "opencase.embedding.completed",
+    "gideon.embedding.completed",
     description="Successful embedding operations",  # attrs: model
 )
 
 embedding_failed = meter.create_counter(
-    "opencase.embedding.failed",
+    "gideon.embedding.failed",
     description="Failed embedding operations",  # attrs: model, error_type
 )
 
 embedding_duration_seconds = meter.create_histogram(
-    "opencase.embedding.duration_seconds",
+    "gideon.embedding.duration_seconds",
     description="Embedding latency in seconds",
     unit="s",
 )
 
 embedding_chunks_processed = meter.create_histogram(
-    "opencase.embedding.chunks_processed",
+    "gideon.embedding.chunks_processed",
     description="Number of chunks embedded per call",
     unit="{chunk}",
 )
 
 embedding_batch_count = meter.create_histogram(
-    "opencase.embedding.batch_count",
+    "gideon.embedding.batch_count",
     description="Number of batches per embedding call",
     unit="{batch}",
 )
@@ -225,39 +225,39 @@ embedding_batch_count = meter.create_histogram(
 # ---------------------------------------------------------------------------
 
 vectorstore_upsert_completed = meter.create_counter(
-    "opencase.vectorstore.upsert.completed",
+    "gideon.vectorstore.upsert.completed",
     description="Successful vector upsert operations",  # attrs: collection
 )
 
 vectorstore_upsert_failed = meter.create_counter(
-    "opencase.vectorstore.upsert.failed",
+    "gideon.vectorstore.upsert.failed",
     description="Failed vector upsert operations",  # attrs: collection, error_type
 )
 
 vectorstore_upsert_duration_seconds = meter.create_histogram(
-    "opencase.vectorstore.upsert.duration_seconds",
+    "gideon.vectorstore.upsert.duration_seconds",
     description="Vector upsert latency in seconds",
     unit="s",
 )
 
 vectorstore_upsert_points = meter.create_histogram(
-    "opencase.vectorstore.upsert.points",
+    "gideon.vectorstore.upsert.points",
     description="Number of points upserted per call",
     unit="{point}",
 )
 
 vectorstore_delete_completed = meter.create_counter(
-    "opencase.vectorstore.delete.completed",
+    "gideon.vectorstore.delete.completed",
     description="Successful vector delete operations",  # attrs: collection
 )
 
 vectorstore_delete_failed = meter.create_counter(
-    "opencase.vectorstore.delete.failed",
+    "gideon.vectorstore.delete.failed",
     description="Failed vector delete operations",  # attrs: collection, error_type
 )
 
 vectorstore_delete_duration_seconds = meter.create_histogram(
-    "opencase.vectorstore.delete.duration_seconds",
+    "gideon.vectorstore.delete.duration_seconds",
     description="Vector delete latency in seconds",
     unit="s",
 )

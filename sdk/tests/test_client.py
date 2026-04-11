@@ -1,4 +1,4 @@
-"""Unit tests for opencase.client.Client using httpx.MockTransport."""
+"""Unit tests for gideon.client.Client using httpx.MockTransport."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import httpx
 import pytest
 from shared.models.auth import MfaRequiredResponse, TokenResponse
 
-from opencase.exceptions import (
+from gideon.exceptions import (
     AuthenticationError,
     AuthorizationError,
     NotFoundError,
@@ -43,13 +43,13 @@ def test_health() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/health"
         return httpx.Response(
-            200, json={"status": "ok", "app": "opencase", "version": "0.1.0"}
+            200, json={"status": "ok", "app": "gideon", "version": "0.1.0"}
         )
 
     client = build_client(handler)
     result = client.health()
     assert result.status == "ok"
-    assert result.app == "opencase"
+    assert result.app == "gideon"
 
 
 def test_readiness() -> None:
@@ -269,7 +269,7 @@ def test_exception_mapping(status: int, exc_type: type[Exception]) -> None:
 def test_context_manager() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
-            200, json={"status": "ok", "app": "opencase", "version": "0.1.0"}
+            200, json={"status": "ok", "app": "gideon", "version": "0.1.0"}
         )
 
     with build_client(handler) as client:

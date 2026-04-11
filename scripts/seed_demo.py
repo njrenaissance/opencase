@@ -21,8 +21,8 @@ import argparse
 import sys
 
 import dotenv
-from opencase import Client
-from opencase.exceptions import OpenCaseError, ValidationError
+from gideon import Client
+from gideon.exceptions import GideonError, ValidationError
 
 BASE_URL = "http://127.0.0.1:8000"
 DEMO_PASSWORD = "DemoPassword123!"  # noqa: S105
@@ -46,7 +46,7 @@ def _create_user(
         )
         print(f"  Created user: {first_name} {last_name} <{email}> ({role})")  # noqa: T201
         return str(user.id)
-    except (OpenCaseError, ValidationError) as exc:
+    except (GideonError, ValidationError) as exc:
         if "already" in str(exc).lower() or getattr(exc, "status_code", 0) == 409:  # noqa: PLR2004
             # User exists — find them
             users = client.list_users()
@@ -87,16 +87,16 @@ def _grant_access(
                 return
         client.grant_matter_access(matter_id, user_id=user_id)
         print(f"  Granted access: {label}")  # noqa: T201
-    except OpenCaseError as exc:
+    except GideonError as exc:
         print(f"  Warning: {label}: {exc}")  # noqa: T201
 
 
 def main(config_file: str) -> None:
-    admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
-    admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
+    admin_email = dotenv.get_key(config_file, "GIDEON_ADMIN_EMAIL")
+    admin_password = dotenv.get_key(config_file, "GIDEON_ADMIN_PASSWORD")
 
     if not admin_email or not admin_password:
-        print("ERROR: OPENCASE_ADMIN_EMAIL / OPENCASE_ADMIN_PASSWORD not set in .env")  # noqa: T201
+        print("ERROR: GIDEON_ADMIN_EMAIL / GIDEON_ADMIN_PASSWORD not set in .env")  # noqa: T201
         sys.exit(1)
 
     with Client(base_url=BASE_URL) as client:

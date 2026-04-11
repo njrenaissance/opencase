@@ -1,15 +1,15 @@
-"""OpenCase CLI entry point — Typer application and top-level commands."""
+"""Gideon CLI entry point — Typer application and top-level commands."""
 
 from __future__ import annotations
 
 from typing import Annotated
 
-import opencase
+import gideon
 import typer
 from rich.table import Table
 
-import opencase_cli
-from opencase_cli.commands import (
+import gideon_cli
+from gideon_cli.commands import (
     auth,
     documents,
     firms,
@@ -20,12 +20,12 @@ from opencase_cli.commands import (
     tasks,
     users,
 )
-from opencase_cli.config import CLIConfig, config_path, load_config, save_config
-from opencase_cli.output import console, print_json, print_success
+from gideon_cli.config import CLIConfig, config_path, load_config, save_config
+from gideon_cli.output import console, print_json, print_success
 
 app = typer.Typer(
-    name="opencase",
-    help="OpenCase CLI — criminal defense discovery platform.",
+    name="gideon",
+    help="Gideon CLI — criminal defense discovery platform.",
     no_args_is_help=True,
 )
 
@@ -83,14 +83,14 @@ def version(
     if json_output:
         print_json(
             {
-                "cli_version": opencase_cli.__version__,
-                "sdk_version": opencase.__version__,
+                "cli_version": gideon_cli.__version__,
+                "sdk_version": gideon.__version__,
             }
         )
     else:
         table = Table(show_header=False, show_edge=False, pad_edge=False)
         table.add_column("Component", style="bold")
         table.add_column("Version")
-        table.add_row("CLI", opencase_cli.__version__)
-        table.add_row("SDK", opencase.__version__)
+        table.add_row("CLI", gideon_cli.__version__)
+        table.add_row("SDK", gideon.__version__)
         console.print(table)

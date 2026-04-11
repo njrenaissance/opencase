@@ -224,7 +224,7 @@ def make_qdrant_settings(**overrides: Any) -> QdrantSettings:
         "host": "localhost",
         "port": 6333,
         "grpc_port": 6334,
-        "collection": "opencase_test",
+        "collection": "gideon_test",
         "prefer_grpc": False,
         "use_ssl": False,
         "api_key": None,

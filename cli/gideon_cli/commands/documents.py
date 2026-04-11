@@ -7,12 +7,12 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
-from opencase.exceptions import OpenCaseError
-from opencase.hashing import hash_file
+from gideon.exceptions import GideonError
+from gideon.hashing import hash_file
 from shared.models.enums import Classification, DocumentSource
 
-from opencase_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
-from opencase_cli.output import (
+from gideon_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
+from gideon_cli.output import (
     console,
     handle_errors,
     print_error,
@@ -198,7 +198,7 @@ def bulk_ingest(
                     )
                 else:
                     console.print(f"  [green]OK[/green]    {path.name}")
-            except OpenCaseError as exc:
+            except GideonError as exc:
                 if exc.status_code == 409:  # noqa: PLR2004
                     # Server-side dedup caught a race between check and upload
                     skipped += 1

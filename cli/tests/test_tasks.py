@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import (
     TASK_CANCEL_RESPONSE,
@@ -18,7 +18,7 @@ from .conftest import (
     TASK_SUMMARY,
 )
 
-_PATCH = "opencase_cli.commands.tasks.get_client"
+_PATCH = "gideon_cli.commands.tasks.get_client"
 _TASK_ID = "00000000-0000-0000-0000-000000000030"
 
 
@@ -27,7 +27,7 @@ class TestListTasks:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_tasks.return_value = [TASK_SUMMARY]
@@ -40,7 +40,7 @@ class TestListTasks:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_tasks.return_value = [TASK_SUMMARY]
@@ -56,7 +56,7 @@ class TestGetTask:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_task.return_value = TASK_RESPONSE
@@ -69,7 +69,7 @@ class TestGetTask:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_task.return_value = TASK_RESPONSE
@@ -85,7 +85,7 @@ class TestSubmitTask:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.submit_task.return_value = TASK_SUBMIT_RESPONSE
@@ -98,7 +98,7 @@ class TestSubmitTask:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.submit_task.return_value = TASK_SUBMIT_RESPONSE
@@ -116,7 +116,7 @@ class TestCancelTask:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.cancel_task.return_value = TASK_CANCEL_RESPONSE

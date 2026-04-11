@@ -9,11 +9,11 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import USER_RESPONSE, USER_SUMMARY
 
-_PATCH = "opencase_cli.commands.users.get_client"
+_PATCH = "gideon_cli.commands.users.get_client"
 
 
 class TestListUsers:
@@ -21,7 +21,7 @@ class TestListUsers:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_users.return_value = [USER_SUMMARY]
@@ -34,7 +34,7 @@ class TestListUsers:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_users.return_value = [USER_SUMMARY]
@@ -51,7 +51,7 @@ class TestGetUser:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_user.return_value = USER_RESPONSE
@@ -66,7 +66,7 @@ class TestGetUser:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_user.return_value = USER_RESPONSE
@@ -85,7 +85,7 @@ class TestCreateUser:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.create_user.return_value = USER_RESPONSE
@@ -116,7 +116,7 @@ class TestUpdateUser:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.update_user.return_value = USER_RESPONSE
@@ -137,7 +137,7 @@ class TestUpdateUser:
     def test_update_no_fields(
         self,
         runner: CliRunner,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         result = runner.invoke(
@@ -146,6 +146,6 @@ class TestUpdateUser:
         )
         assert result.exit_code == 1
 
-    def test_not_authenticated(self, runner: CliRunner, tmp_opencase_dir: Path) -> None:
+    def test_not_authenticated(self, runner: CliRunner, tmp_gideon_dir: Path) -> None:
         result = runner.invoke(app, ["user", "list"])
         assert result.exit_code == 1

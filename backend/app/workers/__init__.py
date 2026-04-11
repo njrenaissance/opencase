@@ -9,12 +9,12 @@ from celery.signals import beat_init, worker_init  # type: ignore[import-untyped
 
 from app.core.config import settings
 
-celery_app = Celery("opencase")
+celery_app = Celery("gideon")
 
 if settings.celery.broker_url is None:
     msg = (
-        "Celery broker_url is None. Set OPENCASE_CELERY_BROKER_URL or "
-        "configure OPENCASE_REDIS_* fields and instantiate via Settings."
+        "Celery broker_url is None. Set GIDEON_CELERY_BROKER_URL or "
+        "configure GIDEON_REDIS_* fields and instantiate via Settings."
     )
     raise ValueError(msg)
 

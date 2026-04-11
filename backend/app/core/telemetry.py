@@ -43,7 +43,7 @@ Use the module-level ``meter`` to create counters, histograms, etc.::
     from app.core.telemetry import meter
 
     doc_counter = meter.create_counter(
-        "opencase.documents.ingested",
+        "gideon.documents.ingested",
         description="Number of documents ingested",
     )
     doc_counter.add(1, {"matter_id": matter.id})
@@ -86,7 +86,7 @@ logger = logging.getLogger(__name__)
 _tracer_provider: TracerProvider | None = None
 
 # Global meter for creating metrics instruments across the application.
-meter = metrics.get_meter("opencase")
+meter = metrics.get_meter("gideon")
 
 _METRIC_EXPORT_INTERVAL_MS = 60000
 

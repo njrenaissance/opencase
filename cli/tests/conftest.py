@@ -31,7 +31,7 @@ from shared.models.task import TaskResponse, TaskSubmitResponse, TaskSummary
 from shared.models.user import UserResponse, UserSummary
 from typer.testing import CliRunner
 
-from opencase_cli import main as main_module
+from gideon_cli import main as main_module
 
 
 @pytest.fixture()
@@ -45,17 +45,17 @@ def app() -> Any:
 
 
 @pytest.fixture()
-def tmp_opencase_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Redirect ~/.opencase/ to a temp directory."""
-    opencase_dir = tmp_path / ".opencase"
-    opencase_dir.mkdir()
+def tmp_gideon_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Redirect ~/.gideon/ to a temp directory."""
+    gideon_dir = tmp_path / ".gideon"
+    gideon_dir.mkdir()
 
-    monkeypatch.setattr("opencase_cli.config.opencase_dir", lambda: opencase_dir)
-    monkeypatch.setattr("opencase_cli.tokens.opencase_dir", lambda: opencase_dir)
+    monkeypatch.setattr("gideon_cli.config.gideon_dir", lambda: gideon_dir)
+    monkeypatch.setattr("gideon_cli.tokens.gideon_dir", lambda: gideon_dir)
     monkeypatch.setattr(
-        "opencase_cli.config.config_path", lambda: opencase_dir / "config.toml"
+        "gideon_cli.config.config_path", lambda: gideon_dir / "config.toml"
     )
-    return opencase_dir
+    return gideon_dir
 
 
 def make_jwt(
@@ -77,9 +77,9 @@ def make_jwt(
 
 
 @pytest.fixture()
-def stored_tokens(tmp_opencase_dir: Path) -> tuple[str, str]:
+def stored_tokens(tmp_gideon_dir: Path) -> tuple[str, str]:
     """Write fake tokens to the temp token file and return them."""
-    from opencase_cli.tokens import save_tokens
+    from gideon_cli.tokens import save_tokens
 
     access = make_jwt(exp=time.time() + 3600)
     refresh = "fake-refresh-token"
@@ -90,7 +90,7 @@ def stored_tokens(tmp_opencase_dir: Path) -> tuple[str, str]:
 @pytest.fixture()
 def mock_client() -> MagicMock:
     """Return a MagicMock that quacks like Client."""
-    from opencase import Client
+    from gideon import Client
 
     mock = MagicMock(spec=Client)
     mock.__enter__ = MagicMock(return_value=mock)
@@ -129,7 +129,7 @@ def mock_client() -> MagicMock:
 # -- pre-built response objects -----------------------------------------------
 
 
-HEALTH_RESPONSE = HealthResponse(status="ok", app="opencase", version="0.1.0")
+HEALTH_RESPONSE = HealthResponse(status="ok", app="gideon", version="0.1.0")
 
 READINESS_RESPONSE = ReadinessResponse(
     status="ok", services=ServiceChecks(postgres="ok")
@@ -145,7 +145,7 @@ MFA_REQUIRED = MfaRequiredResponse(mfa_required=True, mfa_token="mfa-tok")
 
 MFA_SETUP = MfaSetupResponse(
     totp_secret="JBSWY3DPEHPK3PXP",
-    provisioning_uri="otpauth://totp/OpenCase:user@firm.com?secret=JBSWY3DPEHPK3PXP",
+    provisioning_uri="otpauth://totp/Gideon:user@firm.com?secret=JBSWY3DPEHPK3PXP",
 )
 
 MFA_ENABLED = MfaStatusResponse(enabled=True)

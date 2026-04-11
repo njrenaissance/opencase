@@ -62,8 +62,8 @@ def test_health_span_in_tempo(fastapi_service: str, grafana_service: str) -> Non
     r = httpx.get(f"{fastapi_service}/health", timeout=5)
     assert r.status_code == 200
 
-    traces = _wait_for_traces(grafana_service, "opencase-api")
-    assert traces, "No traces found in Tempo for opencase-api"
+    traces = _wait_for_traces(grafana_service, "gideon-api")
+    assert traces, "No traces found in Tempo for gideon-api"
 
 
 def test_ready_sqlalchemy_span_in_tempo(
@@ -73,7 +73,7 @@ def test_ready_sqlalchemy_span_in_tempo(
     r = httpx.get(f"{fastapi_service}/ready", timeout=5)
     assert r.status_code == 200
 
-    traces = _wait_for_traces(grafana_service, "opencase-api")
+    traces = _wait_for_traces(grafana_service, "gideon-api")
     assert traces, (
         "No traces found in Tempo — SQLAlchemy instrumentation may not be wired"
     )
@@ -87,26 +87,26 @@ def test_worker_span_in_tempo(
     """Celery worker emits OTel spans that arrive in Tempo.
 
     Submits a ping task directly to the worker, waits for it to complete,
-    then queries Tempo for traces from the ``opencase-worker`` service.
+    then queries Tempo for traces from the ``gideon-worker`` service.
     """
     from celery import Celery
 
     redis_host, redis_port = redis_service
     pg_host, pg_port = postgres_service
-    pg_user = os.environ.get("POSTGRES_USER", "opencase")
-    pg_pass = os.environ.get("POSTGRES_PASSWORD", "opencase")
+    pg_user = os.environ.get("POSTGRES_USER", "gideon")
+    pg_pass = os.environ.get("POSTGRES_PASSWORD", "gideon")
     backend = (
-        f"db+postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/opencase_tasks_test"
+        f"db+postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/gideon_tasks_test"
     )
     app = Celery(
         broker=f"redis://{redis_host}:{redis_port}/0",
         backend=backend,
     )
-    result = app.send_task("opencase.ping")
+    result = app.send_task("gideon.ping")
     assert result.get(timeout=15) == "pong"
 
-    traces = _wait_for_traces(grafana_service, "opencase-worker", timeout=30.0)
-    assert traces, "No traces found in Tempo for opencase-worker"
+    traces = _wait_for_traces(grafana_service, "gideon-worker", timeout=30.0)
+    assert traces, "No traces found in Tempo for gideon-worker"
 
     # Verify CeleryInstrumentor produced a span (not just any trace).
     # Tempo search results include span names like "run" or "apply_async".

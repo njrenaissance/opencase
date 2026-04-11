@@ -1,8 +1,8 @@
-# OpenCase Architecture
+# Gideon Architecture
 
 ## Deployment Model
 
-Single-tenant. One OpenCase instance per firm. Two modes:
+Single-tenant. One Gideon instance per firm. Two modes:
 
 - **Air-gapped**: manual upload only, no external network
   calls
@@ -155,7 +155,7 @@ flowchart TD
     E -->|send_task| F[Redis broker]
     E --> G[Record in task_submissions table]
     F --> H[Celery Worker executes task]
-    H --> I[Result → opencase_tasks DB]
+    H --> I[Result → gideon_tasks DB]
     G --> J[Client polls GET /tasks/task_id]
     J -->|live enrichment| I
     J --> K[Response with status + result]
@@ -167,13 +167,13 @@ flowchart TD
 
 All original files are stored in MinIO (S3-compatible
 object storage) regardless of ingestion source. This
-gives OpenCase full control over document lifecycle,
+gives Gideon full control over document lifecycle,
 including legal hold enforcement.
 
 ### Bucket Layout
 
 ```text
-opencase/
+gideon/
   {firm_id}/
     {matter_id}/
       {document_id}/original.{ext}
@@ -188,7 +188,7 @@ opencase/
   here
 - SharePoint document libraries only; personal OneDrive
   drives are out of scope
-- SharePoint is read-only — OpenCase never
+- SharePoint is read-only — Gideon never
   writes back to cloud storage
 
 Every vector in Qdrant carries this permission payload:

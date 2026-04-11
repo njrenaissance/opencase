@@ -18,7 +18,7 @@ tracer = trace.get_tracer(__name__)
 
 
 class S3StorageService:
-    """Wraps minio-py with the OpenCase bucket layout convention.
+    """Wraps minio-py with the Gideon bucket layout convention.
 
     Bucket key pattern::
 

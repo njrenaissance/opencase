@@ -18,7 +18,7 @@ tracer = trace.get_tracer(__name__)
 
 
 @shared_task(  # type: ignore[untyped-decorator]
-    name="opencase.embed_chunks",
+    name="gideon.embed_chunks",
     autoretry_for=(Exception,),
     max_retries=3,
     retry_backoff=True,

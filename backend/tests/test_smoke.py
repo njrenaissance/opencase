@@ -8,5 +8,5 @@ async def test_health_returns_ok(client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["app"] == "OpenCase"
+    assert data["app"] == "Gideon"
     assert data["version"] == "0.1.0"

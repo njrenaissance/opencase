@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from shared.models.auth import MfaRequiredResponse
 
-from opencase.client import Client
-from opencase.exceptions import AuthenticationError
+from gideon.client import Client
+from gideon.exceptions import AuthenticationError
 
 
 class Session:

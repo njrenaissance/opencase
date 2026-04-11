@@ -5,11 +5,11 @@ Reads configuration from environment variables (preferred in Docker)
 or CLI arguments (for manual use):
 
     # Via environment (Docker Compose):
-    OPENCASE_ADMIN_EMAIL=admin@corafirm.com
-    OPENCASE_ADMIN_PASSWORD=S3cure!Pass
-    OPENCASE_ADMIN_FIRST_NAME=Virginia
-    OPENCASE_ADMIN_LAST_NAME=Cora
-    OPENCASE_ADMIN_FIRM_NAME="Cora Firm"
+    GIDEON_ADMIN_EMAIL=admin@corafirm.com
+    GIDEON_ADMIN_PASSWORD=S3cure!Pass
+    GIDEON_ADMIN_FIRST_NAME=Virginia
+    GIDEON_ADMIN_LAST_NAME=Cora
+    GIDEON_ADMIN_FIRM_NAME="Cora Firm"
 
     # Via CLI:
     python -m scripts.create_admin \\
@@ -20,7 +20,7 @@ or CLI arguments (for manual use):
         --firm-name 'Cora Firm'
 
 Idempotent — safe to run on every container startup.
-Requires OPENCASE_DB_URL to be set (or .env to be present).
+Requires GIDEON_DB_URL to be set (or .env to be present).
 Uses asyncio + asyncpg (the only PostgreSQL driver installed).
 """
 
@@ -172,23 +172,23 @@ def main() -> None:
     args = parser.parse_args()
 
     # Environment variables take precedence over CLI arguments.
-    email = os.environ.get("OPENCASE_ADMIN_EMAIL") or args.email
-    password = os.environ.get("OPENCASE_ADMIN_PASSWORD") or args.password
-    first_name = os.environ.get("OPENCASE_ADMIN_FIRST_NAME") or args.first_name
-    last_name = os.environ.get("OPENCASE_ADMIN_LAST_NAME") or args.last_name
-    firm_name = os.environ.get("OPENCASE_ADMIN_FIRM_NAME") or args.firm_name
+    email = os.environ.get("GIDEON_ADMIN_EMAIL") or args.email
+    password = os.environ.get("GIDEON_ADMIN_PASSWORD") or args.password
+    first_name = os.environ.get("GIDEON_ADMIN_FIRST_NAME") or args.first_name
+    last_name = os.environ.get("GIDEON_ADMIN_LAST_NAME") or args.last_name
+    firm_name = os.environ.get("GIDEON_ADMIN_FIRM_NAME") or args.firm_name
 
     missing = []
     if not email:
-        missing.append("OPENCASE_ADMIN_EMAIL / --email")
+        missing.append("GIDEON_ADMIN_EMAIL / --email")
     if not password:
-        missing.append("OPENCASE_ADMIN_PASSWORD / --password")
+        missing.append("GIDEON_ADMIN_PASSWORD / --password")
     if not first_name:
-        missing.append("OPENCASE_ADMIN_FIRST_NAME / --first-name")
+        missing.append("GIDEON_ADMIN_FIRST_NAME / --first-name")
     if not last_name:
-        missing.append("OPENCASE_ADMIN_LAST_NAME / --last-name")
+        missing.append("GIDEON_ADMIN_LAST_NAME / --last-name")
     if not firm_name:
-        missing.append("OPENCASE_ADMIN_FIRM_NAME / --firm-name")
+        missing.append("GIDEON_ADMIN_FIRM_NAME / --firm-name")
 
     if missing:
         print(f"Missing required values: {', '.join(missing)}")  # noqa: T201

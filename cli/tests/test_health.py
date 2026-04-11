@@ -8,16 +8,16 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import HEALTH_RESPONSE, READINESS_DEGRADED, READINESS_RESPONSE
 
-_PATCH_GET_CLIENT = "opencase_cli.commands.health.get_client"
+_PATCH_GET_CLIENT = "gideon_cli.commands.health.get_client"
 
 
 class TestHealth:
     def test_health_success(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         mock_client.health.return_value = HEALTH_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -26,7 +26,7 @@ class TestHealth:
         assert "ok" in result.output
 
     def test_health_json(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         mock_client.health.return_value = HEALTH_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -34,10 +34,10 @@ class TestHealth:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["status"] == "ok"
-        assert data["app"] == "opencase"
+        assert data["app"] == "gideon"
 
     def test_health_connection_error(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         import httpx
 
@@ -49,7 +49,7 @@ class TestHealth:
 
 class TestReady:
     def test_ready_success(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         mock_client.readiness.return_value = READINESS_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -58,7 +58,7 @@ class TestReady:
         assert "ok" in result.output
 
     def test_ready_json(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         mock_client.readiness.return_value = READINESS_RESPONSE
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):
@@ -68,7 +68,7 @@ class TestReady:
         assert data["status"] == "ok"
 
     def test_ready_degraded_exits_1(
-        self, runner: CliRunner, mock_client: Any, tmp_opencase_dir: Any
+        self, runner: CliRunner, mock_client: Any, tmp_gideon_dir: Any
     ) -> None:
         mock_client.readiness.return_value = READINESS_DEGRADED
         with patch(_PATCH_GET_CLIENT, return_value=mock_client):

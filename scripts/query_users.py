@@ -8,18 +8,18 @@ import sys
 
 from dotenv import load_dotenv
 
-from opencase import Client
+from gideon import Client
 
 
 def main() -> None:
     load_dotenv()
 
-    email = os.environ.get("OPENCASE_ADMIN_EMAIL")
-    password = os.environ.get("OPENCASE_ADMIN_PASSWORD")
-    base_url = os.environ.get("OPENCASE_API_URL", "http://localhost:8000")
+    email = os.environ.get("GIDEON_ADMIN_EMAIL")
+    password = os.environ.get("GIDEON_ADMIN_PASSWORD")
+    base_url = os.environ.get("GIDEON_API_URL", "http://localhost:8000")
 
     if not email or not password:
-        print("Set OPENCASE_ADMIN_EMAIL and OPENCASE_ADMIN_PASSWORD in .env")
+        print("Set GIDEON_ADMIN_EMAIL and GIDEON_ADMIN_PASSWORD in .env")
         sys.exit(1)
 
     with Client(base_url=base_url) as client:

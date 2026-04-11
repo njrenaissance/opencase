@@ -1,4 +1,4 @@
-"""Synchronous REST client for the OpenCase API."""
+"""Synchronous REST client for the Gideon API."""
 
 from __future__ import annotations
 
@@ -44,19 +44,19 @@ from shared.models.user import (
     UserSummary,
 )
 
-from opencase._auth import AuthManager
-from opencase.exceptions import (
+from gideon._auth import AuthManager
+from gideon.exceptions import (
     AuthenticationError,
     AuthorizationError,
+    GideonError,
     NotFoundError,
-    OpenCaseError,
     ServerError,
     ValidationError,
 )
 
 
 class Client:
-    """Synchronous Python client for the OpenCase REST API.
+    """Synchronous Python client for the Gideon REST API.
 
     Handles JWT lifecycle transparently: auto-refreshes expired access
     tokens before requests and retries once on 401.
@@ -440,4 +440,4 @@ class Client:
             raise ValidationError(detail, status_code=code)
         if code >= 500:  # noqa: PLR2004
             raise ServerError(detail, status_code=code)
-        raise OpenCaseError(detail, status_code=code)
+        raise GideonError(detail, status_code=code)

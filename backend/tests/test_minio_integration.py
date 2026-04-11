@@ -12,9 +12,9 @@ import httpx
 import pytest
 from minio import Minio
 
-_ACCESS_KEY = "opencase"
+_ACCESS_KEY = "gideon"
 _SECRET_KEY = "changeme"  # noqa: S105
-_BUCKET = "opencase"
+_BUCKET = "gideon"
 
 
 def _minio_client(host: str, port: int) -> Minio:
@@ -38,7 +38,7 @@ async def test_ready_endpoint_includes_minio(fastapi_service: str) -> None:
 
 @pytest.mark.integration
 def test_minio_bucket_exists(minio_service: tuple[str, int]) -> None:
-    """The opencase bucket exists after minio-init runs."""
+    """The gideon bucket exists after minio-init runs."""
     host, port = minio_service
     client = _minio_client(host, port)
     assert client.bucket_exists(_BUCKET)
@@ -50,7 +50,7 @@ def test_minio_put_get_object(minio_service: tuple[str, int]) -> None:
     host, port = minio_service
     client = _minio_client(host, port)
 
-    test_data = b"hello opencase"
+    test_data = b"hello gideon"
     object_name = "test/integration-test.txt"
 
     # PUT

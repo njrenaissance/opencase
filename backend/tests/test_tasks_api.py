@@ -85,7 +85,7 @@ class TestSubmitTask:
         assert resp.status_code == 201
         assert resp.json()["task_id"] == broker.task_id
         assert len(broker.submitted) == 1
-        assert broker.submitted[0][0] == "opencase.ping"
+        assert broker.submitted[0][0] == "gideon.ping"
 
     @pytest.mark.asyncio
     async def test_submit_unknown_task_returns_400(self) -> None:

@@ -1,11 +1,11 @@
 [project]
-name = "opencase-shared"
+name = "gideon-shared"
 version = "0.1.0"
-description = "Shared Pydantic models for OpenCase API and SDK"
+description = "Shared Pydantic models for Gideon API and SDK"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
-authors = [{ name = "OpenCase Contributors" }]
+authors = [{ name = "Gideon Contributors" }]
 
 dependencies = [
     "pydantic[email]>=2.10",

@@ -7,16 +7,16 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from opencase.exceptions import OpenCaseError
+from gideon.exceptions import GideonError
 from shared.models.document import DuplicateCheckResponse
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import DOCUMENT_RESPONSE
 
-_PATCH_CLIENT = "opencase_cli.commands.documents.get_client"
-_PATCH_HASH = "opencase_cli.commands.documents.hash_file"
+_PATCH_CLIENT = "gideon_cli.commands.documents.get_client"
+_PATCH_HASH = "gideon_cli.commands.documents.hash_file"
 _MATTER_ID = "00000000-0000-0000-0000-000000000010"
 _NOT_DUP = DuplicateCheckResponse(exists=False, document_id=None)
 _IS_DUP = DuplicateCheckResponse(
@@ -44,7 +44,7 @@ class TestUploadDocument:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -66,7 +66,7 @@ class TestUploadDocument:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -93,7 +93,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -119,7 +119,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -142,7 +142,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -164,7 +164,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -172,7 +172,7 @@ class TestBulkIngest:
         mock_client.check_duplicate.return_value = _NOT_DUP
         mock_client.upload_document.side_effect = [
             DOCUMENT_RESPONSE,
-            OpenCaseError("Server error", status_code=500),
+            GideonError("Server error", status_code=500),
         ]
         with (
             patch(_PATCH_CLIENT, return_value=mock_client),
@@ -190,7 +190,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -222,7 +222,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -244,7 +244,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:
@@ -262,7 +262,7 @@ class TestBulkIngest:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
         tmp_path: Path,
     ) -> None:

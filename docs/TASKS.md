@@ -1,6 +1,6 @@
-# OpenCase — Background Tasks
+# Gideon — Background Tasks
 
-OpenCase uses [Celery](https://docs.celeryq.dev/) for background task
+Gideon uses [Celery](https://docs.celeryq.dev/) for background task
 processing. Tasks run in a separate worker process, decoupled from the
 FastAPI request cycle, so long-running operations (document ingestion,
 embedding, deadline monitoring) do not block API responses.
@@ -14,7 +14,7 @@ FastAPI  ──TaskBroker.submit()──▶  Redis (broker)  ──▶  Celery W
   │                                                          │
   ▼                                                          ▼
 PostgreSQL (main)                                       PostgreSQL
-(task_submissions)                                   (opencase_tasks)
+(task_submissions)                                   (gideon_tasks)
 ```
 
 | Component | Role |
@@ -22,7 +22,7 @@ PostgreSQL (main)                                       PostgreSQL
 | **Redis** | Message broker — holds the task queue |
 | **Celery Worker** | Picks tasks off the queue and executes them |
 | **Celery Beat** | Submits scheduled tasks on a cron-based interval |
-| **PostgreSQL (opencase_tasks)** | Stores task results via Celery's DB backend |
+| **PostgreSQL (gideon_tasks)** | Stores task results via Celery's DB backend |
 
 ### How a task runs
 
@@ -32,7 +32,7 @@ PostgreSQL (main)                                       PostgreSQL
 2. The Celery worker pulls the message, deserializes it, and calls the
    Python function.
 3. On completion (or failure), the result is written to the
-   `opencase_tasks` database. The caller can poll the result by task ID.
+   `gideon_tasks` database. The caller can poll the result by task ID.
 4. The original API endpoint returns immediately with the task ID.
    The client polls `GET /tasks/{task_id}` to check progress.
 
@@ -62,7 +62,7 @@ from app.workers import celery_app
 ```
 
 Configuration is loaded from `settings.celery` (see
-[SETTINGS.md](SETTINGS.md) for all `OPENCASE_CELERY_*` variables).
+[SETTINGS.md](SETTINGS.md) for all `GIDEON_CELERY_*` variables).
 The app auto-discovers task modules in `app.workers.tasks`.
 
 ### Task discovery
@@ -118,8 +118,8 @@ future without touching the API router.
 singleton `TaskBroker` instance.
 
 Each method emits an OTel span (`broker.submit`, `broker.get_status`,
-`broker.revoke`) and records metrics (`opencase.tasks.submitted`,
-`opencase.tasks.status_queried`, `opencase.tasks.cancelled`). See
+`broker.revoke`) and records metrics (`gideon.tasks.submitted`,
+`gideon.tasks.status_queried`, `gideon.tasks.cancelled`). See
 [OBSERVABILITY.md](OBSERVABILITY.md) for the full span and metric tables.
 
 ---
@@ -134,12 +134,12 @@ be invoked by API callers.
 
 ```python
 TASK_REGISTRY: dict[str, str] = {
-    "ping": "opencase.ping",
-    "sleep": "opencase.sleep",
-    "ingest_document": "opencase.ingest_document",
-    "extract_document": "opencase.extract_document",
-    "chunk_document": "opencase.chunk_document",
-    "embed_chunks": "opencase.embed_chunks",
+    "ping": "gideon.ping",
+    "sleep": "gideon.sleep",
+    "ingest_document": "gideon.ingest_document",
+    "extract_document": "gideon.extract_document",
+    "chunk_document": "gideon.chunk_document",
+    "embed_chunks": "gideon.embed_chunks",
 }
 ```
 
@@ -150,14 +150,14 @@ addition to creating the task module (see "Adding a New Task" below).
 
 ## Registered Tasks
 
-### `opencase.ping`
+### `gideon.ping`
 
 Health-check task for verifying worker connectivity.
 
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.ping` |
-| Name | `opencase.ping` |
+| Name | `gideon.ping` |
 | Arguments | None |
 | Returns | `"pong"` |
 | Purpose | Integration test and health-check probe |
@@ -166,11 +166,11 @@ Health-check task for verifying worker connectivity.
 from celery import Celery
 
 app = Celery(broker="redis://redis:6379/0", backend="redis://redis:6379/1")
-result = app.send_task("opencase.ping")
+result = app.send_task("gideon.ping")
 assert result.get(timeout=10) == "pong"
 ```
 
-### `opencase.ingest_document`
+### `gideon.ingest_document`
 
 Orchestrates the full document ingestion pipeline. Downloads the original
 file from S3, extracts text via Apache Tika, persists `extracted.json`,
@@ -180,12 +180,12 @@ Qdrant with permission metadata payload.
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.ingest_document` |
-| Name | `opencase.ingest_document` |
+| Name | `gideon.ingest_document` |
 | Arguments | `document_id: str`, `s3_key: str` |
 | Returns | `{"status": "completed", "document_id": ..., "text_length": int, "chunk_count": int, "point_count": int}` |
 | Purpose | Orchestrate ingestion: extraction → chunking → embedding → Qdrant upsert |
 
-### `opencase.extract_document`
+### `gideon.extract_document`
 
 Extract text and metadata from a document stored in S3 using Apache
 Tika. Returns the extraction result without persisting it — callers
@@ -194,12 +194,12 @@ Tika. Returns the extraction result without persisting it — callers
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.extract_document` |
-| Name | `opencase.extract_document` |
+| Name | `gideon.extract_document` |
 | Arguments | `document_id: str`, `s3_key: str` |
 | Returns | `{"text": "...", "content_type": "...", "metadata": {...}, "ocr_applied": bool, "language": str\|null}` |
 | Purpose | Download from S3, extract text via Tika, return `ExtractionResult` as dict |
 
-### `opencase.chunk_document`
+### `gideon.chunk_document`
 
 Split extracted document text into overlapping chunks with character
 offsets. Uses the configured chunking strategy (default: recursive
@@ -209,12 +209,12 @@ alongside the original and extracted artifacts.
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.chunk_document` |
-| Name | `opencase.chunk_document` |
+| Name | `gideon.chunk_document` |
 | Arguments | `document_id: str`, `text: str`, `metadata: dict`, `s3_prefix: str` |
 | Returns | `{"document_id": "...", "chunk_count": int, "chunks": [...]}` |
 | Purpose | Split text into chunks, persist `chunks.json` to S3 |
 
-### `opencase.embed_chunks`
+### `gideon.embed_chunks`
 
 Generate vector embeddings for document chunks using Ollama and upsert
 the resulting vectors into Qdrant with full permission metadata payload.
@@ -227,7 +227,7 @@ overwritten.
 | Field | Value |
 | --- | --- |
 | Module | `app.workers.tasks.embed_chunks` |
-| Name | `opencase.embed_chunks` |
+| Name | `gideon.embed_chunks` |
 | Arguments | `document_id: str`, `chunks: list[dict]`, `payload_metadata: dict` |
 | Returns | `{"document_id": "...", "chunk_count": int, "point_count": int}` |
 | Purpose | Embed chunk texts via Ollama + upsert vectors to Qdrant with permission payload |
@@ -257,7 +257,7 @@ Tasks will be added as features are built:
     # backend/app/workers/tasks/my_task.py
     from celery import shared_task
 
-    @shared_task(name="opencase.my_task")
+    @shared_task(name="gideon.my_task")
     def my_task(arg1: str) -> dict:
         # ... do work ...
         return {"status": "done"}
@@ -277,8 +277,8 @@ Tasks will be added as features are built:
 
     ```python
     TASK_REGISTRY: dict[str, str] = {
-        "ping": "opencase.ping",
-        "my_task": "opencase.my_task",
+        "ping": "gideon.ping",
+        "my_task": "gideon.my_task",
     }
     ```
 
@@ -291,7 +291,7 @@ Tasks will be added as features are built:
 ## Result Backend
 
 Task results are stored in a dedicated PostgreSQL database
-(`opencase_tasks`) on the same Postgres instance as the main app
+(`gideon_tasks`) on the same Postgres instance as the main app
 database. Celery's built-in SQLAlchemy backend auto-creates two tables:
 
 | Table | Purpose |
@@ -303,7 +303,7 @@ The connection string uses the synchronous `psycopg2` driver (not
 `asyncpg`) because Celery's result backend is synchronous:
 
 ```text
-db+postgresql://user:pass@postgres:5432/opencase_tasks
+db+postgresql://user:pass@postgres:5432/gideon_tasks
 ```
 
 ---
@@ -325,18 +325,18 @@ container and FastAPI run Alembic migrations.
 
 Flower provides a web UI at `http://localhost:5555/flower` showing queue
 depth, worker status, and task details. Basic auth is configurable via
-`OPENCASE_FLOWER_BASIC_AUTH`.
+`GIDEON_FLOWER_BASIC_AUTH`.
 
 See [INFRASTRUCTURE.md](INFRASTRUCTURE.md) for ports, volumes, and
-health checks. See [SETTINGS.md](SETTINGS.md) for `OPENCASE_CELERY_*`
-and `OPENCASE_REDIS_*` environment variables.
+health checks. See [SETTINGS.md](SETTINGS.md) for `GIDEON_CELERY_*`
+and `GIDEON_REDIS_*` environment variables.
 
 ---
 
 ## Celery Configuration Reference
 
 Key settings applied to the worker (all configurable via
-`OPENCASE_CELERY_*` env vars):
+`GIDEON_CELERY_*` env vars):
 
 | Setting | Default | Why |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
-# OpenCase Backend
+# Gideon Backend
 
-FastAPI application powering the OpenCase API, RAG
+FastAPI application powering the Gideon API, RAG
 pipeline, and background workers.
 
 ## Prerequisites

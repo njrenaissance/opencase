@@ -105,7 +105,7 @@ def _reset_qdrant(host: str, port: int, collection: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reset all OpenCase data stores")
+    parser = argparse.ArgumentParser(description="Reset all Gideon data stores")
     parser.add_argument("--env", default=".env", help="Path to .env file (default: .env)")
     parser.add_argument("--skip-db", action="store_true", help="Skip PostgreSQL reset")
     parser.add_argument("--skip-s3", action="store_true", help="Skip MinIO reset")
@@ -114,33 +114,33 @@ def main() -> None:
 
     dotenv.load_dotenv(args.env, override=True)
 
-    print("=== OpenCase Data Reset ===")
+    print("=== Gideon Data Reset ===")
 
     if not args.skip_db:
         # Build localhost DSNs from env (replace Docker hostnames with localhost)
-        pg_user = os.getenv("POSTGRES_USER", "opencase")
+        pg_user = os.getenv("POSTGRES_USER", "gideon")
         pg_pass = os.getenv("POSTGRES_PASSWORD", "")
         pg_port = os.getenv("POSTGRES_PORT", "5432")
 
-        main_dsn = f"postgresql://{pg_user}:{pg_pass}@localhost:{pg_port}/opencase"
-        tasks_dsn = f"postgresql://{pg_user}:{pg_pass}@localhost:{pg_port}/opencase_tasks"
+        main_dsn = f"postgresql://{pg_user}:{pg_pass}@localhost:{pg_port}/gideon"
+        tasks_dsn = f"postgresql://{pg_user}:{pg_pass}@localhost:{pg_port}/gideon_tasks"
 
-        _reset_postgres(main_dsn, "opencase", TRUNCATE_TABLES)
-        _reset_postgres(tasks_dsn, "opencase_tasks", ["celery_taskmeta", "celery_tasksetmeta"])
+        _reset_postgres(main_dsn, "gideon", TRUNCATE_TABLES)
+        _reset_postgres(tasks_dsn, "gideon_tasks", ["celery_taskmeta", "celery_tasksetmeta"])
 
     if not args.skip_s3:
         _reset_minio(
-            endpoint=os.getenv("OPENCASE_S3_ENDPOINT", "minio:9000").replace("minio", "localhost"),
-            access_key=os.getenv("OPENCASE_S3_ACCESS_KEY", "opencase"),
-            secret_key=os.getenv("OPENCASE_S3_SECRET_KEY", "changeme"),
-            bucket=os.getenv("OPENCASE_S3_BUCKET", "opencase"),
-            use_ssl=os.getenv("OPENCASE_S3_USE_SSL", "false").lower() == "true",
+            endpoint=os.getenv("GIDEON_S3_ENDPOINT", "minio:9000").replace("minio", "localhost"),
+            access_key=os.getenv("GIDEON_S3_ACCESS_KEY", "gideon"),
+            secret_key=os.getenv("GIDEON_S3_SECRET_KEY", "changeme"),
+            bucket=os.getenv("GIDEON_S3_BUCKET", "gideon"),
+            use_ssl=os.getenv("GIDEON_S3_USE_SSL", "false").lower() == "true",
         )
 
     if not args.skip_qdrant:
-        qdrant_host = os.getenv("OPENCASE_QDRANT_HOST", "qdrant").replace("qdrant", "localhost")
-        qdrant_port = int(os.getenv("OPENCASE_QDRANT_PORT", "6333"))
-        collection = os.getenv("OPENCASE_QDRANT_COLLECTION", "opencase")
+        qdrant_host = os.getenv("GIDEON_QDRANT_HOST", "qdrant").replace("qdrant", "localhost")
+        qdrant_port = int(os.getenv("GIDEON_QDRANT_PORT", "6333"))
+        collection = os.getenv("GIDEON_QDRANT_COLLECTION", "gideon")
         _reset_qdrant(qdrant_host, qdrant_port, collection)
 
     print("\n=== Reset complete ===")

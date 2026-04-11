@@ -1,6 +1,6 @@
 import time
 import dotenv
-from opencase import Client
+from gideon import Client
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -33,8 +33,8 @@ def main(config_file: str) -> None:
 
     with Client(base_url=BASE_URL) as client:
 
-        admin_email = dotenv.get_key(config_file, "OPENCASE_ADMIN_EMAIL")
-        admin_password = dotenv.get_key(config_file, "OPENCASE_ADMIN_PASSWORD")
+        admin_email = dotenv.get_key(config_file, "GIDEON_ADMIN_EMAIL")
+        admin_password = dotenv.get_key(config_file, "GIDEON_ADMIN_PASSWORD")
         print(f"Logging in with email: {admin_email}")
 
         client.login(email=admin_email, password=admin_password)

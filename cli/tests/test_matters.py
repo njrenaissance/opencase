@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
-from opencase_cli.main import app
+from gideon_cli.main import app
 
 from .conftest import (
     MATTER_ACCESS,
@@ -18,7 +18,7 @@ from .conftest import (
     REVOKE_RESPONSE,
 )
 
-_PATCH = "opencase_cli.commands.matters.get_client"
+_PATCH = "gideon_cli.commands.matters.get_client"
 _MATTER_ID = "00000000-0000-0000-0000-000000000010"
 _USER_ID = "00000000-0000-0000-0000-000000000001"
 
@@ -28,7 +28,7 @@ class TestListMatters:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_matters.return_value = [MATTER_SUMMARY]
@@ -41,7 +41,7 @@ class TestListMatters:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_matters.return_value = [MATTER_SUMMARY]
@@ -57,7 +57,7 @@ class TestGetMatter:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_matter.return_value = MATTER_RESPONSE
@@ -70,7 +70,7 @@ class TestGetMatter:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.get_matter.return_value = MATTER_RESPONSE
@@ -86,7 +86,7 @@ class TestCreateMatter:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.create_matter.return_value = MATTER_RESPONSE
@@ -111,7 +111,7 @@ class TestUpdateMatter:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.update_matter.return_value = MATTER_RESPONSE
@@ -126,7 +126,7 @@ class TestUpdateMatter:
     def test_update_no_fields(
         self,
         runner: CliRunner,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         result = runner.invoke(app, ["matter", "update", _MATTER_ID])
@@ -138,7 +138,7 @@ class TestMatterAccess:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.list_matter_access.return_value = [MATTER_ACCESS]
@@ -151,7 +151,7 @@ class TestMatterAccess:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.grant_matter_access.return_value = MATTER_ACCESS
@@ -173,7 +173,7 @@ class TestMatterAccess:
         self,
         runner: CliRunner,
         mock_client: Any,
-        tmp_opencase_dir: Path,
+        tmp_gideon_dir: Path,
         stored_tokens: tuple[str, str],
     ) -> None:
         mock_client.revoke_matter_access.return_value = REVOKE_RESPONSE
@@ -190,6 +190,6 @@ class TestMatterAccess:
             )
         assert result.exit_code == 0
 
-    def test_not_authenticated(self, runner: CliRunner, tmp_opencase_dir: Path) -> None:
+    def test_not_authenticated(self, runner: CliRunner, tmp_gideon_dir: Path) -> None:
         result = runner.invoke(app, ["matter", "list"])
         assert result.exit_code == 1

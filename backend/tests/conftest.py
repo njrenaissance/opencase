@@ -6,7 +6,7 @@ import httpx
 from dotenv import load_dotenv
 
 # Load test environment before any app imports.
-# Required fields (OPENCASE_AUTH_SECRET_KEY, OPENCASE_DB_URL) must be set
+# Required fields (GIDEON_AUTH_SECRET_KEY, GIDEON_DB_URL) must be set
 # before config.py is imported, because Settings() is instantiated at module level.
 _ENV_TEST = Path(__file__).parent.parent / ".env.test"
 load_dotenv(_ENV_TEST)
@@ -162,9 +162,9 @@ def fake_with_docs(docs: list, total: int | None = None) -> FakeSession:
 # ---------------------------------------------------------------------------
 # pytest-docker — integration test stack lifecycle
 #
-# Dev mode:  docker compose up  (uses root .env, data persists in 'opencase' DB)
+# Dev mode:  docker compose up  (uses root .env, data persists in 'gideon' DB)
 # Test mode: pytest -m integration  (pytest-docker manages the stack lifecycle,
-#            uses .env.test, fastapi points at 'opencase_test', volumes wiped
+#            uses .env.test, fastapi points at 'gideon_test', volumes wiped
 #            on teardown so each run starts from a clean database)
 # ---------------------------------------------------------------------------
 
@@ -182,12 +182,12 @@ def docker_compose_command():
 @pytest.fixture(scope="session")
 def docker_compose_project_name():
     # Separate project name prevents conflicts with the dev stack
-    return "opencase-test"
+    return "gideon-test"
 
 
 @pytest.fixture(scope="session")
 def docker_cleanup():
-    # Down with -v wipes volumes so opencase_test is reset between runs
+    # Down with -v wipes volumes so gideon_test is reset between runs
     return "down --volumes"
 
 

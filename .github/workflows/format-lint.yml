@@ -67,7 +67,7 @@ jobs:
 
       - name: Run type checker — sdk
         working-directory: sdk
-        run: uv run mypy opencase/
+        run: uv run mypy gideon/
 
       - name: Check formatting — cli
         working-directory: cli
@@ -79,4 +79,4 @@ jobs:
 
       - name: Run type checker — cli
         working-directory: cli
-        run: uv run mypy opencase_cli/
+        run: uv run mypy gideon_cli/

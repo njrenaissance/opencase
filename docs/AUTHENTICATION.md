@@ -110,27 +110,27 @@ a valid TOTP code to prove authenticator possession).
 ## Account Lockout
 
 After 5 failed login attempts (configurable via
-`OPENCASE_AUTH_LOGIN_LOCKOUT_ATTEMPTS`), the account is locked
-for 15 minutes (`OPENCASE_AUTH_LOGIN_LOCKOUT_MINUTES`).
+`GIDEON_AUTH_LOGIN_LOCKOUT_ATTEMPTS`), the account is locked
+for 15 minutes (`GIDEON_AUTH_LOGIN_LOCKOUT_MINUTES`).
 Locked accounts return HTTP 423. The counter resets on
 successful login.
 
 ## Password Hashing
 
 Passwords are hashed with bcrypt. The work factor is
-configurable via `OPENCASE_AUTH_BCRYPT_ROUNDS` (default: 12,
+configurable via `GIDEON_AUTH_BCRYPT_ROUNDS` (default: 12,
 test: 4).
 
 ## TOTP Encryption
 
 TOTP secrets are encrypted at rest with AES-256-GCM. The
-encryption key is derived from `OPENCASE_AUTH_SECRET_KEY`
+encryption key is derived from `GIDEON_AUTH_SECRET_KEY`
 via HKDF (SHA-256, info=`totp-encryption`). This keeps a
 single secret env var while maintaining proper key separation
 from JWT signing.
 
 The TOTP digest algorithm is configurable via
-`OPENCASE_AUTH_TOTP_DIGEST` (sha1, sha256, sha512).
+`GIDEON_AUTH_TOTP_DIGEST` (sha1, sha256, sha512).
 Default is sha1 per RFC 6238.
 
 ## Admin Bootstrap
@@ -140,11 +140,11 @@ Compose service on initial startup. It reads:
 
 | Env Var | Purpose |
 | --- | --- |
-| `OPENCASE_ADMIN_EMAIL` | Admin email |
-| `OPENCASE_ADMIN_PASSWORD` | Admin password |
-| `OPENCASE_ADMIN_FIRST_NAME` | First name |
-| `OPENCASE_ADMIN_LAST_NAME` | Last name |
-| `OPENCASE_ADMIN_FIRM_NAME` | Firm name |
+| `GIDEON_ADMIN_EMAIL` | Admin email |
+| `GIDEON_ADMIN_PASSWORD` | Admin password |
+| `GIDEON_ADMIN_FIRST_NAME` | First name |
+| `GIDEON_ADMIN_LAST_NAME` | Last name |
+| `GIDEON_ADMIN_FIRM_NAME` | Firm name |
 
 The seed script is idempotent — safe to run on every startup.
 

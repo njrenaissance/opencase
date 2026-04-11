@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 
-from opencase.hashing import hash_file
+from gideon.hashing import hash_file
 
 
 def test_hash_file(tmp_path) -> None:

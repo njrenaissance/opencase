@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 
 
 class OtelSettings(BaseSettings):
-    """OpenTelemetry sub-config (OPENCASE_OTEL_ prefix)."""
+    """OpenTelemetry sub-config (GIDEON_OTEL_ prefix)."""
 
     enabled: bool = False
     exporter: Literal["console", "otlp"] = "console"
     endpoint: str = "http://localhost:4318"
-    service_name: str = "opencase-api"
+    service_name: str = "gideon-api"
     sample_rate: float = 1.0
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_OTEL_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_OTEL_")
 
 
 class AuthSettings(BaseSettings):
-    """Authentication sub-config (OPENCASE_AUTH_ prefix).
+    """Authentication sub-config (GIDEON_AUTH_ prefix).
 
     secret_key is required — the application will not start without it.
     Generate a suitable value with: openssl rand -base64 32
@@ -39,21 +39,21 @@ class AuthSettings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
-    totp_issuer: str = "OpenCase"
+    totp_issuer: str = "Gideon"
     totp_digest: Literal["sha1", "sha256", "sha512"] = "sha1"
     totp_window: int = 1
     bcrypt_rounds: int = 12
     login_lockout_attempts: int = 5
     login_lockout_minutes: int = 15
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_AUTH_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_AUTH_")
 
 
 class DbSettings(BaseSettings):
-    """Database sub-config (OPENCASE_DB_ prefix).
+    """Database sub-config (GIDEON_DB_ prefix).
 
     url is required — the application will not start without it.
-    Example: postgresql+asyncpg://user:password@localhost:5432/opencase
+    Example: postgresql+asyncpg://user:password@localhost:5432/gideon
     """
 
     url: str = Field(..., min_length=1)
@@ -62,24 +62,24 @@ class DbSettings(BaseSettings):
     pool_pre_ping: bool = True
     echo: bool = False
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_DB_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_DB_")
 
 
 class ApiSettings(BaseSettings):
-    """HTTP server sub-config (OPENCASE_API_ prefix).
+    """HTTP server sub-config (GIDEON_API_ prefix).
 
     Controls the address and port uvicorn binds to inside the container.
-    Override via OPENCASE_API_HOST and OPENCASE_API_PORT environment variables.
+    Override via GIDEON_API_HOST and GIDEON_API_PORT environment variables.
     """
 
     host: str = "0.0.0.0"  # noqa: S104 — bind all interfaces inside container
     port: int = 8000
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_API_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_API_")
 
 
 class AdminSettings(BaseSettings):
-    """Admin seed sub-config (OPENCASE_ADMIN_ prefix).
+    """Admin seed sub-config (GIDEON_ADMIN_ prefix).
 
     When email and password are set, the FastAPI lifespan hook creates the
     initial admin user on every startup (idempotent).
@@ -91,11 +91,11 @@ class AdminSettings(BaseSettings):
     last_name: str = "User"
     firm_name: str = "Default Firm"
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_ADMIN_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_ADMIN_")
 
 
 class RedisSettings(BaseSettings):
-    """Redis sub-config (OPENCASE_REDIS_ prefix).
+    """Redis sub-config (GIDEON_REDIS_ prefix).
 
     Individual fields are preferred over a monolithic URL so that each
     component is independently overridable and visible in documentation.
@@ -116,15 +116,15 @@ class RedisSettings(BaseSettings):
         auth = f":{quote(self.password, safe='')}@" if self.password else ""
         return f"{scheme}://{auth}{self.host}:{self.port}/{self.db}"
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_REDIS_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_REDIS_")
 
 
 class CelerySettings(BaseSettings):
-    """Celery sub-config (OPENCASE_CELERY_ prefix).
+    """Celery sub-config (GIDEON_CELERY_ prefix).
 
-    When ``broker_url`` is not set via ``OPENCASE_CELERY_BROKER_URL``,
+    When ``broker_url`` is not set via ``GIDEON_CELERY_BROKER_URL``,
     it is derived from ``RedisSettings.url`` by the parent ``Settings``
-    model validator — so changing ``OPENCASE_REDIS_*`` fields automatically
+    model validator — so changing ``GIDEON_REDIS_*`` fields automatically
     updates the broker address.
 
     result_backend is None until the tasks database is provisioned
@@ -142,21 +142,21 @@ class CelerySettings(BaseSettings):
     task_acks_late: bool = True
     worker_prefetch_multiplier: int = 1
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_CELERY_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_CELERY_")
 
 
 class FlowerSettings(BaseSettings):
-    """Flower monitoring UI sub-config (OPENCASE_FLOWER_ prefix)."""
+    """Flower monitoring UI sub-config (GIDEON_FLOWER_ prefix)."""
 
     port: int = 5555
     basic_auth: str | None = None
     url_prefix: str = "/flower"
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_FLOWER_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_FLOWER_")
 
 
 class S3Settings(BaseSettings):
-    """S3-compatible object storage sub-config (OPENCASE_S3_ prefix).
+    """S3-compatible object storage sub-config (GIDEON_S3_ prefix).
 
     Targets MinIO running inside the Docker network. The computed ``url``
     property assembles http(s)://endpoint for SDK clients.
@@ -165,7 +165,7 @@ class S3Settings(BaseSettings):
     endpoint: str = Field("minio:9000", min_length=1)
     access_key: str = Field(..., min_length=1)
     secret_key: str = Field(..., min_length=1)
-    bucket: str = "opencase"
+    bucket: str = "gideon"
     use_ssl: bool = False
     region: str = "us-east-1"
     max_upload_bytes: int = Field(100 * 1024 * 1024, gt=0)  # 100 MB
@@ -187,11 +187,11 @@ class S3Settings(BaseSettings):
         scheme = "https" if self.use_ssl else "http"
         return f"{scheme}://{self.endpoint}"
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_S3_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_S3_")
 
 
 class ExtractionSettings(BaseSettings):
-    """Document extraction sub-config (OPENCASE_EXTRACTION_ prefix).
+    """Document extraction sub-config (GIDEON_EXTRACTION_ prefix).
 
     Configures Apache Tika text extraction and Tesseract OCR for the
     ingestion pipeline.
@@ -209,11 +209,11 @@ class ExtractionSettings(BaseSettings):
         """Parse comma-separated language codes into a list."""
         return [lang.strip() for lang in self.ocr_languages.split(",") if lang.strip()]
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_EXTRACTION_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_EXTRACTION_")
 
 
 class ChunkingSettings(BaseSettings):
-    """Text chunking sub-config (OPENCASE_CHUNKING_ prefix).
+    """Text chunking sub-config (GIDEON_CHUNKING_ prefix).
 
     Controls how extracted document text is split into chunks for
     embedding and vector search.  The default strategy uses recursive
@@ -235,11 +235,11 @@ class ChunkingSettings(BaseSettings):
             raise ValueError(msg)
         return self
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_CHUNKING_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_CHUNKING_")
 
 
 class EmbeddingSettings(BaseSettings):
-    """Embedding generation sub-config (OPENCASE_EMBEDDING_ prefix).
+    """Embedding generation sub-config (GIDEON_EMBEDDING_ prefix).
 
     Controls which embedding provider and model are used to vectorize
     document chunks.  Only Ollama is supported (airgapped deployment).
@@ -252,7 +252,7 @@ class EmbeddingSettings(BaseSettings):
     batch_size: int = Field(100, gt=0)
     request_timeout: int = Field(120, gt=0)
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_EMBEDDING_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_EMBEDDING_")
 
 
 _CHATBOT_DEFAULT_SYSTEM_PROMPT = (
@@ -264,7 +264,7 @@ _CHATBOT_DEFAULT_SYSTEM_PROMPT = (
 
 
 class ChatbotSettings(BaseSettings):
-    """Chatbot / LLM inference sub-config (OPENCASE_CHATBOT_ prefix).
+    """Chatbot / LLM inference sub-config (GIDEON_CHATBOT_ prefix).
 
     Configures the inference model and generation parameters used by the
     RAG chatbot.  The model name is the single source of truth for which
@@ -274,12 +274,12 @@ class ChatbotSettings(BaseSettings):
     consistent answers, not creative variation.
 
     System prompt loading priority:
-      1. OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE — path to a Markdown file (richest option)
-      2. OPENCASE_CHATBOT_SYSTEM_PROMPT — inline string override
+      1. GIDEON_CHATBOT_SYSTEM_PROMPT_FILE — path to a Markdown file (richest option)
+      2. GIDEON_CHATBOT_SYSTEM_PROMPT — inline string override
       3. Built-in default (_CHATBOT_DEFAULT_SYSTEM_PROMPT)
 
     The canonical editable prompt lives at backend/SYSTEM_PROMPT.md.
-    In production, set OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE=/app/SYSTEM_PROMPT.md.
+    In production, set GIDEON_CHATBOT_SYSTEM_PROMPT_FILE=/app/SYSTEM_PROMPT.md.
     """
 
     system_prompt_file: Path | None = None
@@ -291,7 +291,7 @@ class ChatbotSettings(BaseSettings):
     base_url: str = "http://ollama:11434"
     request_timeout: int = Field(120, gt=0)
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_CHATBOT_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_CHATBOT_", extra="ignore")
 
     @model_validator(mode="after")
     def _load_system_prompt_from_file(self) -> "ChatbotSettings":
@@ -300,20 +300,18 @@ class ChatbotSettings(BaseSettings):
             path = self.system_prompt_file
             if not path.exists():
                 raise ValueError(
-                    f"OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE points to a non-existent "
+                    f"GIDEON_CHATBOT_SYSTEM_PROMPT_FILE points to a non-existent "
                     f"file: {path}"
                 )
             content = path.read_text(encoding="utf-8").strip()
             if not content:
-                raise ValueError(
-                    f"OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE is empty: {path}"
-                )
+                raise ValueError(f"GIDEON_CHATBOT_SYSTEM_PROMPT_FILE is empty: {path}")
             object.__setattr__(self, "system_prompt", content)
         return self
 
 
 class QdrantSettings(BaseSettings):
-    """Qdrant vector store sub-config (OPENCASE_QDRANT_ prefix).
+    """Qdrant vector store sub-config (GIDEON_QDRANT_ prefix).
 
     Connection settings for the Qdrant vector database, analogous to
     S3Settings for MinIO — vendor-specific because it's an external
@@ -323,7 +321,7 @@ class QdrantSettings(BaseSettings):
     host: str = "qdrant"
     port: int = 6333
     grpc_port: int = 6334
-    collection: str = "opencase"
+    collection: str = "gideon"
     prefer_grpc: bool = True
     use_ssl: bool = False
     api_key: str | None = None
@@ -341,7 +339,7 @@ class QdrantSettings(BaseSettings):
         """gRPC endpoint address (host:grpc_port, no scheme)."""
         return f"{self.host}:{self.grpc_port}"
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_QDRANT_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_QDRANT_")
 
 
 # ---------------------------------------------------------------------------
@@ -440,7 +438,7 @@ def _parse_allowed_types_file(
 
 
 class IngestionSettings(BaseSettings):
-    """Ingestion pipeline sub-config (OPENCASE_INGESTION_ prefix).
+    """Ingestion pipeline sub-config (GIDEON_INGESTION_ prefix).
 
     Controls which document types are accepted for upload and bulk-ingest.
     When ``allowed_types_file`` is set, MIME types and file extensions are
@@ -469,7 +467,7 @@ class IngestionSettings(BaseSettings):
         values["allowed_extensions"] = extensions
         return values
 
-    model_config = SettingsConfigDict(env_prefix="OPENCASE_INGESTION_")
+    model_config = SettingsConfigDict(env_prefix="GIDEON_INGESTION_")
 
 
 # ---------------------------------------------------------------------------
@@ -525,14 +523,14 @@ class Settings(BaseSettings):
     """Application settings with layered loading.
 
     Priority (highest wins):
-      1. Environment variables (OPENCASE_ prefix)
+      1. Environment variables (GIDEON_ prefix)
       2. .env file
       3. config.json file
       4. Hard-coded defaults
     """
 
-    app_name: str = "OpenCase"
-    app_version: str = version("opencase")
+    app_name: str = "Gideon"
+    app_version: str = version("gideon")
     debug: bool = False
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     log_output: Literal["stdout", "stderr"] = "stdout"
@@ -563,7 +561,7 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_prefix="OPENCASE_",
+        env_prefix="GIDEON_",
         env_file=".env",
         env_file_encoding="utf-8",
         json_file="config.json",

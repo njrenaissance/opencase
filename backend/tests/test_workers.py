@@ -34,7 +34,7 @@ def test_ping_task_is_registered():
     import app.workers.tasks.ping  # noqa: F401
     from app.workers import celery_app
 
-    assert "opencase.ping" in celery_app.tasks
+    assert "gideon.ping" in celery_app.tasks
 
 
 def test_ping_task_returns_pong():
@@ -53,13 +53,13 @@ def test_extract_document_task_is_registered():
     import app.workers.tasks.extract_document  # noqa: F401
     from app.workers import celery_app
 
-    assert "opencase.extract_document" in celery_app.tasks
+    assert "gideon.extract_document" in celery_app.tasks
 
 
 def test_extract_document_in_task_registry():
     from app.workers.registry import TASK_REGISTRY
 
-    assert TASK_REGISTRY["extract_document"] == "opencase.extract_document"
+    assert TASK_REGISTRY["extract_document"] == "gideon.extract_document"
 
 
 def test_extract_document_task_returns_dict():
@@ -104,7 +104,7 @@ def test_ingest_document_task_is_registered():
     import app.workers.tasks.ingest_document  # noqa: F401
     from app.workers import celery_app
 
-    assert "opencase.ingest_document" in celery_app.tasks
+    assert "gideon.ingest_document" in celery_app.tasks
 
 
 def test_ingest_document_full_pipeline():

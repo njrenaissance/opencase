@@ -2,7 +2,7 @@
 
 monkeypatch is used throughout to auto-revert environment variables and
 working directory changes after each test, preventing state leakage
-between tests (e.g. OPENCASE_* env vars or chdir to fixtures/).
+between tests (e.g. GIDEON_* env vars or chdir to fixtures/).
 """
 
 import os
@@ -37,8 +37,8 @@ from app.core.config import (
 _ENV_TEST = dotenv_values(Path(__file__).parent.parent / ".env.test")
 
 DEFAULTS = {
-    "app_name": "OpenCase",
-    "app_version": version("opencase"),
+    "app_name": "Gideon",
+    "app_version": version("gideon"),
     "debug": False,
     "log_level": "INFO",
     "log_output": "stdout",
@@ -51,15 +51,15 @@ DEFAULTS = {
         "enabled": False,
         "exporter": "console",
         "endpoint": "http://localhost:4318",
-        "service_name": "opencase-api",
+        "service_name": "gideon-api",
         "sample_rate": 1.0,
     },
     "auth": {
-        "secret_key": _ENV_TEST["OPENCASE_AUTH_SECRET_KEY"],
+        "secret_key": _ENV_TEST["GIDEON_AUTH_SECRET_KEY"],
         "algorithm": "HS256",
         "access_token_expire_minutes": 15,
         "refresh_token_expire_days": 7,
-        "totp_issuer": "OpenCase",
+        "totp_issuer": "Gideon",
         "totp_digest": "sha1",
         "totp_window": 1,
         "bcrypt_rounds": 4,
@@ -67,37 +67,37 @@ DEFAULTS = {
         "login_lockout_minutes": 15,
     },
     "db": {
-        "url": _ENV_TEST["OPENCASE_DB_URL"],
+        "url": _ENV_TEST["GIDEON_DB_URL"],
         "pool_size": 10,
         "max_overflow": 20,
         "pool_pre_ping": True,
         "echo": False,
     },
     "admin": {
-        "email": _ENV_TEST.get("OPENCASE_ADMIN_EMAIL"),
-        "password": _ENV_TEST.get("OPENCASE_ADMIN_PASSWORD"),
-        "first_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRST_NAME", "Admin"),
-        "last_name": _ENV_TEST.get("OPENCASE_ADMIN_LAST_NAME", "User"),
-        "firm_name": _ENV_TEST.get("OPENCASE_ADMIN_FIRM_NAME", "Default Firm"),
+        "email": _ENV_TEST.get("GIDEON_ADMIN_EMAIL"),
+        "password": _ENV_TEST.get("GIDEON_ADMIN_PASSWORD"),
+        "first_name": _ENV_TEST.get("GIDEON_ADMIN_FIRST_NAME", "Admin"),
+        "last_name": _ENV_TEST.get("GIDEON_ADMIN_LAST_NAME", "User"),
+        "firm_name": _ENV_TEST.get("GIDEON_ADMIN_FIRM_NAME", "Default Firm"),
     },
     "redis": {
-        "host": _ENV_TEST.get("OPENCASE_REDIS_HOST", "redis"),
-        "port": int(_ENV_TEST.get("OPENCASE_REDIS_PORT", "6379")),
-        "db": int(_ENV_TEST.get("OPENCASE_REDIS_DB", "0")),
+        "host": _ENV_TEST.get("GIDEON_REDIS_HOST", "redis"),
+        "port": int(_ENV_TEST.get("GIDEON_REDIS_PORT", "6379")),
+        "db": int(_ENV_TEST.get("GIDEON_REDIS_DB", "0")),
         "password": None,
         "ssl": False,
-        "pool_size": int(_ENV_TEST.get("OPENCASE_REDIS_POOL_SIZE", "10")),
-        "url": f"redis://{_ENV_TEST.get('OPENCASE_REDIS_HOST', 'redis')}:6379/0",
+        "pool_size": int(_ENV_TEST.get("GIDEON_REDIS_POOL_SIZE", "10")),
+        "url": f"redis://{_ENV_TEST.get('GIDEON_REDIS_HOST', 'redis')}:6379/0",
     },
     "celery": {
         # broker_url is not in .env.test — derived from RedisSettings
         # by the Settings model validator.
         "broker_url": (
-            f"redis://{_ENV_TEST.get('OPENCASE_REDIS_HOST', 'redis')}"
-            f":{_ENV_TEST.get('OPENCASE_REDIS_PORT', '6379')}"
-            f"/{_ENV_TEST.get('OPENCASE_REDIS_DB', '0')}"
+            f"redis://{_ENV_TEST.get('GIDEON_REDIS_HOST', 'redis')}"
+            f":{_ENV_TEST.get('GIDEON_REDIS_PORT', '6379')}"
+            f"/{_ENV_TEST.get('GIDEON_REDIS_DB', '0')}"
         ),
-        "result_backend": _ENV_TEST.get("OPENCASE_CELERY_RESULT_BACKEND"),
+        "result_backend": _ENV_TEST.get("GIDEON_CELERY_RESULT_BACKEND"),
         "task_serializer": "json",
         "accept_content": ["json"],
         "timezone": "UTC",
@@ -113,15 +113,15 @@ DEFAULTS = {
         "url_prefix": "/flower",
     },
     "s3": {
-        "endpoint": _ENV_TEST["OPENCASE_S3_ENDPOINT"],
-        "access_key": _ENV_TEST["OPENCASE_S3_ACCESS_KEY"],
-        "secret_key": _ENV_TEST["OPENCASE_S3_SECRET_KEY"],
-        "bucket": _ENV_TEST.get("OPENCASE_S3_BUCKET", "opencase"),
+        "endpoint": _ENV_TEST["GIDEON_S3_ENDPOINT"],
+        "access_key": _ENV_TEST["GIDEON_S3_ACCESS_KEY"],
+        "secret_key": _ENV_TEST["GIDEON_S3_SECRET_KEY"],
+        "bucket": _ENV_TEST.get("GIDEON_S3_BUCKET", "gideon"),
         "use_ssl": False,
-        "region": _ENV_TEST.get("OPENCASE_S3_REGION", "us-east-1"),
+        "region": _ENV_TEST.get("GIDEON_S3_REGION", "us-east-1"),
         "max_upload_bytes": 100 * 1024 * 1024,
         "spool_threshold_bytes": 10 * 1024 * 1024,
-        "url": f"http://{_ENV_TEST['OPENCASE_S3_ENDPOINT']}",
+        "url": f"http://{_ENV_TEST['GIDEON_S3_ENDPOINT']}",
     },
     "extraction": {
         "tika_url": "http://tika:9998",
@@ -171,7 +171,7 @@ DEFAULTS = {
         "host": "localhost",
         "port": 6333,
         "grpc_port": 6334,
-        "collection": "opencase_test",
+        "collection": "gideon_test",
         "prefer_grpc": False,
         "use_ssl": False,
         "api_key": None,
@@ -185,10 +185,10 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
-    """Remove any OPENCASE_ env vars so each test starts clean,
+    """Remove any GIDEON_ env vars so each test starts clean,
     then reload required fields from .env.test."""
     for key in list(os.environ):
-        if key.startswith("OPENCASE_"):
+        if key.startswith("GIDEON_"):
             monkeypatch.delenv(key, raising=False)
     for key, value in _ENV_TEST.items():
         if value is not None:
@@ -201,8 +201,8 @@ def test_defaults():
 
 
 def test_env_vars_override_defaults(monkeypatch):
-    monkeypatch.setenv("OPENCASE_APP_NAME", "TestCase")
-    monkeypatch.setenv("OPENCASE_DEBUG", "true")
+    monkeypatch.setenv("GIDEON_APP_NAME", "TestCase")
+    monkeypatch.setenv("GIDEON_DEBUG", "true")
     cfg = Settings()
     assert cfg.model_dump() == {**DEFAULTS, "app_name": "TestCase", "debug": True}
 
@@ -219,7 +219,7 @@ def test_json_config_overrides_defaults(monkeypatch):
 
 def test_env_vars_override_json(monkeypatch):
     monkeypatch.chdir(FIXTURES_DIR)
-    monkeypatch.setenv("OPENCASE_APP_NAME", "EnvCase")
+    monkeypatch.setenv("GIDEON_APP_NAME", "EnvCase")
     cfg = Settings()
     assert cfg.model_dump() == {
         **DEFAULTS,
@@ -239,7 +239,7 @@ def test_dotenv_overrides_json(monkeypatch):
 
 
 def test_bool_casting_from_env(monkeypatch):
-    monkeypatch.setenv("OPENCASE_DEBUG", "false")
+    monkeypatch.setenv("GIDEON_DEBUG", "false")
     cfg = Settings()
     assert cfg.model_dump() == DEFAULTS
 
@@ -262,7 +262,7 @@ def test_api_defaults():
 
 
 def test_api_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_API_PORT", "9000")
+    monkeypatch.setenv("GIDEON_API_PORT", "9000")
     cfg = ApiSettings()
     assert cfg.port == 9000
 
@@ -273,7 +273,7 @@ def test_api_env_override(monkeypatch):
 
 
 def test_auth_missing_secret_key_raises(monkeypatch):
-    monkeypatch.delenv("OPENCASE_AUTH_SECRET_KEY", raising=False)
+    monkeypatch.delenv("GIDEON_AUTH_SECRET_KEY", raising=False)
     with pytest.raises(ValidationError):
         AuthSettings()
 
@@ -283,7 +283,7 @@ def test_auth_defaults(monkeypatch):
     assert cfg.algorithm == "HS256"
     assert cfg.access_token_expire_minutes == 15
     assert cfg.refresh_token_expire_days == 7
-    assert cfg.totp_issuer == "OpenCase"
+    assert cfg.totp_issuer == "Gideon"
     assert cfg.totp_window == 1
     assert cfg.totp_digest == "sha1"
     assert cfg.bcrypt_rounds == 4
@@ -292,15 +292,15 @@ def test_auth_defaults(monkeypatch):
 
 
 def test_auth_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_AUTH_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+    monkeypatch.setenv("GIDEON_AUTH_ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     cfg = AuthSettings()
     assert cfg.access_token_expire_minutes == 30
 
 
 def test_auth_prefix_isolation(monkeypatch):
-    # OPENCASE_SECRET_KEY (wrong prefix) must not satisfy OPENCASE_AUTH_SECRET_KEY
-    monkeypatch.setenv("OPENCASE_SECRET_KEY", "wrong")
-    monkeypatch.delenv("OPENCASE_AUTH_SECRET_KEY", raising=False)
+    # GIDEON_SECRET_KEY (wrong prefix) must not satisfy GIDEON_AUTH_SECRET_KEY
+    monkeypatch.setenv("GIDEON_SECRET_KEY", "wrong")
+    monkeypatch.delenv("GIDEON_AUTH_SECRET_KEY", raising=False)
     with pytest.raises(ValidationError):
         AuthSettings()
 
@@ -311,7 +311,7 @@ def test_auth_prefix_isolation(monkeypatch):
 
 
 def test_db_missing_url_raises(monkeypatch):
-    monkeypatch.delenv("OPENCASE_DB_URL", raising=False)
+    monkeypatch.delenv("GIDEON_DB_URL", raising=False)
     with pytest.raises(ValidationError):
         DbSettings()
 
@@ -325,15 +325,15 @@ def test_db_defaults(monkeypatch):
 
 
 def test_db_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_DB_POOL_SIZE", "20")
+    monkeypatch.setenv("GIDEON_DB_POOL_SIZE", "20")
     cfg = DbSettings()
     assert cfg.pool_size == 20
 
 
 def test_db_prefix_isolation(monkeypatch):
-    # OPENCASE_URL (wrong prefix) must not satisfy OPENCASE_DB_URL
-    monkeypatch.setenv("OPENCASE_URL", "wrong")
-    monkeypatch.delenv("OPENCASE_DB_URL", raising=False)
+    # GIDEON_URL (wrong prefix) must not satisfy GIDEON_DB_URL
+    monkeypatch.setenv("GIDEON_URL", "wrong")
+    monkeypatch.delenv("GIDEON_DB_URL", raising=False)
     with pytest.raises(ValidationError):
         DbSettings()
 
@@ -359,32 +359,32 @@ def test_redis_url_no_password():
 
 
 def test_redis_url_with_password(monkeypatch):
-    monkeypatch.setenv("OPENCASE_REDIS_PASSWORD", "s3cret")
+    monkeypatch.setenv("GIDEON_REDIS_PASSWORD", "s3cret")
     cfg = RedisSettings()
     assert cfg.url == "redis://:s3cret@localhost:6379/0"
 
 
 def test_redis_url_encodes_special_chars(monkeypatch):
-    monkeypatch.setenv("OPENCASE_REDIS_PASSWORD", "p@ss/word")
+    monkeypatch.setenv("GIDEON_REDIS_PASSWORD", "p@ss/word")
     cfg = RedisSettings()
     assert cfg.url == "redis://:p%40ss%2Fword@localhost:6379/0"
 
 
 def test_redis_url_ssl(monkeypatch):
-    monkeypatch.setenv("OPENCASE_REDIS_SSL", "true")
+    monkeypatch.setenv("GIDEON_REDIS_SSL", "true")
     cfg = RedisSettings()
     assert cfg.url.startswith("rediss://")
 
 
 def test_redis_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_REDIS_PORT", "6380")
+    monkeypatch.setenv("GIDEON_REDIS_PORT", "6380")
     cfg = RedisSettings()
     assert cfg.port == 6380
 
 
 def test_redis_prefix_isolation(monkeypatch):
-    # OPENCASE_HOST (wrong prefix) must not override OPENCASE_REDIS_HOST
-    monkeypatch.setenv("OPENCASE_HOST", "wrong")
+    # GIDEON_HOST (wrong prefix) must not override GIDEON_REDIS_HOST
+    monkeypatch.setenv("GIDEON_HOST", "wrong")
     cfg = RedisSettings()
     assert cfg.host != "wrong"
 
@@ -399,7 +399,7 @@ def test_celery_defaults():
     # broker_url is None at CelerySettings level; the Settings
     # model validator derives it from RedisSettings.
     assert cfg.broker_url is None
-    assert cfg.result_backend == _ENV_TEST.get("OPENCASE_CELERY_RESULT_BACKEND")
+    assert cfg.result_backend == _ENV_TEST.get("GIDEON_CELERY_RESULT_BACKEND")
     assert cfg.task_serializer == "json"
     assert cfg.accept_content == ["json"]
     assert cfg.timezone == "UTC"
@@ -411,39 +411,39 @@ def test_celery_defaults():
 
 
 def test_celery_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CELERY_WORKER_CONCURRENCY", "4")
+    monkeypatch.setenv("GIDEON_CELERY_WORKER_CONCURRENCY", "4")
     cfg = CelerySettings()
     assert cfg.worker_concurrency == 4
 
 
 def test_celery_result_backend_override(monkeypatch):
     dsn = "db+postgresql+psycopg2://user:pass@tasks-db:5432/celery"
-    monkeypatch.setenv("OPENCASE_CELERY_RESULT_BACKEND", dsn)
+    monkeypatch.setenv("GIDEON_CELERY_RESULT_BACKEND", dsn)
     cfg = CelerySettings()
     assert cfg.result_backend == dsn
 
 
 def test_celery_prefix_isolation(monkeypatch):
-    # OPENCASE_BROKER_URL (wrong prefix) must not override OPENCASE_CELERY_BROKER_URL
-    monkeypatch.setenv("OPENCASE_BROKER_URL", "wrong")
+    # GIDEON_BROKER_URL (wrong prefix) must not override GIDEON_CELERY_BROKER_URL
+    monkeypatch.setenv("GIDEON_BROKER_URL", "wrong")
     cfg = CelerySettings()
     assert cfg.broker_url != "wrong"
 
 
 def test_celery_broker_url_derived_from_redis(monkeypatch):
     """Settings derives broker_url from RedisSettings."""
-    monkeypatch.delenv("OPENCASE_CELERY_BROKER_URL", raising=False)
-    monkeypatch.setenv("OPENCASE_REDIS_HOST", "custom-redis")
-    monkeypatch.setenv("OPENCASE_REDIS_PORT", "6380")
-    monkeypatch.setenv("OPENCASE_REDIS_DB", "2")
+    monkeypatch.delenv("GIDEON_CELERY_BROKER_URL", raising=False)
+    monkeypatch.setenv("GIDEON_REDIS_HOST", "custom-redis")
+    monkeypatch.setenv("GIDEON_REDIS_PORT", "6380")
+    monkeypatch.setenv("GIDEON_REDIS_DB", "2")
     cfg = Settings()
     assert cfg.celery.broker_url == "redis://custom-redis:6380/2"
 
 
 def test_celery_broker_url_explicit_overrides_redis(monkeypatch):
-    """Explicit OPENCASE_CELERY_BROKER_URL takes precedence over RedisSettings."""
-    monkeypatch.setenv("OPENCASE_CELERY_BROKER_URL", "redis://explicit:6379/5")
-    monkeypatch.setenv("OPENCASE_REDIS_HOST", "custom-redis")
+    """Explicit GIDEON_CELERY_BROKER_URL takes precedence over RedisSettings."""
+    monkeypatch.setenv("GIDEON_CELERY_BROKER_URL", "redis://explicit:6379/5")
+    monkeypatch.setenv("GIDEON_REDIS_HOST", "custom-redis")
     cfg = Settings()
     assert cfg.celery.broker_url == "redis://explicit:6379/5"
 
@@ -461,20 +461,20 @@ def test_flower_defaults():
 
 
 def test_flower_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_FLOWER_PORT", "5556")
+    monkeypatch.setenv("GIDEON_FLOWER_PORT", "5556")
     cfg = FlowerSettings()
     assert cfg.port == 5556
 
 
 def test_flower_basic_auth(monkeypatch):
-    monkeypatch.setenv("OPENCASE_FLOWER_BASIC_AUTH", "admin:secret")
+    monkeypatch.setenv("GIDEON_FLOWER_BASIC_AUTH", "admin:secret")
     cfg = FlowerSettings()
     assert cfg.basic_auth == "admin:secret"
 
 
 def test_flower_prefix_isolation(monkeypatch):
-    # OPENCASE_PORT (wrong prefix) must not override OPENCASE_FLOWER_PORT
-    monkeypatch.setenv("OPENCASE_PORT", "9999")
+    # GIDEON_PORT (wrong prefix) must not override GIDEON_FLOWER_PORT
+    monkeypatch.setenv("GIDEON_PORT", "9999")
     cfg = FlowerSettings()
     assert cfg.port == 5555
 
@@ -487,34 +487,34 @@ def test_flower_prefix_isolation(monkeypatch):
 def test_s3_defaults():
     cfg = S3Settings()
     assert cfg.endpoint == "minio:9000"
-    assert cfg.access_key == "opencase"
+    assert cfg.access_key == "gideon"
     assert cfg.secret_key == "changeme"  # noqa: S105
-    assert cfg.bucket == "opencase"
+    assert cfg.bucket == "gideon"
     assert cfg.use_ssl is False
     assert cfg.region == "us-east-1"
 
 
 def test_s3_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_S3_BUCKET", "custom-bucket")
+    monkeypatch.setenv("GIDEON_S3_BUCKET", "custom-bucket")
     cfg = S3Settings()
     assert cfg.bucket == "custom-bucket"
 
 
 def test_s3_prefix_isolation(monkeypatch):
-    # OPENCASE_ENDPOINT (wrong prefix) must not override OPENCASE_S3_ENDPOINT
-    monkeypatch.setenv("OPENCASE_ENDPOINT", "wrong")
+    # GIDEON_ENDPOINT (wrong prefix) must not override GIDEON_S3_ENDPOINT
+    monkeypatch.setenv("GIDEON_ENDPOINT", "wrong")
     cfg = S3Settings()
     assert cfg.endpoint != "wrong"
 
 
 def test_s3_missing_access_key_raises(monkeypatch):
-    monkeypatch.delenv("OPENCASE_S3_ACCESS_KEY", raising=False)
+    monkeypatch.delenv("GIDEON_S3_ACCESS_KEY", raising=False)
     with pytest.raises(ValidationError):
         S3Settings()
 
 
 def test_s3_missing_secret_key_raises(monkeypatch):
-    monkeypatch.delenv("OPENCASE_S3_SECRET_KEY", raising=False)
+    monkeypatch.delenv("GIDEON_S3_SECRET_KEY", raising=False)
     with pytest.raises(ValidationError):
         S3Settings()
 
@@ -525,7 +525,7 @@ def test_s3_url_http():
 
 
 def test_s3_url_https(monkeypatch):
-    monkeypatch.setenv("OPENCASE_S3_USE_SSL", "true")
+    monkeypatch.setenv("GIDEON_S3_USE_SSL", "true")
     cfg = S3Settings()
     assert cfg.url == "https://minio:9000"
 
@@ -546,20 +546,20 @@ def test_extraction_defaults():
 
 
 def test_extraction_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_EXTRACTION_TIKA_URL", "http://custom:8080")
+    monkeypatch.setenv("GIDEON_EXTRACTION_TIKA_URL", "http://custom:8080")
     cfg = ExtractionSettings()
     assert cfg.tika_url == "http://custom:8080"
 
 
 def test_extraction_prefix_isolation(monkeypatch):
-    # OPENCASE_TIKA_URL (wrong prefix) must not override OPENCASE_EXTRACTION_TIKA_URL
-    monkeypatch.setenv("OPENCASE_TIKA_URL", "wrong")
+    # GIDEON_TIKA_URL (wrong prefix) must not override GIDEON_EXTRACTION_TIKA_URL
+    monkeypatch.setenv("GIDEON_TIKA_URL", "wrong")
     cfg = ExtractionSettings()
     assert cfg.tika_url != "wrong"
 
 
 def test_extraction_ocr_languages_comma_separated(monkeypatch):
-    monkeypatch.setenv("OPENCASE_EXTRACTION_OCR_LANGUAGES", "eng,fra,deu")
+    monkeypatch.setenv("GIDEON_EXTRACTION_OCR_LANGUAGES", "eng,fra,deu")
     cfg = ExtractionSettings()
     assert cfg.ocr_languages == "eng,fra,deu"
     assert cfg.ocr_language_list == ["eng", "fra", "deu"]
@@ -601,8 +601,8 @@ def test_ingestion_empty_file_raises(tmp_path):
 
 
 def test_ingestion_prefix_isolation(monkeypatch):
-    # OPENCASE_ALLOWED_TYPES_FILE (wrong prefix) must not override
-    monkeypatch.setenv("OPENCASE_ALLOWED_TYPES_FILE", "/tmp/wrong.txt")  # noqa: S108
+    # GIDEON_ALLOWED_TYPES_FILE (wrong prefix) must not override
+    monkeypatch.setenv("GIDEON_ALLOWED_TYPES_FILE", "/tmp/wrong.txt")  # noqa: S108
     cfg = IngestionSettings()
     assert cfg.allowed_types_file is None
 
@@ -621,14 +621,14 @@ def test_chunking_defaults():
 
 
 def test_chunking_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_SIZE", "500")
+    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_SIZE", "500")
     cfg = ChunkingSettings()
     assert cfg.chunk_size == 500
 
 
 def test_chunking_prefix_isolation(monkeypatch):
-    # OPENCASE_CHUNK_SIZE (wrong prefix) must not override OPENCASE_CHUNKING_CHUNK_SIZE
-    monkeypatch.setenv("OPENCASE_CHUNK_SIZE", "999")
+    # GIDEON_CHUNK_SIZE (wrong prefix) must not override GIDEON_CHUNKING_CHUNK_SIZE
+    monkeypatch.setenv("GIDEON_CHUNK_SIZE", "999")
     cfg = ChunkingSettings()
     assert cfg.chunk_size == 1000
 
@@ -639,14 +639,14 @@ def test_chunking_prefix_isolation(monkeypatch):
     ids=["equal", "exceeds"],
 )
 def test_chunking_overlap_gte_size_raises(monkeypatch, overlap, size):
-    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_OVERLAP", str(overlap))
-    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_SIZE", str(size))
+    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_OVERLAP", str(overlap))
+    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_SIZE", str(size))
     with pytest.raises(ValidationError, match="chunk_overlap"):
         ChunkingSettings()
 
 
 def test_chunking_zero_overlap_valid(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHUNKING_CHUNK_OVERLAP", "0")
+    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_OVERLAP", "0")
     cfg = ChunkingSettings()
     assert cfg.chunk_overlap == 0
 
@@ -662,14 +662,14 @@ def test_embedding_defaults():
 
 
 def test_embedding_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_EMBEDDING_MODEL", "mxbai-embed-large")
+    monkeypatch.setenv("GIDEON_EMBEDDING_MODEL", "mxbai-embed-large")
     cfg = EmbeddingSettings()
     assert cfg.model == "mxbai-embed-large"
 
 
 def test_embedding_prefix_isolation(monkeypatch):
-    # OPENCASE_MODEL (wrong prefix) must not override OPENCASE_EMBEDDING_MODEL
-    monkeypatch.setenv("OPENCASE_MODEL", "wrong")
+    # GIDEON_MODEL (wrong prefix) must not override GIDEON_EMBEDDING_MODEL
+    monkeypatch.setenv("GIDEON_MODEL", "wrong")
     cfg = EmbeddingSettings()
     assert cfg.model == "nomic-embed-text"
 
@@ -685,20 +685,20 @@ def test_chatbot_defaults():
 
 
 def test_chatbot_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHATBOT_MODEL", "mistral")
+    monkeypatch.setenv("GIDEON_CHATBOT_MODEL", "mistral")
     cfg = ChatbotSettings()
     assert cfg.model == "mistral"
 
 
 def test_chatbot_prefix_isolation(monkeypatch):
-    # OPENCASE_MODEL (wrong prefix) must not override OPENCASE_CHATBOT_MODEL
-    monkeypatch.setenv("OPENCASE_MODEL", "wrong")
+    # GIDEON_MODEL (wrong prefix) must not override GIDEON_CHATBOT_MODEL
+    monkeypatch.setenv("GIDEON_MODEL", "wrong")
     cfg = ChatbotSettings()
     assert cfg.model == "llama3"
 
 
 def test_chatbot_system_prompt_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT", "Custom legal prompt.")
+    monkeypatch.setenv("GIDEON_CHATBOT_SYSTEM_PROMPT", "Custom legal prompt.")
     cfg = ChatbotSettings()
     assert cfg.system_prompt == "Custom legal prompt."
 
@@ -706,7 +706,7 @@ def test_chatbot_system_prompt_override(monkeypatch):
 def test_chatbot_system_prompt_file_loads_content(tmp_path, monkeypatch):
     prompt_file = tmp_path / "system_prompt.md"
     prompt_file.write_text("Custom prompt from file.", encoding="utf-8")
-    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
+    monkeypatch.setenv("GIDEON_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
     cfg = ChatbotSettings()
     assert cfg.system_prompt == "Custom prompt from file."
     assert cfg.system_prompt_file == prompt_file
@@ -714,7 +714,7 @@ def test_chatbot_system_prompt_file_loads_content(tmp_path, monkeypatch):
 
 def test_chatbot_system_prompt_file_missing_raises(tmp_path, monkeypatch):
     monkeypatch.setenv(
-        "OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(tmp_path / "nonexistent.md")
+        "GIDEON_CHATBOT_SYSTEM_PROMPT_FILE", str(tmp_path / "nonexistent.md")
     )
     with pytest.raises(ValidationError, match="non-existent"):
         ChatbotSettings()
@@ -723,27 +723,27 @@ def test_chatbot_system_prompt_file_missing_raises(tmp_path, monkeypatch):
 def test_chatbot_system_prompt_file_empty_raises(tmp_path, monkeypatch):
     prompt_file = tmp_path / "empty.md"
     prompt_file.write_text("   \n\n", encoding="utf-8")
-    monkeypatch.setenv("OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
+    monkeypatch.setenv("GIDEON_CHATBOT_SYSTEM_PROMPT_FILE", str(prompt_file))
     with pytest.raises(ValidationError, match="empty"):
         ChatbotSettings()
 
 
 def test_chatbot_temperature_boundaries_valid(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHATBOT_TEMPERATURE", "0.0")
+    monkeypatch.setenv("GIDEON_CHATBOT_TEMPERATURE", "0.0")
     cfg = ChatbotSettings()
     assert cfg.temperature == pytest.approx(0.0)
 
-    monkeypatch.setenv("OPENCASE_CHATBOT_TEMPERATURE", "2.0")
+    monkeypatch.setenv("GIDEON_CHATBOT_TEMPERATURE", "2.0")
     cfg2 = ChatbotSettings()
     assert cfg2.temperature == pytest.approx(2.0)
 
 
 def test_chatbot_chunk_count_boundaries_valid(monkeypatch):
-    monkeypatch.setenv("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "1")
+    monkeypatch.setenv("GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT", "1")
     cfg = ChatbotSettings()
     assert cfg.retrieval_chunk_count == 1
 
-    monkeypatch.setenv("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "20")
+    monkeypatch.setenv("GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT", "20")
     cfg2 = ChatbotSettings()
     assert cfg2.retrieval_chunk_count == 20
 
@@ -751,12 +751,12 @@ def test_chatbot_chunk_count_boundaries_valid(monkeypatch):
 @pytest.mark.parametrize(
     "env_var,value",
     [
-        ("OPENCASE_CHATBOT_TEMPERATURE", "-0.1"),
-        ("OPENCASE_CHATBOT_TEMPERATURE", "2.1"),
-        ("OPENCASE_CHATBOT_MAX_TOKENS", "0"),
-        ("OPENCASE_CHATBOT_MAX_TOKENS", "-1"),
-        ("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "0"),
-        ("OPENCASE_CHATBOT_RETRIEVAL_CHUNK_COUNT", "21"),
+        ("GIDEON_CHATBOT_TEMPERATURE", "-0.1"),
+        ("GIDEON_CHATBOT_TEMPERATURE", "2.1"),
+        ("GIDEON_CHATBOT_MAX_TOKENS", "0"),
+        ("GIDEON_CHATBOT_MAX_TOKENS", "-1"),
+        ("GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT", "0"),
+        ("GIDEON_CHATBOT_RETRIEVAL_CHUNK_COUNT", "21"),
     ],
     ids=[
         "temperature-below-min",
@@ -790,14 +790,14 @@ def test_qdrant_defaults():
 
 
 def test_qdrant_env_override(monkeypatch):
-    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "custom-qdrant")
+    monkeypatch.setenv("GIDEON_QDRANT_HOST", "custom-qdrant")
     cfg = QdrantSettings()
     assert cfg.host == "custom-qdrant"
 
 
 def test_qdrant_prefix_isolation(monkeypatch):
-    # OPENCASE_HOST (wrong prefix) must not override OPENCASE_QDRANT_HOST
-    monkeypatch.setenv("OPENCASE_HOST", "wrong")
+    # GIDEON_HOST (wrong prefix) must not override GIDEON_QDRANT_HOST
+    monkeypatch.setenv("GIDEON_HOST", "wrong")
     cfg = QdrantSettings()
     assert cfg.host == "localhost"
 
@@ -808,14 +808,14 @@ def test_qdrant_url_computed():
 
 
 def test_qdrant_url_custom_host_port(monkeypatch):
-    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "my-qdrant")
-    monkeypatch.setenv("OPENCASE_QDRANT_PORT", "7333")
+    monkeypatch.setenv("GIDEON_QDRANT_HOST", "my-qdrant")
+    monkeypatch.setenv("GIDEON_QDRANT_PORT", "7333")
     cfg = QdrantSettings()
     assert cfg.url == "http://my-qdrant:7333"
 
 
 def test_qdrant_url_https(monkeypatch):
-    monkeypatch.setenv("OPENCASE_QDRANT_USE_SSL", "true")
+    monkeypatch.setenv("GIDEON_QDRANT_USE_SSL", "true")
     cfg = QdrantSettings()
     assert cfg.url == "https://localhost:6333"
 
@@ -826,8 +826,8 @@ def test_qdrant_grpc_url_computed():
 
 
 def test_qdrant_grpc_url_custom(monkeypatch):
-    monkeypatch.setenv("OPENCASE_QDRANT_HOST", "my-qdrant")
-    monkeypatch.setenv("OPENCASE_QDRANT_GRPC_PORT", "7334")
+    monkeypatch.setenv("GIDEON_QDRANT_HOST", "my-qdrant")
+    monkeypatch.setenv("GIDEON_QDRANT_GRPC_PORT", "7334")
     cfg = QdrantSettings()
     assert cfg.grpc_url == "my-qdrant:7334"
 
@@ -855,7 +855,7 @@ def test_redact_settings_masks_secrets():
             "access_key": "AKIAIOSFODNN7EXAMPLE",
             "secret_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "endpoint": "minio:9000",
-            "bucket": "opencase",
+            "bucket": "gideon",
         },
         "qdrant": {
             "api_key": "secret-qdrant-key",
@@ -881,7 +881,7 @@ def test_redact_settings_masks_secrets():
     assert redacted["s3"]["access_key"] == _REDACTED
     assert redacted["s3"]["secret_key"] == _REDACTED
     assert redacted["s3"]["endpoint"] == "minio:9000"
-    assert redacted["s3"]["bucket"] == "opencase"
+    assert redacted["s3"]["bucket"] == "gideon"
     # Qdrant API key is redacted
     assert redacted["qdrant"]["api_key"] == _REDACTED
     assert redacted["qdrant"]["host"] == "qdrant"

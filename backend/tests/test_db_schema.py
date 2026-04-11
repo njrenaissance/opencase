@@ -1,6 +1,6 @@
 """Integration tests for database schema constraints.
 
-These tests require a running PostgreSQL instance (OPENCASE_DB_URL in .env.test).
+These tests require a running PostgreSQL instance (GIDEON_DB_URL in .env.test).
 Run with: pytest -m integration
 
 Each test runs inside a transaction that is rolled back on completion,

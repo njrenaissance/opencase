@@ -9,7 +9,7 @@ import time
 
 import httpx
 
-from opencase.exceptions import AuthenticationError
+from gideon.exceptions import AuthenticationError
 
 
 class AuthManager:

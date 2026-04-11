@@ -1,4 +1,4 @@
-# OpenCase — Observability
+# Gideon — Observability
 
 All observability data stays on-premise. No telemetry leaves the host.
 
@@ -6,7 +6,7 @@ All observability data stays on-premise. No telemetry leaves the host.
 
 ## Strategy
 
-OpenCase uses **OpenTelemetry** (OTel) to collect all three signals — traces,
+Gideon uses **OpenTelemetry** (OTel) to collect all three signals — traces,
 metrics, and logs — from the FastAPI backend, Celery worker, and Celery Beat
 processes. The OTLP backend is
 **Grafana otel-lgtm**, a single Docker container that bundles:
@@ -111,93 +111,93 @@ All metric instruments are defined in `backend/app/core/metrics.py`:
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.auth.login_attempts` | Counter | `result` | Login attempts (success/failure/locked) |
-| `opencase.auth.mfa_challenges` | Counter | `result` | MFA TOTP challenge outcomes |
-| `opencase.auth.token_refresh_attempts` | Counter | | Token refresh attempts |
-| `opencase.auth.active_sessions` | UpDownCounter | | Active sessions (issued minus logouts) |
+| `gideon.auth.login_attempts` | Counter | `result` | Login attempts (success/failure/locked) |
+| `gideon.auth.mfa_challenges` | Counter | `result` | MFA TOTP challenge outcomes |
+| `gideon.auth.token_refresh_attempts` | Counter | | Token refresh attempts |
+| `gideon.auth.active_sessions` | UpDownCounter | | Active sessions (issued minus logouts) |
 
 #### RBAC
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.rbac.access_denied` | Counter | `reason`, `role` | RBAC denials |
+| `gideon.rbac.access_denied` | Counter | `reason`, `role` | RBAC denials |
 
 #### Entity Management
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.users.created` | Counter | | Users created |
-| `opencase.users.updated` | Counter | | Users updated |
-| `opencase.matters.created` | Counter | | Matters created |
-| `opencase.matters.updated` | Counter | | Matters updated |
-| `opencase.matter_access.granted` | Counter | | Matter access grants |
-| `opencase.matter_access.revoked` | Counter | | Matter access revocations |
+| `gideon.users.created` | Counter | | Users created |
+| `gideon.users.updated` | Counter | | Users updated |
+| `gideon.matters.created` | Counter | | Matters created |
+| `gideon.matters.updated` | Counter | | Matters updated |
+| `gideon.matter_access.granted` | Counter | | Matter access grants |
+| `gideon.matter_access.revoked` | Counter | | Matter access revocations |
 
 #### Documents
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.documents.created` | Counter | | Documents created |
-| `opencase.documents.duplicates_rejected` | Counter | | Duplicate upload rejections |
+| `gideon.documents.created` | Counter | | Documents created |
+| `gideon.documents.duplicates_rejected` | Counter | | Duplicate upload rejections |
 
 #### Prompts
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.prompts.created` | Counter | | Prompts submitted |
+| `gideon.prompts.created` | Counter | | Prompts submitted |
 
 #### Tasks
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.tasks.submitted` | Counter | `task_name` | Tasks submitted via API |
-| `opencase.tasks.cancelled` | Counter | | Tasks cancelled |
-| `opencase.tasks.status_queried` | Counter | `task_state` | Task status queries via broker |
+| `gideon.tasks.submitted` | Counter | `task_name` | Tasks submitted via API |
+| `gideon.tasks.cancelled` | Counter | | Tasks cancelled |
+| `gideon.tasks.status_queried` | Counter | `task_state` | Task status queries via broker |
 
 #### Extraction
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.extraction.completed` | Counter | `content_type`, `ocr_applied` | Successful extractions |
-| `opencase.extraction.failed` | Counter | `content_type`, `error_type` | Failed extractions |
-| `opencase.extraction.duration_seconds` | Histogram (s) | `content_type`, `ocr_applied` | Extraction latency |
-| `opencase.extraction.document_size_bytes` | Histogram (By) | `content_type`, `ocr_applied` | Input document size |
-| `opencase.extraction.text_length_chars` | Histogram ({char}) | `content_type`, `ocr_applied` | Extracted text length |
+| `gideon.extraction.completed` | Counter | `content_type`, `ocr_applied` | Successful extractions |
+| `gideon.extraction.failed` | Counter | `content_type`, `error_type` | Failed extractions |
+| `gideon.extraction.duration_seconds` | Histogram (s) | `content_type`, `ocr_applied` | Extraction latency |
+| `gideon.extraction.document_size_bytes` | Histogram (By) | `content_type`, `ocr_applied` | Input document size |
+| `gideon.extraction.text_length_chars` | Histogram ({char}) | `content_type`, `ocr_applied` | Extracted text length |
 
 #### Chunking
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.chunking.completed` | Counter | `strategy` | Successful chunk operations |
-| `opencase.chunking.failed` | Counter | `error_type` | Failed chunk operations |
-| `opencase.chunking.duration_seconds` | Histogram (s) | `strategy` | Chunking latency |
-| `opencase.chunking.text_length_chars` | Histogram ({char}) | `strategy` | Input text length |
-| `opencase.chunking.chunks_produced` | Histogram ({chunk}) | `strategy` | Chunks produced per document |
+| `gideon.chunking.completed` | Counter | `strategy` | Successful chunk operations |
+| `gideon.chunking.failed` | Counter | `error_type` | Failed chunk operations |
+| `gideon.chunking.duration_seconds` | Histogram (s) | `strategy` | Chunking latency |
+| `gideon.chunking.text_length_chars` | Histogram ({char}) | `strategy` | Input text length |
+| `gideon.chunking.chunks_produced` | Histogram ({chunk}) | `strategy` | Chunks produced per document |
 
 #### Embedding
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.embedding.completed` | Counter | `model` | Successful embedding operations |
-| `opencase.embedding.failed` | Counter | `model`, `error_type` | Failed embedding operations |
-| `opencase.embedding.duration_seconds` | Histogram (s) | `model` | Embedding latency |
-| `opencase.embedding.chunks_processed` | Histogram ({chunk}) | `model` | Chunks embedded per call |
-| `opencase.embedding.batch_count` | Histogram ({batch}) | `model` | Batches per embedding call |
+| `gideon.embedding.completed` | Counter | `model` | Successful embedding operations |
+| `gideon.embedding.failed` | Counter | `model`, `error_type` | Failed embedding operations |
+| `gideon.embedding.duration_seconds` | Histogram (s) | `model` | Embedding latency |
+| `gideon.embedding.chunks_processed` | Histogram ({chunk}) | `model` | Chunks embedded per call |
+| `gideon.embedding.batch_count` | Histogram ({batch}) | `model` | Batches per embedding call |
 
 #### Vectorstore
 
 | Metric | Type | Attrs | Description |
 | --- | --- | --- | --- |
-| `opencase.vectorstore.upsert.completed` | Counter | `collection` | Successful upserts |
-| `opencase.vectorstore.upsert.failed` | Counter | `collection`, `error_type` | Failed upserts |
-| `opencase.vectorstore.upsert.duration_seconds` | Histogram (s) | `collection` | Upsert latency |
-| `opencase.vectorstore.upsert.points` | Histogram ({point}) | `collection` | Points upserted per call |
-| `opencase.vectorstore.delete.completed` | Counter | `collection` | Successful deletes |
-| `opencase.vectorstore.delete.failed` | Counter | `collection`, `error_type` | Failed deletes |
-| `opencase.vectorstore.delete.duration_seconds` | Histogram (s) | `collection` | Delete latency |
+| `gideon.vectorstore.upsert.completed` | Counter | `collection` | Successful upserts |
+| `gideon.vectorstore.upsert.failed` | Counter | `collection`, `error_type` | Failed upserts |
+| `gideon.vectorstore.upsert.duration_seconds` | Histogram (s) | `collection` | Upsert latency |
+| `gideon.vectorstore.upsert.points` | Histogram ({point}) | `collection` | Points upserted per call |
+| `gideon.vectorstore.delete.completed` | Counter | `collection` | Successful deletes |
+| `gideon.vectorstore.delete.failed` | Counter | `collection`, `error_type` | Failed deletes |
+| `gideon.vectorstore.delete.duration_seconds` | Histogram (s) | `collection` | Delete latency |
 
 New features should add their metrics to `metrics.py` following the
-`opencase.<domain>.<metric_name>` naming convention.
+`gideon.<domain>.<metric_name>` naming convention.
 
 ### Logs
 
@@ -213,15 +213,15 @@ jump from a trace span to its associated log entries in Grafana.
 
 ## Configuration
 
-All settings use the `OPENCASE_OTEL_` prefix:
+All settings use the `GIDEON_OTEL_` prefix:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENCASE_OTEL_ENABLED` | `false` | Enable all OTel instrumentation |
-| `OPENCASE_OTEL_EXPORTER` | `console` | `console` (stdout) or `otlp` (Grafana otel-lgtm) |
-| `OPENCASE_OTEL_ENDPOINT` | `http://grafana:4318` | OTLP HTTP endpoint |
-| `OPENCASE_OTEL_SERVICE_NAME` | `opencase-api` | Resource tag on all signals |
-| `OPENCASE_OTEL_SAMPLE_RATE` | `1.0` | Trace sampling rate (0.0–1.0) |
+| `GIDEON_OTEL_ENABLED` | `false` | Enable all OTel instrumentation |
+| `GIDEON_OTEL_EXPORTER` | `console` | `console` (stdout) or `otlp` (Grafana otel-lgtm) |
+| `GIDEON_OTEL_ENDPOINT` | `http://grafana:4318` | OTLP HTTP endpoint |
+| `GIDEON_OTEL_SERVICE_NAME` | `gideon-api` | Resource tag on all signals |
+| `GIDEON_OTEL_SAMPLE_RATE` | `1.0` | Trace sampling rate (0.0–1.0) |
 
 See [SETTINGS.md](SETTINGS.md) for the full settings reference.
 
@@ -230,9 +230,9 @@ See [SETTINGS.md](SETTINGS.md) for the full settings reference.
 ## Architecture
 
 ```text
-FastAPI (opencase-api)        ─┐
-Celery Worker (opencase-worker) ├── traces  ──→ OTLP HTTP ──→ OTel Collector ──→ Tempo
-Celery Beat (opencase-beat)   ─┘  metrics ──→ OTLP HTTP ──→ OTel Collector ──→ Prometheus
+FastAPI (gideon-api)        ─┐
+Celery Worker (gideon-worker) ├── traces  ──→ OTLP HTTP ──→ OTel Collector ──→ Tempo
+Celery Beat (gideon-beat)   ─┘  metrics ──→ OTLP HTTP ──→ OTel Collector ──→ Prometheus
                                   logs    ──→ OTLP HTTP ──→ OTel Collector ──→ Loki
                                                                                   │
                                                                              Grafana UI

@@ -30,7 +30,7 @@ from app.db.models.user import User
 # ---------------------------------------------------------------------------
 
 _PASSWORD = "TestPassword123!"  # noqa: S105
-_COLLECTION = "opencase_test"
+_COLLECTION = "gideon_test"
 
 
 def _sync_db_url() -> str:

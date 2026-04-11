@@ -38,9 +38,9 @@ async def read_and_hash(
     Args:
         upload_file: The incoming file.
         max_bytes: Maximum allowed file size.  Configurable via
-            ``OPENCASE_S3_MAX_UPLOAD_BYTES``.
+            ``GIDEON_S3_MAX_UPLOAD_BYTES``.
         spool_threshold: In-memory buffer limit before spilling to disk.
-            Configurable via ``OPENCASE_S3_SPOOL_THRESHOLD_BYTES``.
+            Configurable via ``GIDEON_S3_SPOOL_THRESHOLD_BYTES``.
 
     Returns:
         A tuple of ``(data, hex_digest, size_bytes)`` where *data* is a

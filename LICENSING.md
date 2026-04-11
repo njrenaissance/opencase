@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-OpenCase is licensed under [Apache 2.0](LICENSE). This
+Gideon is licensed under [Apache 2.0](LICENSE). This
 document inventories the licenses of all third-party
 components used by the project.
 
@@ -8,7 +8,7 @@ All directly-linked Python dependencies use permissive
 licenses (MIT, BSD, Apache 2.0). Components with
 copyleft licenses (AGPL, LGPL) are either isolated
 network services or dynamically-linked C extensions,
-neither of which imposes obligations on the OpenCase
+neither of which imposes obligations on the Gideon
 source code. See the
 [compatibility analysis](#license-compatibility-analysis)
 for details.
@@ -22,7 +22,7 @@ for details.
 ## Infrastructure Services
 
 These run as separate Docker containers, accessed over
-TCP/HTTP. OpenCase never links against their source code.
+TCP/HTTP. Gideon never links against their source code.
 
 | Component | Image | License | SPDX |
 | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ These are not shipped in production containers.
 ## LLM Models
 
 Models are downloaded at runtime by the user via Ollama.
-OpenCase does not distribute any model weights.
+Gideon does not distribute any model weights.
 
 | Model | License | Notes |
 | --- | --- | --- |
@@ -194,20 +194,20 @@ category.
 ### AGPL-3.0 (MinIO, Grafana OTEL-LGTM)
 
 MinIO and Grafana run as **separate network services**
-inside their own Docker containers. OpenCase communicates
+inside their own Docker containers. Gideon communicates
 with them exclusively over TCP/HTTP. The AGPL's copyleft
 clause triggers when software is "conveyed" or when
 users interact with a "modified version" over a network.
-Because OpenCase does not modify, link against, or
+Because Gideon does not modify, link against, or
 distribute AGPL source code, the copyleft obligation
-does not propagate to the OpenCase codebase.
+does not propagate to the Gideon codebase.
 
 ### LGPL-3.0 (psycopg2-binary)
 
 `psycopg2-binary` is a C extension dynamically loaded
 at runtime as a shared library. The LGPL explicitly
 permits dynamic linking without imposing copyleft on
-the calling application. OpenCase does not modify
+the calling application. Gideon does not modify
 psycopg2 source code. The `-binary` wheel bundles
 `libpq`, which is PostgreSQL-licensed (permissive).
 
@@ -217,16 +217,16 @@ If `redis:7-alpine` resolves to Redis 7.4+, the server
 is under RSALv2 + SSPLv1. These licenses restrict
 offering Redis itself as a managed service but do not
 restrict applications that use Redis as an internal
-component. OpenCase uses Redis solely as a Celery
+component. Gideon uses Redis solely as a Celery
 broker and cache within its own Docker network.
 
 ### Meta Llama 3 Community License
 
-OpenCase does not distribute Llama 3 model weights.
+Gideon does not distribute Llama 3 model weights.
 Users download models themselves via Ollama. The Meta
 Llama 3 Community License has an acceptable use policy
 and a 700 million monthly active user threshold, neither
-of which applies to OpenCase's distribution of its own
+of which applies to Gideon's distribution of its own
 source code.
 
 ### Attribution requirements
@@ -237,16 +237,16 @@ installed via `pip` or `uv`, these notices are preserved
 in each package's `dist-info/LICENSE` directory inside
 the virtual environment. Docker images carry their own
 license terms independently. No additional `NOTICE` file
-is required at this time since OpenCase does not bundle
+is required at this time since Gideon does not bundle
 or redistribute third-party source code in its own
 distribution artifacts.
 
 ### Conclusion
 
 **Apache 2.0 is confirmed as a valid license for
-OpenCase.** All directly-linked dependencies are
+Gideon.** All directly-linked dependencies are
 permissively licensed. Copyleft components (AGPL, LGPL)
 are isolated by architectural boundaries (network
 services, dynamic linking) that prevent license
 propagation. Model licenses do not apply because
-OpenCase does not distribute model weights.
+Gideon does not distribute model weights.

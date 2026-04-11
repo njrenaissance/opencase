@@ -1,4 +1,4 @@
-# OpenCase — Development Journal
+# Gideon — Development Journal
 
 A running log of the development process. Early entries are reconstructed
 from the commit history. New entries are added by hand as work progresses.
@@ -9,7 +9,7 @@ from the commit history. New entries are added by hand as work progresses.
 
 *~3 hours (21:32–00:42)*
 
-Started OpenCase from scratch. The goal: a free, self-hostable, AI-powered
+Started Gideon from scratch. The goal: a free, self-hostable, AI-powered
 discovery platform for solo and small criminal defense practitioners — built
 first for Virginia Cora at Cora Firm in New York.
 
@@ -24,7 +24,7 @@ Then built the first real feature: a minimal FastAPI skeleton (`GET /health`,
 `GET /ready`) with a clean package structure and `pyproject.toml` toolchain
 (ruff, mypy strict, pytest-bdd). Immediately followed with a layered
 configuration system using pydantic-settings — env vars, `.env` file, and
-`config.json` all merged in priority order under an `OPENCASE_` prefix.
+`config.json` all merged in priority order under an `GIDEON_` prefix.
 
 **Commits:** initial scaffold, MinIO design, architecture diagrams,
 Feature 0.1 (FastAPI skeleton), Feature 0.2 (AppConfiguration)
@@ -119,7 +119,7 @@ using a `TYPE_CHECKING` guard to avoid circular imports.
 Had to work through a few non-obvious issues: `SQLAlchemyInstrumentor`
 requires `engine.sync_engine` not the `AsyncEngine` directly, and logging
 init order matters — `setup_logging()` must be called before other app
-imports so module-level loggers respect `OPENCASE_LOG_LEVEL`.
+imports so module-level loggers respect `GIDEON_LOG_LEVEL`.
 
 Opened and merged PR #1.
 
@@ -153,8 +153,8 @@ reference for all five settings classes), `docs/INFRASTRUCTURE.md` (Docker
 Compose services, ports, volumes, integration test stack), and updated
 `docs/TOC.md` with a Reference section. Marked Features 1.1 and 1.2 docs
 columns as Done in the roadmap. Fixed two accuracy issues found in code
-review: removed `OPENCASE_APP_VERSION` (not user-settable), and added a
-note that `OPENCASE_DB_URL` is assembled automatically by Docker Compose
+review: removed `GIDEON_APP_VERSION` (not user-settable), and added a
+note that `GIDEON_DB_URL` is assembled automatically by Docker Compose
 from the `POSTGRES_*` vars.
 
 **Commits:** Feature 0.9, 1.3 integration tests, PR review fixes (#2–#4),
@@ -253,7 +253,7 @@ Jonathan (paralegal) only to one.
 pre-commit with GitHub Actions across all three packages, and moved the
 container build to on-demand only (no registry target yet).
 
-**CLI (Feature 1.7):** Built the `opencase` command-line tool on Typer + Rich,
+**CLI (Feature 1.7):** Built the `gideon` command-line tool on Typer + Rich,
 consuming the SDK for all API calls. Commands for health, auth, MFA, user/
 matter/firm management, all with `--json` output for scripting. 61 tests, 87%
 coverage. One subtle bug from code review: `logout` wasn't clearing local
@@ -284,7 +284,7 @@ Feature 1.8 (#16), Feature 2.1, multiple review fixes
 worker queue stack: Redis container with healthcheck, Celery worker and beat
 containers sharing the backend Dockerfile, task autodiscovery via
 `app.workers.tasks`, a `ping` health-check task, and a separate
-`opencase_tasks` PostgreSQL database for Celery result persistence (fault
+`gideon_tasks` PostgreSQL database for Celery result persistence (fault
 isolation from the main API database).
 
 The Docker dependency chain required some thought — worker and beat must wait
@@ -310,11 +310,11 @@ get, and cancel endpoints. Tasks are submitted asynchronously to Celery via a
 Includes a task whitelist registry, OTel instrumentation, and RBAC (admin/
 attorney can submit, admin-only cancel). Added SDK methods and CLI commands.
 
-One non-obvious issue: FastAPI needs `OPENCASE_CELERY_BROKER_URL` and
-`OPENCASE_CELERY_RESULT_BACKEND` env vars to submit tasks and query results
+One non-obvious issue: FastAPI needs `GIDEON_CELERY_BROKER_URL` and
+`GIDEON_CELERY_RESULT_BACKEND` env vars to submit tasks and query results
 via `TaskBroker`. Without them, the Celery client initialized with a
 `DisabledBackend` and `get_status()` raised an `AttributeError`. Added a
-`submit_task.py` script for manual testing and an `opencase.sleep` task for
+`submit_task.py` script for manual testing and an `gideon.sleep` task for
 observability testing in Flower and Grafana.
 
 **Flower monitoring (Feature 2.7):** Deployed Flower for real-time queue
@@ -326,14 +326,14 @@ added an `INSTALL_EXTRAS` build arg to the Dockerfile so worker/API/beat
 images stay lean.
 
 **S3 storage foundation (Feature 3.3):** Added `S3Settings` pydantic config,
-renamed `MINIO_*` env vars to `OPENCASE_S3_*` for prefix consistency,
+renamed `MINIO_*` env vars to `GIDEON_S3_*` for prefix consistency,
 enabled MinIO in the integration test stack, and added a `minio-init` sidecar
 container for automatic bucket creation. Integration tests verify readiness
 probe, bucket existence, and object put/get round-trip.
 
 One pain point: `Settings()` validates all required fields at import time,
-even for services that don't use S3. Had to add `OPENCASE_S3_ACCESS_KEY` and
-`OPENCASE_S3_SECRET_KEY` to every Docker Compose service, including ones like
+even for services that don't use S3. Had to add `GIDEON_S3_ACCESS_KEY` and
+`GIDEON_S3_SECRET_KEY` to every Docker Compose service, including ones like
 `db-migrate` and `flower` that never touch S3.
 
 **Commits:** Features 2.5–2.7, Feature 3.3, MinIO init (#28), multiple
@@ -369,26 +369,26 @@ the entry point for the extraction pipeline.
 
 *~8 hours across four sessions (00:02–01:02, 10:43–10:55, 12:41–16:33, 18:07–21:52)*
 
-**Bulk ingest CLI:** Added `opencase document bulk-ingest` — walks a local
+**Bulk ingest CLI:** Added `gideon document bulk-ingest` — walks a local
 directory, pre-hashes files client-side, checks for duplicates via a new
 lightweight `GET /documents/check-duplicate` endpoint, and uploads
 non-duplicates via multipart form data. Replaced in-memory `BytesIO` buffering
 with `SpooledTemporaryFile` (configurable 10 MB threshold) so large uploads
 spill to disk instead of consuming memory. Added configurable
-`OPENCASE_S3_MAX_UPLOAD_BYTES` and `OPENCASE_S3_SPOOL_THRESHOLD_BYTES`
+`GIDEON_S3_MAX_UPLOAD_BYTES` and `GIDEON_S3_SPOOL_THRESHOLD_BYTES`
 settings with a model validator ensuring spool threshold doesn't exceed max
 upload size.
 
 **Extraction and ingestion config:** Added `ExtractionSettings`
-(OPENCASE_EXTRACTION_ prefix) for Tika/OCR pipeline configuration and
-`IngestionSettings` (OPENCASE_INGESTION_ prefix) for configurable document
+(GIDEON_EXTRACTION_ prefix) for Tika/OCR pipeline configuration and
+`IngestionSettings` (GIDEON_INGESTION_ prefix) for configurable document
 type allowlists. Allowed MIME types and file extensions are now loaded from
 an optional flat file, replacing hardcoded constants. The CLI's `bulk-ingest`
 fetches allowed extensions from the API at runtime so the server is the single
 source of truth.
 
-**SDK refactor:** Renamed `OpenCaseClient` → `Client` and introduced
-`opencase.Session` — a context manager that automates the login/logout
+**SDK refactor:** Renamed `GideonClient` → `Client` and introduced
+`gideon.Session` — a context manager that automates the login/logout
 lifecycle and scrubs credentials from memory after authentication. Code review
 pushed credential scrubbing into a `finally` block so email/password are
 cleared even when `login()` raises.

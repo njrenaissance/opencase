@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Quick semantic search against the OpenCase Qdrant vector store.
+"""Quick semantic search against the Gideon Qdrant vector store.
 
 Runs inside the FastAPI container so it can reach Ollama and Qdrant
 on the Docker network. Embeds a query, searches Qdrant, then pulls
 chunk text from MinIO.
 
 Usage (from repo root):
-    docker exec opencase-fastapi-1 python /app/scripts/search_qdrant.py "your query here"
+    docker exec gideon-fastapi-1 python /app/scripts/search_qdrant.py "your query here"
 
 Or mount and run:
-    docker exec opencase-fastapi-1 python scripts/search_qdrant.py "Explain the purpose of OpenCase"
+    docker exec gideon-fastapi-1 python scripts/search_qdrant.py "Explain the purpose of Gideon"
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ from minio import Minio  # type: ignore[import-untyped]
 
 OLLAMA_URL = "http://ollama:11434"
 QDRANT_URL = "http://qdrant:6333"
-COLLECTION = "opencase"
+COLLECTION = "gideon"
 MINIO_ENDPOINT = "minio:9000"
-MINIO_ACCESS_KEY = "opencase"
+MINIO_ACCESS_KEY = "gideon"
 MINIO_SECRET_KEY = "changeme"
-MINIO_BUCKET = "opencase"
+MINIO_BUCKET = "gideon"
 EMBEDDING_MODEL = "nomic-embed-text"
 TOP_K = 3
 

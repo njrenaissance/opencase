@@ -1,4 +1,4 @@
-"""Token persistence — store/load JWT tokens to ``~/.opencase/tokens.json``."""
+"""Token persistence — store/load JWT tokens to ``~/.gideon/tokens.json``."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ import stat
 import sys
 from pathlib import Path
 
-from opencase_cli.config import opencase_dir
+from gideon_cli.config import gideon_dir
 
 
 def _tokens_path() -> Path:
     """Return the path to the stored tokens file."""
-    return opencase_dir() / "tokens.json"
+    return gideon_dir() / "tokens.json"
 
 
 def save_tokens(access_token: str, refresh_token: str) -> None:

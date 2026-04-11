@@ -41,8 +41,8 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Create non-root user
-RUN groupadd --gid 1000 opencase \
-    && useradd --uid 1000 --gid opencase --shell /bin/bash opencase
+RUN groupadd --gid 1000 gideon \
+    && useradd --uid 1000 --gid gideon --shell /bin/bash gideon
 
 # Copy virtual environment (shared is installed as a wheel, no source needed)
 COPY --from=builder /app/.venv /app/.venv
@@ -55,17 +55,17 @@ COPY --from=builder /app/backend/scripts /app/scripts
 COPY backend/docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Copy editable system prompt (overridable via OPENCASE_CHATBOT_SYSTEM_PROMPT_FILE)
+# Copy editable system prompt (overridable via GIDEON_CHATBOT_SYSTEM_PROMPT_FILE)
 COPY backend/SYSTEM_PROMPT.md /app/SYSTEM_PROMPT.md
 
 # Put venv on PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Create celery schedule directory (used by celery-beat --schedule flag)
-RUN mkdir -p /tmp/celery && chown opencase:opencase /tmp/celery
+RUN mkdir -p /tmp/celery && chown gideon:gideon /tmp/celery
 
 # Switch to non-root user
-USER opencase
+USER gideon
 
 EXPOSE 8000
 

@@ -73,7 +73,7 @@ async def _update_ingestion_status(document_id: str, status: IngestionStatus) ->
         await engine.dispose()
 
 
-@shared_task(name="opencase.ingest_document")  # type: ignore[untyped-decorator]
+@shared_task(name="gideon.ingest_document")  # type: ignore[untyped-decorator]
 def ingest_document(document_id: str, s3_key: str) -> dict[str, object]:
     """Ingest a document — extract, chunk, embed, and upsert to Qdrant.
 

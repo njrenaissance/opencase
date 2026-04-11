@@ -50,7 +50,7 @@ jobs:
         working-directory: sdk
         run: |
           uv run pytest \
-            --cov=opencase \
+            --cov=gideon \
             --cov-report=term-missing \
             --cov-report=json:coverage.json \
             -v
@@ -59,7 +59,7 @@ jobs:
         working-directory: cli
         run: |
           uv run pytest \
-            --cov=opencase_cli \
+            --cov=gideon_cli \
             --cov-report=term-missing \
             --cov-report=json:coverage.json \
             -v

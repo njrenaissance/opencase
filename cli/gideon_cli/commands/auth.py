@@ -7,9 +7,9 @@ from typing import Annotated
 import typer
 from shared.models.auth import MfaRequiredResponse
 
-from opencase_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
-from opencase_cli.output import handle_errors, print_json, print_model, print_success
-from opencase_cli.tokens import clear_tokens, save_tokens
+from gideon_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
+from gideon_cli.output import handle_errors, print_json, print_model, print_success
+from gideon_cli.tokens import clear_tokens, save_tokens
 
 
 def login(

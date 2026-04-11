@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typer
 
-from opencase_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
-from opencase_cli.output import handle_errors, print_model
+from gideon_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
+from gideon_cli.output import handle_errors, print_model
 
 app = typer.Typer(help="Firm information.", no_args_is_help=True)
 

@@ -35,11 +35,11 @@ class TestTikaLive:
         host, port = tika_service
         svc = _make_service(host, port)
         result = await svc.extract_text(
-            b"Hello from OpenCase integration test",
+            b"Hello from Gideon integration test",
             "test.txt",
             "text/plain",
         )
-        assert "Hello from OpenCase" in result.text
+        assert "Hello from Gideon" in result.text
         assert result.content_type  # Tika should detect a type
         assert result.ocr_applied is False
 
@@ -49,7 +49,7 @@ class TestTikaLive:
         host, port = tika_service
         svc = _make_service(host, port)
 
-        # Minimal PDF containing the text "OpenCase Test"
+        # Minimal PDF containing the text "Gideon Test"
         pdf_bytes = (
             b"%PDF-1.0\n"
             b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
@@ -57,7 +57,7 @@ class TestTikaLive:
             b"3 0 obj<</Type/Page/MediaBox[0 0 612 792]"
             b"/Contents 4 0 R/Parent 2 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj\n"
             b"4 0 obj<</Length 44>>stream\n"
-            b"BT /F1 12 Tf 100 700 Td (OpenCase Test) Tj ET\n"
+            b"BT /F1 12 Tf 100 700 Td (Gideon Test) Tj ET\n"
             b"endstream\nendobj\n"
             b"5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj\n"
             b"xref\n0 6\n"
@@ -72,5 +72,5 @@ class TestTikaLive:
         )
 
         result = await svc.extract_text(pdf_bytes, "test.pdf", "application/pdf")
-        assert "OpenCase Test" in result.text
+        assert "Gideon Test" in result.text
         assert "pdf" in result.content_type.lower()

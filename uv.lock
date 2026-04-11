@@ -9,10 +9,10 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "opencase",
-    "opencase-cli",
-    "opencase-sdk",
-    "opencase-shared",
+    "gideon",
+    "gideon-cli",
+    "gideon-sdk",
+    "gideon-shared",
 ]
 
 [[package]]
@@ -1000,6 +1000,219 @@ sdist = { url = "https://files.pythonhosted.org/packages/f3/d8/7a28537efd7638448
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f8/fc/b86c22ad3b18d8324a9d6fe5a3b55403291d2bf7572ba6a16efa5aa88059/gherkin_official-29.0.0-py3-none-any.whl", hash = "sha256:26967b0d537a302119066742669e0e8b663e632769330be675457ae993e1d1bc", size = 37085, upload-time = "2024-08-12T09:41:07.954Z" },
 ]
+
+[[package]]
+name = "gideon"
+version = "0.1.0"
+source = { editable = "backend" }
+dependencies = [
+    { name = "alembic" },
+    { name = "asyncpg" },
+    { name = "celery", extra = ["redis"] },
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "gideon-shared" },
+    { name = "langchain" },
+    { name = "langchain-community" },
+    { name = "langchain-ollama" },
+    { name = "langchain-text-splitters" },
+    { name = "minio" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-instrumentation-celery" },
+    { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "opentelemetry-instrumentation-sqlalchemy" },
+    { name = "opentelemetry-sdk" },
+    { name = "passlib", extra = ["bcrypt"] },
+    { name = "psycopg2-binary" },
+    { name = "pydantic", extra = ["email"] },
+    { name = "pydantic-settings" },
+    { name = "pyotp" },
+    { name = "python-jose", extra = ["cryptography"] },
+    { name = "python-multipart" },
+    { name = "qdrant-client" },
+    { name = "sqlalchemy" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "ruff" },
+    { name = "types-python-jose" },
+]
+monitoring = [
+    { name = "flower" },
+]
+test = [
+    { name = "factory-boy" },
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-bdd" },
+    { name = "pytest-cov" },
+    { name = "python-dotenv" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "factory-boy" },
+    { name = "hatch" },
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "psycopg2-binary" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-bdd" },
+    { name = "pytest-cov" },
+    { name = "pytest-docker" },
+    { name = "pytest-playwright" },
+    { name = "python-dotenv" },
+    { name = "ruff" },
+    { name = "types-python-jose" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.14" },
+    { name = "asyncpg", specifier = ">=0.30" },
+    { name = "celery", extras = ["redis"], specifier = ">=5.4" },
+    { name = "cryptography", specifier = ">=44" },
+    { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "flower", marker = "extra == 'monitoring'", specifier = ">=2.0" },
+    { name = "gideon-shared", editable = "shared" },
+    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28" },
+    { name = "langchain", specifier = ">=0.3" },
+    { name = "langchain-community", specifier = ">=0.3" },
+    { name = "langchain-ollama", specifier = ">=0.3" },
+    { name = "langchain-text-splitters", specifier = ">=0.3" },
+    { name = "minio", specifier = ">=7.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
+    { name = "opentelemetry-api", specifier = ">=1.29" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.29" },
+    { name = "opentelemetry-instrumentation-celery", specifier = ">=0.50b0" },
+    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.50b0" },
+    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.50b0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.29" },
+    { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.1" },
+    { name = "psycopg2-binary", specifier = ">=2.9" },
+    { name = "pydantic", extras = ["email"], specifier = ">=2.10" },
+    { name = "pydantic-settings", specifier = ">=2.7" },
+    { name = "pyotp", specifier = ">=2.9" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
+    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.25" },
+    { name = "pytest-bdd", marker = "extra == 'test'", specifier = ">=8.1" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
+    { name = "python-dotenv", marker = "extra == 'test'", specifier = ">=1.0" },
+    { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3" },
+    { name = "python-multipart", specifier = ">=0.0.18" },
+    { name = "qdrant-client", specifier = ">=1.13" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+    { name = "types-python-jose", marker = "extra == 'dev'", specifier = ">=3.3" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
+]
+provides-extras = ["monitoring", "dev", "test"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "factory-boy", specifier = ">=3.3" },
+    { name = "hatch", specifier = ">=1.16.5" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "mypy", specifier = ">=1.14" },
+    { name = "pre-commit", specifier = ">=4.1" },
+    { name = "psycopg2-binary", specifier = ">=2.9" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "pytest-asyncio", specifier = ">=0.25" },
+    { name = "pytest-bdd", specifier = ">=8.1" },
+    { name = "pytest-cov", specifier = ">=6.0" },
+    { name = "pytest-docker", specifier = ">=3.1" },
+    { name = "pytest-playwright", specifier = ">=0.7.2" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "ruff", specifier = ">=0.9" },
+    { name = "types-python-jose", specifier = ">=3.3" },
+]
+
+[[package]]
+name = "gideon-cli"
+version = "0.1.0"
+source = { editable = "cli" }
+dependencies = [
+    { name = "gideon-sdk" },
+    { name = "gideon-shared" },
+    { name = "rich" },
+    { name = "tomli-w" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gideon-sdk", editable = "sdk" },
+    { name = "gideon-shared", editable = "shared" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=13.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
+    { name = "tomli-w", specifier = ">=1.0" },
+    { name = "typer", specifier = ">=0.15" },
+]
+provides-extras = ["dev", "test"]
+
+[[package]]
+name = "gideon-sdk"
+version = "0.1.0"
+source = { editable = "sdk" }
+dependencies = [
+    { name = "gideon-shared" },
+    { name = "httpx" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "ruff" },
+]
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "gideon-shared", editable = "shared" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
+]
+provides-extras = ["dev", "test"]
+
+[[package]]
+name = "gideon-shared"
+version = "0.1.0"
+source = { editable = "shared" }
+dependencies = [
+    { name = "pydantic", extra = ["email"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", extras = ["email"], specifier = ">=2.10" }]
 
 [[package]]
 name = "googleapis-common-protos"
@@ -2003,219 +2216,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/9d/5a/652dac4b7affc2b37
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/4f/4a617ee93d8208d2bcf26b2d8b9402ceaed03e3853c754940e2290fed063/ollama-0.6.1-py3-none-any.whl", hash = "sha256:fc4c984b345735c5486faeee67d8a265214a31cbb828167782dc642ce0a2bf8c", size = 14354, upload-time = "2025-11-13T23:02:16.292Z" },
 ]
-
-[[package]]
-name = "opencase"
-version = "0.1.0"
-source = { editable = "backend" }
-dependencies = [
-    { name = "alembic" },
-    { name = "asyncpg" },
-    { name = "celery", extra = ["redis"] },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "langchain" },
-    { name = "langchain-community" },
-    { name = "langchain-ollama" },
-    { name = "langchain-text-splitters" },
-    { name = "minio" },
-    { name = "opencase-shared" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-exporter-otlp-proto-http" },
-    { name = "opentelemetry-instrumentation-celery" },
-    { name = "opentelemetry-instrumentation-fastapi" },
-    { name = "opentelemetry-instrumentation-sqlalchemy" },
-    { name = "opentelemetry-sdk" },
-    { name = "passlib", extra = ["bcrypt"] },
-    { name = "psycopg2-binary" },
-    { name = "pydantic", extra = ["email"] },
-    { name = "pydantic-settings" },
-    { name = "pyotp" },
-    { name = "python-jose", extra = ["cryptography"] },
-    { name = "python-multipart" },
-    { name = "qdrant-client" },
-    { name = "sqlalchemy" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "ruff" },
-    { name = "types-python-jose" },
-]
-monitoring = [
-    { name = "flower" },
-]
-test = [
-    { name = "factory-boy" },
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-bdd" },
-    { name = "pytest-cov" },
-    { name = "python-dotenv" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "factory-boy" },
-    { name = "hatch" },
-    { name = "httpx" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "psycopg2-binary" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-bdd" },
-    { name = "pytest-cov" },
-    { name = "pytest-docker" },
-    { name = "pytest-playwright" },
-    { name = "python-dotenv" },
-    { name = "ruff" },
-    { name = "types-python-jose" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.14" },
-    { name = "asyncpg", specifier = ">=0.30" },
-    { name = "celery", extras = ["redis"], specifier = ">=5.4" },
-    { name = "cryptography", specifier = ">=44" },
-    { name = "factory-boy", marker = "extra == 'test'", specifier = ">=3.3" },
-    { name = "fastapi", specifier = ">=0.115" },
-    { name = "flower", marker = "extra == 'monitoring'", specifier = ">=2.0" },
-    { name = "httpx", marker = "extra == 'test'", specifier = ">=0.28" },
-    { name = "langchain", specifier = ">=0.3" },
-    { name = "langchain-community", specifier = ">=0.3" },
-    { name = "langchain-ollama", specifier = ">=0.3" },
-    { name = "langchain-text-splitters", specifier = ">=0.3" },
-    { name = "minio", specifier = ">=7.0" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
-    { name = "opencase-shared", editable = "shared" },
-    { name = "opentelemetry-api", specifier = ">=1.29" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.29" },
-    { name = "opentelemetry-instrumentation-celery", specifier = ">=0.50b0" },
-    { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.50b0" },
-    { name = "opentelemetry-instrumentation-sqlalchemy", specifier = ">=0.50b0" },
-    { name = "opentelemetry-sdk", specifier = ">=1.29" },
-    { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.1" },
-    { name = "psycopg2-binary", specifier = ">=2.9" },
-    { name = "pydantic", extras = ["email"], specifier = ">=2.10" },
-    { name = "pydantic-settings", specifier = ">=2.7" },
-    { name = "pyotp", specifier = ">=2.9" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
-    { name = "pytest-asyncio", marker = "extra == 'test'", specifier = ">=0.25" },
-    { name = "pytest-bdd", marker = "extra == 'test'", specifier = ">=8.1" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
-    { name = "python-dotenv", marker = "extra == 'test'", specifier = ">=1.0" },
-    { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3" },
-    { name = "python-multipart", specifier = ">=0.0.18" },
-    { name = "qdrant-client", specifier = ">=1.13" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
-    { name = "sqlalchemy", specifier = ">=2.0" },
-    { name = "types-python-jose", marker = "extra == 'dev'", specifier = ">=3.3" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
-]
-provides-extras = ["monitoring", "dev", "test"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "factory-boy", specifier = ">=3.3" },
-    { name = "hatch", specifier = ">=1.16.5" },
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "mypy", specifier = ">=1.14" },
-    { name = "pre-commit", specifier = ">=4.1" },
-    { name = "psycopg2-binary", specifier = ">=2.9" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "pytest-asyncio", specifier = ">=0.25" },
-    { name = "pytest-bdd", specifier = ">=8.1" },
-    { name = "pytest-cov", specifier = ">=6.0" },
-    { name = "pytest-docker", specifier = ">=3.1" },
-    { name = "pytest-playwright", specifier = ">=0.7.2" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "ruff", specifier = ">=0.9" },
-    { name = "types-python-jose", specifier = ">=3.3" },
-]
-
-[[package]]
-name = "opencase-cli"
-version = "0.1.0"
-source = { editable = "cli" }
-dependencies = [
-    { name = "opencase-sdk" },
-    { name = "opencase-shared" },
-    { name = "rich" },
-    { name = "tomli-w" },
-    { name = "typer" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "ruff" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
-    { name = "opencase-sdk", editable = "sdk" },
-    { name = "opencase-shared", editable = "shared" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=13.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
-    { name = "tomli-w", specifier = ">=1.0" },
-    { name = "typer", specifier = ">=0.15" },
-]
-provides-extras = ["dev", "test"]
-
-[[package]]
-name = "opencase-sdk"
-version = "0.1.0"
-source = { editable = "sdk" }
-dependencies = [
-    { name = "httpx" },
-    { name = "opencase-shared" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "ruff" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
-    { name = "opencase-shared", editable = "shared" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9" },
-]
-provides-extras = ["dev", "test"]
-
-[[package]]
-name = "opencase-shared"
-version = "0.1.0"
-source = { editable = "shared" }
-dependencies = [
-    { name = "pydantic", extra = ["email"] },
-]
-
-[package.metadata]
-requires-dist = [{ name = "pydantic", extras = ["email"], specifier = ">=2.10" }]
 
 [[package]]
 name = "opentelemetry-api"

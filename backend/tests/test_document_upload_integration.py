@@ -306,7 +306,7 @@ class TestDocumentS3Metadata:
         host, port = minio_service
         mc = Minio(
             f"{host}:{port}",
-            access_key="opencase",
+            access_key="gideon",
             secret_key="changeme",  # noqa: S106
             secure=False,
         )
@@ -315,7 +315,7 @@ class TestDocumentS3Metadata:
         doc_id = doc["id"]
         key = f"{firm_id}/{matter_id}/{doc_id}/original.pdf"
 
-        stat = mc.stat_object("opencase", key)
+        stat = mc.stat_object("gideon", key)
         meta = stat.metadata
 
         # MinIO lowercases and adds 'x-amz-meta-' prefix

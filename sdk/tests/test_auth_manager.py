@@ -1,4 +1,4 @@
-"""Unit tests for opencase._auth.AuthManager."""
+"""Unit tests for gideon._auth.AuthManager."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import time
 import httpx
 import pytest
 
-from opencase._auth import AuthManager
-from opencase.exceptions import AuthenticationError
+from gideon._auth import AuthManager
+from gideon.exceptions import AuthenticationError
 from tests.conftest import make_jwt, mock_http
 
 # ---------------------------------------------------------------------------

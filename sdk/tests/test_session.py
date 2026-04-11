@@ -1,4 +1,4 @@
-"""Unit tests for opencase.session.Session context manager."""
+"""Unit tests for gideon.session.Session context manager."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ import time
 import httpx
 import pytest
 
-from opencase import Client, Session
-from opencase.exceptions import AuthenticationError
+from gideon import Client, Session
+from gideon.exceptions import AuthenticationError
 from tests.conftest import make_jwt
 
 # ---------------------------------------------------------------------------
