@@ -30,7 +30,7 @@ class TestVectorPayload:
     def test_required_metadata_keys_are_subset_of_payload(self) -> None:
         payload_keys = set(VectorPayload.__annotations__)
         # Required metadata keys + per-chunk keys = full payload
-        per_chunk_keys = {"document_id", "chunk_index"}
+        per_chunk_keys = {"document_id", "chunk_index", "text"}
         optional_keys = {"bates_number", "page_number"}
         assert REQUIRED_METADATA_KEYS | per_chunk_keys | optional_keys == payload_keys
 

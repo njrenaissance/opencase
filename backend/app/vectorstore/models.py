@@ -16,6 +16,10 @@ class VectorPayload(TypedDict):
 
     Every vector stored in Qdrant must carry these fields so that
     ``build_qdrant_filter()`` can enforce RBAC on every query.
+
+    ``text`` stores the raw chunk text so that the RAG pipeline can
+    build context blocks directly from search results without a
+    separate MinIO fetch.
     """
 
     firm_id: str
@@ -27,6 +31,7 @@ class VectorPayload(TypedDict):
     source: str
     bates_number: str | None
     page_number: int | None
+    text: str
 
 
 # Keys that must be present in payload_metadata passed to the task.
