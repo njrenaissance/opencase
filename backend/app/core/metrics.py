@@ -261,3 +261,19 @@ vectorstore_delete_duration_seconds = meter.create_histogram(
     description="Vector delete latency in seconds",
     unit="s",
 )
+
+vectorstore_search_completed = meter.create_counter(
+    "gideon.vectorstore.search.completed",
+    description="Successful vector similarity search operations",  # attrs: collection
+)
+
+vectorstore_search_failed = meter.create_counter(
+    "gideon.vectorstore.search.failed",
+    description="Failed vector similarity search operations",  # attrs: collection
+)
+
+vectorstore_search_duration_seconds = meter.create_histogram(
+    "gideon.vectorstore.search.duration_seconds",
+    description="Vector search latency in seconds",
+    unit="s",
+)

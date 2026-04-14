@@ -15,6 +15,9 @@ from app.core.metrics import (
     vectorstore_delete_completed,
     vectorstore_delete_duration_seconds,
     vectorstore_delete_failed,
+    vectorstore_search_completed,
+    vectorstore_search_duration_seconds,
+    vectorstore_search_failed,
     vectorstore_upsert_completed,
     vectorstore_upsert_duration_seconds,
     vectorstore_upsert_failed,
@@ -230,6 +233,74 @@ class QdrantVectorStore:
                 )
                 raise
 
+    async def search(
+        self,
+        query_vector: list[float],
+        qdrant_filter: models.Filter,
+        limit: int,
+    ) -> list[models.ScoredPoint]:
+        """Similarity search with mandatory RBAC filter applied.
+
+        Args:
+            query_vector: Embedded query vector.
+            qdrant_filter: Pre-built filter from ``build_qdrant_filter()``
+                converted to ``qdrant_client.models.Filter``. Never
+                bypass or accept a client-supplied filter here.
+            limit: Maximum number of results to return.
+
+        Returns:
+            Scored points sorted by descending similarity, with full
+            payload (including ``text``) attached.
+        """
+        start_time = time.monotonic()
+
+        with tracer.start_as_current_span(
+            "vectorstore.search",
+            attributes={
+                "vectorstore.collection": self._collection,
+                "vectorstore.limit": limit,
+            },
+        ) as span:
+            try:
+                response = await self._client.query_points(
+                    collection_name=self._collection,
+                    query=query_vector,
+                    query_filter=qdrant_filter,
+                    limit=limit,
+                    with_payload=True,
+                )
+                results = response.points
+
+                span.set_attribute("vectorstore.result_count", len(results))
+
+                elapsed = time.monotonic() - start_time
+                attrs = {"collection": self._collection}
+                vectorstore_search_completed.add(1, attrs)
+                vectorstore_search_duration_seconds.record(elapsed, attrs)
+
+                logger.debug(
+                    "Search returned %d results from collection %r",
+                    len(results),
+                    self._collection,
+                )
+                return results
+
+            except Exception as exc:
+                elapsed = time.monotonic() - start_time
+                span.set_status(StatusCode.ERROR, str(exc))
+                span.record_exception(exc)
+                vectorstore_search_failed.add(
+                    1,
+                    {
+                        "collection": self._collection,
+                        "error_type": type(exc).__name__,
+                    },
+                )
+                vectorstore_search_duration_seconds.record(
+                    elapsed, {"collection": self._collection}
+                )
+                raise
+
     async def close(self) -> None:
         """Close the underlying Qdrant client connection."""
         await self._client.close()
@@ -250,6 +321,7 @@ class QdrantVectorStore:
             "source": str(payload_metadata["source"]),
             "bates_number": payload_metadata.get("bates_number"),  # type: ignore[typeddict-item]
             "page_number": payload_metadata.get("page_number"),  # type: ignore[typeddict-item]
+            "text": emb.text,
         }
 
         return models.PointStruct(
