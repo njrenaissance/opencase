@@ -380,6 +380,8 @@ def _re_ingest_response_json(doc_id: str | None = None) -> dict:
 
 
 def test_re_ingest_document() -> None:
+    from shared.models.enums import IngestionStatus
+
     doc_id = str(uuid.uuid4())
     payload = _re_ingest_response_json(doc_id)
 
@@ -394,4 +396,4 @@ def test_re_ingest_document() -> None:
 
     assert isinstance(result, ReIngestResponse)
     assert str(result.document_id) == doc_id
-    assert result.ingestion_status == "pending"
+    assert result.ingestion_status == IngestionStatus.pending

@@ -265,8 +265,21 @@ class Client:
 
     # -- documents -----------------------------------------------------------
 
-    def list_documents(self) -> list[DocumentSummary]:
-        resp = self._request("GET", "/documents/")
+    def list_documents(
+        self,
+        *,
+        ingestion_status: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> list[DocumentSummary]:
+        """List documents accessible to the current user.
+
+        Supports pagination and filtering by ingestion status.
+        """
+        params: dict[str, Any] = {"offset": offset, "limit": limit}
+        if ingestion_status is not None:
+            params["ingestion_status"] = ingestion_status
+        resp = self._request("GET", "/documents/", params=params)
         return [DocumentSummary.model_validate(item) for item in resp.json()]
 
     def get_document(self, document_id: str) -> DocumentResponse:

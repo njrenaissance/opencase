@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
+from uuid import UUID
 
 import typer
 from gideon.exceptions import GideonError
@@ -262,6 +263,14 @@ def re_ingest(
         print_error("Specify DOCUMENT_ID or --all-failed, not both.")
         raise SystemExit(1)
 
+    if document_id:
+        # Validate UUID format
+        try:
+            UUID(document_id)
+        except ValueError:
+            print_error(f"Invalid document ID: '{document_id}' is not a valid UUID.")
+            raise SystemExit(1) from None
+
     client = get_client(base_url, timeout, authenticated=True)
 
     with handle_errors(), client:
@@ -270,24 +279,34 @@ def re_ingest(
             print_model(result, json_mode=json_output)
             return
 
-        # --all-failed path
-        docs = [
-            d
-            for d in client.list_documents()
-            if d.ingestion_status == IngestionStatus.failed
-        ]
-        if not docs:
+        # --all-failed path: fetch all failed documents with pagination
+        all_docs: list[Any] = []
+        offset = 0
+        limit = 200  # Max per-page limit from backend
+
+        while True:
+            page = client.list_documents(
+                ingestion_status=IngestionStatus.failed.value,
+                offset=offset,
+                limit=limit,
+            )
+            all_docs.extend(page)
+            if len(page) < limit:
+                break
+            offset += limit
+
+        if not all_docs:
             if not json_output:
                 console.print("[dim]No failed documents found.[/dim]")
             else:
-                console.print("[]", highlight=False)
+                console.print(json.dumps([]), highlight=False)
             return
 
         succeeded = 0
         failed_count = 0
         results: list[dict[str, str]] = []
 
-        for doc in docs:
+        for doc in all_docs:
             try:
                 client.re_ingest_document(str(doc.id))
                 succeeded += 1
@@ -295,7 +314,7 @@ def re_ingest(
                     results.append({"document_id": str(doc.id), "status": "queued"})
                 else:
                     console.print(f"  [green]OK[/green]    {doc.filename} ({doc.id})")
-            except GideonError as exc:
+            except Exception as exc:
                 failed_count += 1
                 detail = str(exc)
                 if json_output:
@@ -315,7 +334,7 @@ def re_ingest(
             console.print(
                 f"\n[bold]{succeeded}[/bold] queued, "
                 f"[bold]{failed_count}[/bold] failed "
-                f"out of [bold]{len(docs)}[/bold] total."
+                f"out of [bold]{len(all_docs)}[/bold] total."
             )
 
         if failed_count > 0:

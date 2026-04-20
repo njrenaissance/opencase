@@ -340,13 +340,8 @@ class TestReIngest:
                 "ingestion_status": IngestionStatus.failed,
             }
         )
-        indexed_doc = DocumentSummary(
-            **{
-                **DOCUMENT_SUMMARY.model_dump(),
-                "ingestion_status": IngestionStatus.indexed,
-            }
-        )
-        mock_client.list_documents.return_value = [failed_doc, indexed_doc]
+        # Simulate pagination: first call returns one doc, second call returns empty
+        mock_client.list_documents.side_effect = [[failed_doc], []]
         mock_client.re_ingest_document.return_value = ReIngestResponse(
             document_id=str(failed_doc.id),
             ingestion_status=IngestionStatus.pending,
@@ -361,6 +356,22 @@ class TestReIngest:
 
         assert result.exit_code == 0
         mock_client.re_ingest_document.assert_called_once_with(str(failed_doc.id))
+
+    def test_re_ingest_invalid_uuid(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "not-a-uuid"],
+            )
+
+        assert result.exit_code == 1
+        assert "not a valid UUID" in result.output
 
     def test_re_ingest_no_args_errors(
         self,
@@ -387,7 +398,93 @@ class TestReIngest:
         with patch(_PATCH_CLIENT, return_value=mock_client):
             result = runner.invoke(
                 app,
-                ["document", "re-ingest", "some-id", "--all-failed"],
+                [
+                    "document",
+                    "re-ingest",
+                    "00000000-0000-0000-0000-000000000040",
+                    "--all-failed",
+                ],
             )
 
         assert result.exit_code == 1
+
+    def test_re_ingest_all_failed_none_found(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        # Simulate server-side filtering: no failed documents
+        # First call returns empty list (no failed docs), so no second pagination call
+        mock_client.list_documents.return_value = []
+
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "--all-failed"],
+            )
+
+        assert result.exit_code == 0
+        assert "No failed documents found" in result.output
+
+    def test_re_ingest_all_failed_none_found_json(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        # Simulate pagination: first call returns empty list
+        mock_client.list_documents.return_value = []
+
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "--all-failed", "--json"],
+            )
+
+        assert result.exit_code == 0
+        assert json.loads(result.output) == []
+
+    def test_re_ingest_all_failed_partial_failure(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        failed_doc_1 = DocumentSummary(
+            **{
+                **DOCUMENT_SUMMARY.model_dump(),
+                "id": "00000000-0000-0000-0000-000000000041",
+                "ingestion_status": IngestionStatus.failed,
+            }
+        )
+        failed_doc_2 = DocumentSummary(
+            **{
+                **DOCUMENT_SUMMARY.model_dump(),
+                "id": "00000000-0000-0000-0000-000000000042",
+                "ingestion_status": IngestionStatus.failed,
+            }
+        )
+        # Simulate pagination: first call returns two docs, second call returns empty
+        mock_client.list_documents.side_effect = [[failed_doc_1, failed_doc_2], []]
+        mock_client.re_ingest_document.side_effect = [
+            ReIngestResponse(
+                document_id=str(failed_doc_1.id),
+                ingestion_status=IngestionStatus.pending,
+                message="Re-ingestion queued.",
+            ),
+            GideonError("Server error", status_code=500),
+        ]
+
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "--all-failed"],
+            )
+
+        assert result.exit_code == 1
+        assert "1" in result.output and "queued" in result.output
+        assert "1" in result.output and "failed" in result.output
