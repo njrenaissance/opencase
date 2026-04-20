@@ -1,0 +1,33 @@
+# docker-compose.override.yml.example
+#
+# Use this override to opt out of the external Ollama models volume.
+# Models will be re-downloaded on each stack restart (slower, but simpler).
+#
+# Usage:
+#   cp infrastructure/docker-compose.override.yml.example infrastructure/docker-compose.override.yml
+#   docker compose -f infrastructure/docker-compose.yml up
+#
+# Docker Compose will automatically apply the override and use a local volume
+# that is deleted when you run `docker compose down -v`.
+
+version: "3.9"
+
+volumes:
+  postgres-data:
+    # Override the external volume to use a local (ephemeral) volume instead.
+    # This is useful for:
+    # - CI/CD runners where persistence across runs isn't needed
+    # - Local development where you want a completely clean state
+    # - Test runs with fresh database
+    external: false
+    name: postgres-data
+  qdrant-data:
+    # Similarly, override Qdrant to use an ephemeral volume.
+    # Useful if you want to reingest documents from scratch on each restart.
+    external: false
+    name: qdrant-data
+  ollama-models:
+    # Override Ollama to use an ephemeral volume.
+    # Models will be re-downloaded on each restart (slower startup).
+    external: false
+    name: ollama-models
