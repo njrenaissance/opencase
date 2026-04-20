@@ -82,7 +82,13 @@ full details.
    # Edit .env — replace every CHANGE_ME value
    ```
 
-2. Start all services:
+2. Create the persistent Ollama model cache volume (one-time setup):
+
+   ```bash
+   docker volume create gideon-ollama-models
+   ```
+
+3. Start all services:
 
    ```bash
    docker compose -f infrastructure/docker-compose.yml --env-file .env up -d

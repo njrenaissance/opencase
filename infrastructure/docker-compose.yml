@@ -476,6 +476,8 @@ volumes:
   qdrant-data:
   redis-data:
   ollama-models:
+    external: true
+    name: gideon-ollama-models
   minio-data:
   celery-tmp:
   grafana-data:

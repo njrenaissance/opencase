@@ -41,6 +41,14 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env down
 docker compose -f infrastructure/docker-compose.yml --env-file .env down -v
 ```
 
+Before first run, create the persistent Ollama model cache volume:
+
+```bash
+docker volume create gideon-ollama-models
+```
+
+This volume is declared external and is never deleted by `docker compose down -v`.
+
 Copy `.env.example` to `.env` and fill in the required values before first run.
 At minimum, set `GIDEON_AUTH_SECRET_KEY`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `GIDEON_S3_ACCESS_KEY`, and
@@ -359,7 +367,7 @@ Used as the Celery broker. Not exposed outside the Docker network.
 | `postgres-data` | postgres | PostgreSQL data directory |
 | `qdrant-data` | qdrant | Qdrant vector index and storage |
 | `redis-data` | redis | Redis AOF persistence |
-| `ollama-models` | ollama | Downloaded LLM and embedding models |
+| `ollama-models` | ollama | Downloaded LLM and embedding models — **external volume** (`gideon-ollama-models`), preserved across `down -v` |
 | `minio-data` | minio | Object store buckets and objects |
 | `celery-tmp` | celery-worker | Ephemeral temp files during ingestion |
 | `grafana-data` | grafana | Grafana dashboards, Tempo traces, Prometheus metrics, Loki logs |
