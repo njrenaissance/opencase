@@ -89,10 +89,18 @@ _tracer_provider: TracerProvider | None = None
 _log_provider: "LoggerProvider | None" = None
 _otel_resource: "Resource | None" = None
 
-# Global meter for creating metrics instruments across the application.
-meter = metrics.get_meter("gideon")
+def get_meter() -> metrics.Meter:
+    """Get the global meter, initializing on first call after setup_telemetry()."""
+    global _meter  # noqa: PLW0603
+    if _meter is None:
+        _meter = metrics.get_meter("gideon")
+    return _meter
 
 _METRIC_EXPORT_INTERVAL_MS = 60000
+
+# Lazily initialized after setup_telemetry() sets the MeterProvider.
+# Accessing meter before setup_telemetry() returns None.
+_meter: "metrics.Meter | None" = None
 
 
 def _create_span_exporter(settings: Settings) -> SpanExporter:
