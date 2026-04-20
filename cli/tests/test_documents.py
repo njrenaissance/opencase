@@ -8,12 +8,17 @@ from typing import Any
 from unittest.mock import patch
 
 from gideon.exceptions import GideonError
-from shared.models.document import DuplicateCheckResponse
+from shared.models.document import (
+    DocumentSummary,
+    DuplicateCheckResponse,
+    ReIngestResponse,
+)
+from shared.models.enums import IngestionStatus
 from typer.testing import CliRunner
 
 from gideon_cli.main import app
 
-from .conftest import DOCUMENT_RESPONSE
+from .conftest import DOCUMENT_RESPONSE, DOCUMENT_SUMMARY
 
 _PATCH_CLIENT = "gideon_cli.commands.documents.get_client"
 _PATCH_HASH = "gideon_cli.commands.documents.hash_file"
@@ -290,3 +295,99 @@ class TestBulkIngest:
         statuses = {r["status"] for r in data}
         assert "uploaded" in statuses
         assert "skipped" in statuses
+
+
+# ---------------------------------------------------------------------------
+# document re-ingest
+# ---------------------------------------------------------------------------
+
+
+class TestReIngest:
+    def test_re_ingest_single_document(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        doc_id = "00000000-0000-0000-0000-000000000040"
+        re_ingest_response = ReIngestResponse(
+            document_id=doc_id,
+            ingestion_status=IngestionStatus.pending,
+            message="Re-ingestion queued.",
+        )
+        mock_client.re_ingest_document.return_value = re_ingest_response
+
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", doc_id],
+            )
+
+        assert result.exit_code == 0
+        mock_client.re_ingest_document.assert_called_once_with(doc_id)
+
+    def test_re_ingest_all_failed(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        failed_doc = DocumentSummary(
+            **{
+                **DOCUMENT_SUMMARY.model_dump(),
+                "ingestion_status": IngestionStatus.failed,
+            }
+        )
+        indexed_doc = DocumentSummary(
+            **{
+                **DOCUMENT_SUMMARY.model_dump(),
+                "ingestion_status": IngestionStatus.indexed,
+            }
+        )
+        mock_client.list_documents.return_value = [failed_doc, indexed_doc]
+        mock_client.re_ingest_document.return_value = ReIngestResponse(
+            document_id=str(failed_doc.id),
+            ingestion_status=IngestionStatus.pending,
+            message="Re-ingestion queued.",
+        )
+
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "--all-failed"],
+            )
+
+        assert result.exit_code == 0
+        mock_client.re_ingest_document.assert_called_once_with(str(failed_doc.id))
+
+    def test_re_ingest_no_args_errors(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest"],
+            )
+
+        assert result.exit_code == 1
+
+    def test_re_ingest_both_args_errors(
+        self,
+        runner: CliRunner,
+        mock_client: Any,
+        tmp_gideon_dir: Path,
+        stored_tokens: tuple[str, str],
+    ) -> None:
+        with patch(_PATCH_CLIENT, return_value=mock_client):
+            result = runner.invoke(
+                app,
+                ["document", "re-ingest", "some-id", "--all-failed"],
+            )
+
+        assert result.exit_code == 1

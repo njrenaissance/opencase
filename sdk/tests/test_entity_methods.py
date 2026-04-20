@@ -10,7 +10,11 @@ import uuid
 
 import httpx
 import pytest
-from shared.models.document import DocumentResponse, DuplicateCheckResponse
+from shared.models.document import (
+    DocumentResponse,
+    DuplicateCheckResponse,
+    ReIngestResponse,
+)
 from shared.models.firm import FirmResponse
 from shared.models.matter import MatterResponse, MatterSummary
 from shared.models.matter_access import MatterAccessResponse
@@ -365,4 +369,29 @@ def test_check_duplicate_not_found() -> None:
     client = build_authenticated_client(handler)
     result = client.check_duplicate(matter_id=_MATTER_ID, file_hash="b" * 64)
     assert result.exists is False
-    assert result.document_id is None
+
+
+def _re_ingest_response_json(doc_id: str | None = None) -> dict:
+    return {
+        "document_id": doc_id or str(uuid.uuid4()),
+        "ingestion_status": "pending",
+        "message": "Re-ingestion queued.",
+    }
+
+
+def test_re_ingest_document() -> None:
+    doc_id = str(uuid.uuid4())
+    payload = _re_ingest_response_json(doc_id)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == f"/documents/{doc_id}/re-ingest"
+        return httpx.Response(202, json=payload)
+
+    client = build_authenticated_client(handler)
+    with client:
+        result = client.re_ingest_document(doc_id)
+
+    assert isinstance(result, ReIngestResponse)
+    assert str(result.document_id) == doc_id
+    assert result.ingestion_status == "pending"

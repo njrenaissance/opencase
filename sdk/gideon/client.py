@@ -19,6 +19,7 @@ from shared.models.document import (
     DocumentSummary,
     DuplicateCheckResponse,
     IngestionConfigResponse,
+    ReIngestResponse,
 )
 from shared.models.enums import Classification, DocumentSource, TaskState
 from shared.models.firm import FirmResponse
@@ -316,6 +317,11 @@ class Client:
             params={"matter_id": matter_id, "file_hash": file_hash},
         )
         return DuplicateCheckResponse.model_validate(resp.json())
+
+    def re_ingest_document(self, document_id: str) -> ReIngestResponse:
+        """Trigger re-ingestion of a failed document."""
+        resp = self._request("POST", f"/documents/{document_id}/re-ingest")
+        return ReIngestResponse.model_validate(resp.json())
 
     # -- prompts -------------------------------------------------------------
 

@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 from gideon.exceptions import GideonError
 from gideon.hashing import hash_file
-from shared.models.enums import Classification, DocumentSource
+from shared.models.enums import Classification, DocumentSource, IngestionStatus
 
 from gideon_cli.common import BaseUrlOption, JsonOption, TimeoutOption, get_client
 from gideon_cli.output import (
@@ -234,4 +234,89 @@ def bulk_ingest(
             )
 
         if failed > 0:
+            raise SystemExit(1)
+
+
+@app.command("re-ingest")
+def re_ingest(
+    document_id: Annotated[
+        str | None,
+        typer.Argument(help="Document UUID to re-ingest."),
+    ] = None,
+    all_failed: Annotated[
+        bool,
+        typer.Option(
+            "--all-failed",
+            help="Re-ingest all documents with failed status.",
+        ),
+    ] = False,
+    base_url: BaseUrlOption = None,
+    timeout: TimeoutOption = None,
+    json_output: JsonOption = False,
+) -> None:
+    """Re-ingest a failed document, or all failed documents."""
+    if not document_id and not all_failed:
+        print_error("Specify a DOCUMENT_ID or --all-failed.")
+        raise SystemExit(1)
+    if document_id and all_failed:
+        print_error("Specify DOCUMENT_ID or --all-failed, not both.")
+        raise SystemExit(1)
+
+    client = get_client(base_url, timeout, authenticated=True)
+
+    with handle_errors(), client:
+        if document_id:
+            result = client.re_ingest_document(document_id)
+            print_model(result, json_mode=json_output)
+            return
+
+        # --all-failed path
+        docs = [
+            d
+            for d in client.list_documents()
+            if d.ingestion_status == IngestionStatus.failed
+        ]
+        if not docs:
+            if not json_output:
+                console.print("[dim]No failed documents found.[/dim]")
+            else:
+                console.print("[]", highlight=False)
+            return
+
+        succeeded = 0
+        failed_count = 0
+        results: list[dict[str, str]] = []
+
+        for doc in docs:
+            try:
+                client.re_ingest_document(str(doc.id))
+                succeeded += 1
+                if json_output:
+                    results.append({"document_id": str(doc.id), "status": "queued"})
+                else:
+                    console.print(f"  [green]OK[/green]    {doc.filename} ({doc.id})")
+            except GideonError as exc:
+                failed_count += 1
+                detail = str(exc)
+                if json_output:
+                    results.append(
+                        {
+                            "document_id": str(doc.id),
+                            "status": "failed",
+                            "detail": detail,
+                        }
+                    )
+                else:
+                    print_error(f"  FAIL  {doc.filename}: {exc}")
+
+        if json_output:
+            console.print(json.dumps(results, indent=2), highlight=False)
+        else:
+            console.print(
+                f"\n[bold]{succeeded}[/bold] queued, "
+                f"[bold]{failed_count}[/bold] failed "
+                f"out of [bold]{len(docs)}[/bold] total."
+            )
+
+        if failed_count > 0:
             raise SystemExit(1)
