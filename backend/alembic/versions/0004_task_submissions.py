@@ -18,7 +18,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 _NOW = sa.text("now()")
-_PENDING = "PENDING"
+_PENDING = sa.text("'PENDING'")
 
 
 def upgrade() -> None:
@@ -54,4 +54,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass  # fix-forward — never roll back schema changes
+    raise NotImplementedError("fix-forward policy: downgrades are not supported")
