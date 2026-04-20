@@ -80,10 +80,12 @@ from app.core.config import Settings
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
+    from opentelemetry.sdk._logs import LoggerProvider
 
 logger = logging.getLogger(__name__)
 
 _tracer_provider: TracerProvider | None = None
+_log_provider: "LoggerProvider | None" = None
 
 # Global meter for creating metrics instruments across the application.
 meter = metrics.get_meter("gideon")
@@ -133,6 +135,8 @@ def _setup_log_exporter(settings: Settings, resource: Resource) -> None:
     Only activates when ``exporter=otlp``. Console mode relies on the
     existing ``logging.StreamHandler`` configured in ``logging.py``.
     """
+    global _log_provider  # noqa: PLW0603
+
     if settings.otel.exporter != "otlp":
         return
 
@@ -141,16 +145,17 @@ def _setup_log_exporter(settings: Settings, resource: Resource) -> None:
         OTLPLogExporter,
     )
     from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-    from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 
     endpoint = f"{settings.otel.endpoint}/v1/logs"
     logger.debug("Log exporter: otlp → %s", endpoint)
 
     log_provider = LoggerProvider(resource=resource)
     log_provider.add_log_record_processor(
-        SimpleLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
+        BatchLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
     )
     set_logger_provider(log_provider)
+    _log_provider = log_provider
 
     # Attach an OTel logging handler to the root logger so all app logs
     # are forwarded to the OTLP backend alongside stdout.
@@ -238,6 +243,62 @@ def configure_celery_instrumentation(settings: Settings) -> None:
     if not instrumentor.is_instrumented_by_opentelemetry:
         instrumentor.instrument()
         logger.debug("OTel instrumentor wired: Celery")
+
+
+def reattach_log_handler(settings: Settings) -> None:
+    """Re-attach the OTel log bridge in a forked worker process.
+
+    Called via worker_process_init signal after Celery forks a pool child.
+    The fork inherits the parent's logging handler chain, but the HTTP
+    connection pool inside OTLPLogExporter is invalid post-fork — the socket
+    is shared and breaks. This function removes stale OTel handlers, creates
+    a fresh LoggerProvider and exporter, and re-attaches the bridge.
+
+    Safe to call multiple times (idempotent).
+    """
+    if not settings.otel.enabled or settings.otel.exporter != "otlp":
+        return
+
+    from opentelemetry._logs import set_logger_provider
+    from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+        OTLPLogExporter,
+    )
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+    from opentelemetry.sdk.resources import Resource
+
+    global _log_provider  # noqa: PLW0603
+
+    # Remove stale OTel handlers from root logger (inherited from parent before fork).
+    root_logger = logging.getLogger()
+    stale_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    for h in stale_handlers:
+        root_logger.removeHandler(h)
+
+    # Create a fresh LoggerProvider with the same resource as the parent.
+    # Use the service name from settings (already customized for worker/beat in env).
+    resource = Resource.create(
+        {
+            "service.name": settings.otel.service_name,
+            "service.version": settings.app_version,
+        }
+    )
+
+    endpoint = f"{settings.otel.endpoint}/v1/logs"
+    logger.debug("Re-attaching OTel log bridge in forked process → %s", endpoint)
+
+    log_provider = LoggerProvider(resource=resource)
+    log_provider.add_log_record_processor(
+        BatchLogRecordProcessor(OTLPLogExporter(endpoint=endpoint))
+    )
+    set_logger_provider(log_provider)
+    _log_provider = log_provider
+
+    # Attach fresh handler to root logger.
+    otel_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
+    root_logger.addHandler(otel_handler)
+
+    logger.debug("OTel log bridge re-attached in forked process")
 
 
 def configure_instrumentation(app: "FastAPI", settings: Settings) -> None:
