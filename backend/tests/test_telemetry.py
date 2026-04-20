@@ -1,7 +1,10 @@
 """Unit tests for OpenTelemetry telemetry setup."""
 
+import logging
+
 import pytest
 from opentelemetry import trace
+from opentelemetry.sdk._logs import LoggingHandler
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     ConsoleSpanExporter,
@@ -17,13 +20,24 @@ from app.core.config import OtelSettings, Settings
 def _reset_telemetry():
     """Reset module-level and global OTel state between tests."""
     telemetry._tracer_provider = None
+    telemetry._log_provider = None
     # Reset the global provider lock so tests can set it again.
     trace._TRACER_PROVIDER = None
     trace._TRACER_PROVIDER_SET_ONCE._done = False
+    # Remove stale OTel handlers from root logger.
+    root_logger = logging.getLogger()
+    stale_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    for h in stale_handlers:
+        root_logger.removeHandler(h)
     yield
     telemetry._tracer_provider = None
+    telemetry._log_provider = None
     trace._TRACER_PROVIDER = None
     trace._TRACER_PROVIDER_SET_ONCE._done = False
+    # Clean up again after test.
+    stale_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    for h in stale_handlers:
+        root_logger.removeHandler(h)
 
 
 def _make_settings(**otel_overrides) -> Settings:
@@ -116,3 +130,62 @@ def test_celery_instrumentation_calls_instrumentor(monkeypatch):
     )
     telemetry.configure_celery_instrumentation(_make_settings(enabled=True))
     assert called["instrument"]
+
+
+# ---------------------------------------------------------------------------
+# reattach_log_handler (Feature 2.7 — Celery worker log export)
+# ---------------------------------------------------------------------------
+
+
+def test_reattach_log_handler_skipped_when_disabled():
+    """No error when OTel is disabled — no handler added."""
+    telemetry.reattach_log_handler(_make_settings(enabled=False))
+    root_logger = logging.getLogger()
+    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    assert len(otel_handlers) == 0
+
+
+def test_reattach_log_handler_skipped_for_console_exporter():
+    """No handler added when exporter=console."""
+    telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="console"))
+    root_logger = logging.getLogger()
+    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    assert len(otel_handlers) == 0
+
+
+def test_reattach_log_handler_attaches_handler_to_root_logger():
+    """After call with exporter=otlp, root logger has a LoggingHandler."""
+    telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
+    root_logger = logging.getLogger()
+    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
+    assert len(otel_handlers) == 1
+
+
+def test_reattach_log_handler_removes_stale_handlers():
+    """Calling twice results in exactly one LoggingHandler (no duplicates)."""
+    telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
+    root_logger = logging.getLogger()
+    first_call_handlers = [
+        h for h in root_logger.handlers if isinstance(h, LoggingHandler)
+    ]
+    assert len(first_call_handlers) == 1
+
+    telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
+    second_call_handlers = [
+        h for h in root_logger.handlers if isinstance(h, LoggingHandler)
+    ]
+    assert len(second_call_handlers) == 1
+
+
+def test_setup_log_exporter_uses_batch_processor():
+    """Verify BatchLogRecordProcessor is used (not Simple)."""
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
+    telemetry.setup_telemetry(_make_settings(enabled=True, exporter="otlp"))
+    log_provider = telemetry._log_provider
+    assert log_provider is not None
+    # Verify the processor type via the multi-processor's delegate list.
+    multi_processor = log_provider._multi_log_record_processor
+    processors = multi_processor._log_record_processors
+    assert len(processors) == 1
+    assert isinstance(processors[0], BatchLogRecordProcessor)

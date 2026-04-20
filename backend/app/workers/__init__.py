@@ -5,7 +5,11 @@ Task modules are auto-discovered from ``app.workers.tasks``.
 """
 
 from celery import Celery  # type: ignore[import-untyped]
-from celery.signals import beat_init, worker_init  # type: ignore[import-untyped]
+from celery.signals import (  # type: ignore[import-untyped]
+    beat_init,
+    worker_init,
+    worker_process_init,
+)
 
 from app.core.config import settings
 
@@ -49,3 +53,16 @@ def _on_worker_init(**_kwargs: object) -> None:
 @beat_init.connect  # type: ignore[untyped-decorator]
 def _on_beat_init(**_kwargs: object) -> None:
     _init_otel()
+
+
+@worker_process_init.connect  # type: ignore[untyped-decorator]
+def _on_worker_process_init(**_kwargs: object) -> None:
+    """Re-attach OTel log bridge in forked worker processes.
+
+    worker_process_init fires in each forked child process after prefork
+    creates it. The fork inherits the parent's logging handlers but the
+    HTTP connection pool is stale. This re-creates the log bridge fresh.
+    """
+    from app.core.telemetry import reattach_log_handler
+
+    reattach_log_handler(settings)
