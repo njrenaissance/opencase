@@ -82,9 +82,11 @@ full details.
    # Edit .env — replace every CHANGE_ME value
    ```
 
-2. Create the persistent Ollama model cache volume (one-time setup):
+2. Create persistent external volumes (one-time setup):
 
    ```bash
+   docker volume create gideon-postgres-data
+   docker volume create gideon-qdrant-data
    docker volume create gideon-ollama-models
    ```
 

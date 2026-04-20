@@ -14,11 +14,21 @@ permissions:
   pull-requests: write
 
 jobs:
+  setup:
+    name: Setup Docker Volumes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create external volumes
+        run: |
+          docker volume create gideon-postgres-data || true
+          docker volume create gideon-qdrant-data || true
+          docker volume create gideon-ollama-models || true
+
   lint:
     name: Lint & Format
     uses: ./.github/workflows/format-lint.yml
 
   unit-tests:
     name: Unit Tests
-    needs: [lint]
+    needs: [lint, setup]
     uses: ./.github/workflows/unit-tests.yml

@@ -199,6 +199,8 @@ services:
     image: ollama/ollama:latest
     expose:
       - "11434"
+    ports:
+      - "11434:11434"
     volumes:
       - ollama-models:/root/.ollama
     healthcheck:
@@ -235,22 +237,29 @@ services:
       - ADDITIONAL_MODELS=${GIDEON_ADDITIONAL_MODELS:-}
     entrypoint: >
       /bin/sh -c "
-      echo 'Pulling embedding model $$EMBEDDING_MODEL...';
-      ollama pull $$EMBEDDING_MODEL;
-      echo 'Embedding model pull complete.';
-      echo 'Pulling LLM model $$CHATBOT_MODEL...';
-      ollama pull $$CHATBOT_MODEL;
-      echo 'LLM model pull complete.';
+      pull_if_missing() {
+        model=$$1;
+        if ollama list | grep -q \"^$$model \"; then
+          echo \"Model $$model already exists — skipping pull.\";
+        else
+          echo \"Pulling model $$model...\";
+          ollama pull $$model;
+          echo \"Done: $$model\";
+        fi;
+      };
+      echo 'Checking embedding model $$EMBEDDING_MODEL...';
+      pull_if_missing $$EMBEDDING_MODEL;
+      echo 'Checking LLM model $$CHATBOT_MODEL...';
+      pull_if_missing $$CHATBOT_MODEL;
       if [ -n \"$$ADDITIONAL_MODELS\" ]; then
         echo \"$$ADDITIONAL_MODELS\" | tr ',' '\n' | while IFS= read -r model; do
           model=$$(echo \"$$model\" | tr -d ' ');
           [ -z \"$$model\" ] && continue;
-          echo \"Pulling additional model $$model...\";
-          ollama pull $$model;
-          echo \"Done: $$model\";
+          echo \"Checking additional model $$model...\";
+          pull_if_missing $$model;
         done;
       fi;
-      echo 'All model pulls complete.';
+      echo 'All model checks complete.';
       "
     networks:
       - gideon
@@ -473,7 +482,11 @@ services:
 
 volumes:
   postgres-data:
+    external: true
+    name: gideon-postgres-data
   qdrant-data:
+    external: true
+    name: gideon-qdrant-data
   redis-data:
   ollama-models:
     external: true

@@ -16,13 +16,45 @@ Documents the Docker Compose setup in `infrastructure/`. See
 
 ---
 
+## Setup & Prerequisites
+
+Before starting the development stack for the first time:
+
+1. **Environment configuration**: Copy `.env.example` to `.env` and fill in required values:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env — at minimum set:
+   # - GIDEON_AUTH_SECRET_KEY
+   # - POSTGRES_USER
+   # - POSTGRES_PASSWORD
+   # - GIDEON_S3_ACCESS_KEY
+   # - GIDEON_S3_SECRET_KEY
+   ```
+
+2. **Create persistent external volumes** (one-time only):
+
+   ```bash
+   docker volume create gideon-postgres-data
+   docker volume create gideon-qdrant-data
+   docker volume create gideon-ollama-models
+   ```
+
+   These volumes persist across `docker compose down -v` commands:
+   - `gideon-postgres-data` — relational database (matters, documents, users,
+     audit logs)
+   - `gideon-qdrant-data` — vector embeddings (avoids reingest on restart)
+   - `gideon-ollama-models` — cached LLM/embedding models (avoids multi-GB
+     re-downloads)
+
+---
+
 ## Running the Stack
 
 ### Development stack
 
-The dev stack uses `.env` at the project root and starts the services
-needed for local development: PostgreSQL, Redis, MinIO, FastAPI,
-Celery worker + beat, Flower, and Grafana.
+The dev stack starts the services needed for local development: PostgreSQL,
+Redis, MinIO, FastAPI, Celery worker + beat, Flower, and Grafana.
 
 Next.js is disabled via Docker Compose profiles and will not start
 until frontend implementation begins.
@@ -41,18 +73,30 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env down
 docker compose -f infrastructure/docker-compose.yml --env-file .env down -v
 ```
 
-Before first run, create the persistent Ollama model cache volume:
+#### Automated setup
+
+To automate volume creation:
 
 ```bash
-docker volume create gideon-ollama-models
+bash scripts/setup-volumes.sh
+docker compose -f infrastructure/docker-compose.yml --env-file .env up
 ```
 
-This volume is declared external and is never deleted by `docker compose down -v`.
+#### Using a local (ephemeral) Ollama volume
 
-Copy `.env.example` to `.env` and fill in the required values before first run.
-At minimum, set `GIDEON_AUTH_SECRET_KEY`, `POSTGRES_USER`,
-`POSTGRES_PASSWORD`, `GIDEON_S3_ACCESS_KEY`, and
-`GIDEON_S3_SECRET_KEY`.
+For local development or CI environments where you don't mind re-downloading
+models on each restart:
+
+```bash
+cp infrastructure/docker-compose.override.yml.example \
+   infrastructure/docker-compose.override.yml
+docker compose -f infrastructure/docker-compose.yml --env-file .env up
+```
+
+This overrides the `ollama-models` volume to be local and ephemeral, deleted
+when you run `docker compose down -v`.
+
+#### Enable the frontend
 
 To enable the frontend when ready:
 
@@ -364,8 +408,8 @@ Used as the Celery broker. Not exposed outside the Docker network.
 
 | Volume | Service | Contents |
 | --- | --- | --- |
-| `postgres-data` | postgres | PostgreSQL data directory |
-| `qdrant-data` | qdrant | Qdrant vector index and storage |
+| `postgres-data` | postgres | Relational database — **external volume** (`gideon-postgres-data`), preserved across `down -v` |
+| `qdrant-data` | qdrant | Vector embeddings — **external volume** (`gideon-qdrant-data`), preserved across `down -v` |
 | `redis-data` | redis | Redis AOF persistence |
 | `ollama-models` | ollama | Downloaded LLM and embedding models — **external volume** (`gideon-ollama-models`), preserved across `down -v` |
 | `minio-data` | minio | Object store buckets and objects |
