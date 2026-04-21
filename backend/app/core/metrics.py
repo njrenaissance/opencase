@@ -40,9 +40,10 @@ def _create_instruments() -> None:
             description="Login attempts by result",
         )
 
+        # attrs: result=(success|failure)
         cache["mfa_challenges"] = meter.create_counter(
             "gideon.auth.mfa_challenges",
-            description="MFA TOTP challenge outcomes",  # attrs: result=(success|failure)
+            description="MFA TOTP challenge outcomes",
         )
 
         cache["token_refresh_attempts"] = meter.create_counter(
@@ -52,12 +53,13 @@ def _create_instruments() -> None:
 
         cache["active_sessions"] = meter.create_up_down_counter(
             "gideon.auth.active_sessions",
-            description="Currently active sessions (access tokens issued minus logouts)",
+            description="Currently active sessions (tokens issued - logouts)",
         )
 
+        # attrs: reason=(role|matter), role=<role>
         cache["access_denied"] = meter.create_counter(
             "gideon.rbac.access_denied",
-            description="RBAC access denials",  # attrs: reason=(role|matter), role=<role>
+            description="RBAC access denials",
         )
 
         cache["users_created"] = meter.create_counter(
@@ -125,9 +127,10 @@ def _create_instruments() -> None:
             description="Task status queries via broker",
         )
 
+        # attrs: content_type, ocr_applied
         cache["extraction_completed"] = meter.create_counter(
             "gideon.extraction.completed",
-            description="Successful text extractions",  # attrs: content_type, ocr_applied
+            description="Successful text extractions",
         )
 
         cache["extraction_failed"] = meter.create_counter(
@@ -214,9 +217,10 @@ def _create_instruments() -> None:
             description="Successful vector upsert operations",  # attrs: collection
         )
 
+        # attrs: collection, error_type
         cache["vectorstore_upsert_failed"] = meter.create_counter(
             "gideon.vectorstore.upsert.failed",
-            description="Failed vector upsert operations",  # attrs: collection, error_type
+            description="Failed vector upsert operations",
         )
 
         cache["vectorstore_upsert_duration_seconds"] = meter.create_histogram(
@@ -236,9 +240,10 @@ def _create_instruments() -> None:
             description="Successful vector delete operations",  # attrs: collection
         )
 
+        # attrs: collection, error_type
         cache["vectorstore_delete_failed"] = meter.create_counter(
             "gideon.vectorstore.delete.failed",
-            description="Failed vector delete operations",  # attrs: collection, error_type
+            description="Failed vector delete operations",
         )
 
         cache["vectorstore_delete_duration_seconds"] = meter.create_histogram(
@@ -252,9 +257,10 @@ def _create_instruments() -> None:
             description="Successful vector similarity search operations",
         )
 
+        # attrs: collection
         cache["vectorstore_search_failed"] = meter.create_counter(
             "gideon.vectorstore.search.failed",
-            description="Failed vector similarity search operations",  # attrs: collection
+            description="Failed vector similarity search operations",
         )
 
         cache["vectorstore_search_duration_seconds"] = meter.create_histogram(
