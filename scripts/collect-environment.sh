@@ -4,6 +4,9 @@
 
 set -e
 
+echo "⚠️  IMPORTANT: Review the output below carefully before posting in a bug report."
+echo "   Redact any secrets, credentials, or sensitive environment variables."
+echo ""
 echo "# Gideon Environment Information"
 echo ""
 echo "## System"

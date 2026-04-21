@@ -41,7 +41,7 @@ Gideon welcomes contributors of all kinds:
 1. Clone the repository and navigate to the root:
 
    ```bash
-   git clone https://github.com/gideon-dev/gideon.git
+   git clone https://github.com/njrenaissance/gideon.git
    cd gideon
    ```
 

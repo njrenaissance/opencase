@@ -116,6 +116,8 @@ not a separate service.
    deduplication and integrity.
 7. **Immutable hash-chained audit log** for all LLM
    queries, document access, and permission changes.
+8. **MFA enforced** for all users from day one.
+9. **Encryption at rest and in transit.**
 
 ---
 

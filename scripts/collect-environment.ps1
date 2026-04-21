@@ -1,11 +1,15 @@
 # Collect environment information for bug reports
 # Usage: .\collect-environment.ps1
 
+Write-Output "⚠️  IMPORTANT: Review the output below carefully before posting in a bug report."
+Write-Output "   Redact any secrets, credentials, or sensitive environment variables."
+Write-Output ""
 Write-Output "# Gideon Environment Information"
 Write-Output ""
 Write-Output "## System"
 Write-Output "- **OS**: Windows $(Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object -ExpandProperty Version)"
-Write-Output "- **Architecture**: $((Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty Architecture) -eq 9 ? 'x64' : 'x86')"
+$arch = if ((Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty Architecture) -eq 9) { 'x64' } else { 'x86' }
+Write-Output "- **Architecture**: $arch"
 Write-Output ""
 
 Write-Output "## Docker"
