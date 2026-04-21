@@ -294,6 +294,9 @@ class _LazyInstrument:
     def __repr__(self) -> str:
         return f"_LazyInstrument({self._name!r})"
 
+    def __str__(self) -> str:
+        return f"_LazyInstrument({self._name})"
+
 
 login_attempts = _LazyInstrument("login_attempts")
 mfa_challenges = _LazyInstrument("mfa_challenges")
