@@ -30,6 +30,8 @@ BDD scenarios.*
 
 ### Reference
 
+- [CLI Reference](CLI.md) — Complete CLI command reference,
+  all flags, examples, and configuration
 - [Settings Reference](SETTINGS.md) — all environment variables,
   defaults, and configuration classes
 - [Infrastructure Reference](INFRASTRUCTURE.md) — Docker Compose
