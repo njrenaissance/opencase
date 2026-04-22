@@ -48,6 +48,7 @@ def make_user(**kwargs: object) -> User:
         "hashed_password": "hashed-in-test",  # noqa: S106
         "first_name": "Test",
         "last_name": "User",
+        "middle_initial": None,
         "role": Role.attorney,
         "is_active": True,
         "totp_enabled": False,

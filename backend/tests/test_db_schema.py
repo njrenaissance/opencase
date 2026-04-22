@@ -105,6 +105,15 @@ async def test_user_insert(user, session):
     assert result.email == user.email
     assert result.first_name == "Test"
     assert result.last_name == "User"
+    assert result.middle_initial is None
+
+
+async def test_user_middle_initial_round_trip(firm, session):
+    u = make_user(firm_id=firm.id, middle_initial="B")
+    session.add(u)
+    await session.flush()
+    result = await session.get(User, u.id)
+    assert result.middle_initial == "B"
 
 
 async def test_user_invalid_firm_fk_raises(session):

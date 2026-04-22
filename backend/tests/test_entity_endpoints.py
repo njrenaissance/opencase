@@ -122,22 +122,36 @@ class TestGetUser:
 
 class TestCreateUser:
     @pytest.mark.asyncio
-    async def test_admin_can_create(self) -> None:
+    @pytest.mark.parametrize(
+        "middle_initial,expected",
+        [
+            (None, None),
+            ("B", "B"),
+        ],
+        ids=["without_middle_initial", "with_middle_initial"],
+    )
+    async def test_admin_can_create(
+        self, middle_initial: str | None, expected: str | None
+    ) -> None:
         user = make_user(firm_id=_FIRM_ID, role=Role.admin)
         fake = FakeSession()
+        payload = {
+            "email": "new@firm.com",
+            "password": "a-long-password",
+            "first_name": "New",
+            "last_name": "User",
+            "role": "paralegal",
+        }
+        if middle_initial is not None:
+            payload["middle_initial"] = middle_initial
         async with api_client(user, fake) as ac:
             resp = await ac.post(
                 "/users/",
-                json={
-                    "email": "new@firm.com",
-                    "password": "a-long-password",
-                    "first_name": "New",
-                    "last_name": "User",
-                    "role": "paralegal",
-                },
+                json=payload,
                 headers=auth_header(user),
             )
         assert resp.status_code == 201
+        assert resp.json()["middle_initial"] == expected
 
     @pytest.mark.asyncio
     async def test_attorney_forbidden(self) -> None:
@@ -177,6 +191,33 @@ class TestUpdateUser:
                 headers=auth_header(user),
             )
         assert resp.status_code == 200
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "patch_payload,expected_middle_initial",
+        [
+            ({"middle_initial": "C"}, "C"),
+            ({"middle_initial": None}, None),
+        ],
+        ids=["set_middle_initial", "clear_middle_initial"],
+    )
+    async def test_update_middle_initial(
+        self,
+        patch_payload: dict,
+        expected_middle_initial: str | None,
+    ) -> None:
+        user = make_user(firm_id=_FIRM_ID, role=Role.admin)
+        target = make_user(firm_id=_FIRM_ID, role=Role.attorney, middle_initial="A")
+        fake = FakeSession()
+        fake.add_result(target)
+        async with api_client(user, fake) as ac:
+            resp = await ac.patch(
+                f"/users/{target.id}",
+                json=patch_payload,
+                headers=auth_header(user),
+            )
+        assert resp.status_code == 200
+        assert resp.json()["middle_initial"] == expected_middle_initial
 
     @pytest.mark.asyncio
     async def test_self_deactivation_rejected(self) -> None:

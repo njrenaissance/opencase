@@ -143,7 +143,7 @@ def test_get_user() -> None:
     assert isinstance(result, UserResponse)
 
 
-def test_create_user() -> None:
+def test_create_user_without_middle_initial() -> None:
     sent_body: dict = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -163,6 +163,30 @@ def test_create_user() -> None:
     assert isinstance(result, UserResponse)
     assert sent_body["email"] == "new@firm.com"
     assert sent_body["role"] == "paralegal"
+    assert "middle_initial" not in sent_body
+
+
+def test_create_user_with_middle_initial() -> None:
+    sent_body: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/users/"
+        assert request.method == "POST"
+        sent_body.update(json.loads(request.content))
+        return httpx.Response(201, json=_user_response_json())
+
+    client = build_authenticated_client(handler)
+    result = client.create_user(
+        email="new@firm.com",
+        password="a-long-password",
+        first_name="New",
+        last_name="User",
+        role="paralegal",
+        middle_initial="B",
+    )
+    assert isinstance(result, UserResponse)
+    assert sent_body["middle_initial"] == "B"
+    assert result.middle_initial == "B"
 
 
 def test_update_user() -> None:
