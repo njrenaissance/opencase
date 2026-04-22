@@ -152,4 +152,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass  # fix-forward — never roll back schema changes
+    raise NotImplementedError(
+        "Downgrade is not supported. "
+        "This project enforces a fix-forward migration policy."
+    )

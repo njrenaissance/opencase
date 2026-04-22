@@ -23,4 +23,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    ${downgrades if downgrades else "pass"}
+    raise NotImplementedError(
+        "Downgrade is not supported. "
+        "This project enforces a fix-forward migration policy."
+    )
