@@ -11,7 +11,7 @@ permissions:
 jobs:
   ai-review:
     if: github.event.pull_request.draft != true
-    uses: njrenaissance/pr-review-agent/.github/workflows/ai-code-review.yml@4569050f5db7b2b9a2f4bcd1ccd38890caaadc8f
+    uses: njrenaissance/pr-review-agent/.github/workflows/ai-code-review.yml@c1b2dd6733f7a2b8b93a755770ba351acb431a79
     secrets:
       anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
 
