@@ -7,8 +7,10 @@ bypassed, and never accepts client-supplied filter parameters.
 
 from __future__ import annotations
 
+import functools
 import logging
 import uuid
+import warnings
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -163,8 +165,25 @@ async def build_permission_filter(
         )
 
 
-# Backwards compatibility alias — use build_permission_filter instead
-build_qdrant_filter = build_permission_filter
+# Backwards-compatible alias with deprecation warning
+@functools.wraps(build_permission_filter)
+async def build_qdrant_filter(
+    user: User,
+    matter_id: uuid.UUID,
+    db: AsyncSession,
+) -> PermissionFilter:
+    """Deprecated alias for build_permission_filter.
+
+    .. deprecated::
+        Use :func:`build_permission_filter` instead. This alias will be
+        removed in a future release.
+    """
+    warnings.warn(
+        "build_qdrant_filter is deprecated; use build_permission_filter instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return await build_permission_filter(user, matter_id, db)
 
 
 # ---------------------------------------------------------------------------

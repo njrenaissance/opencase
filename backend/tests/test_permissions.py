@@ -306,3 +306,36 @@ def test_is_system_matter_recognises_global_knowledge() -> None:
 
 def test_is_system_matter_rejects_regular_uuid() -> None:
     assert is_system_matter(uuid.uuid4()) is False
+
+
+# ---------------------------------------------------------------------------
+# Backwards-compatibility alias tests
+# ---------------------------------------------------------------------------
+
+
+def test_backwards_compat_alias_exists() -> None:
+    """Confirm build_qdrant_filter alias is still importable."""
+    # This is the most critical test — if the alias is missing,
+    # any external code still using the old name will fail.
+    from app.core.permissions import build_qdrant_filter as alias_func
+
+    assert callable(alias_func)
+
+
+@pytest.mark.asyncio
+async def test_backwards_compat_alias_emits_deprecation_warning() -> None:
+    """Confirm build_qdrant_filter emits a deprecation warning."""
+    import warnings
+
+    from app.core.permissions import build_qdrant_filter
+
+    user = make_user(role=Role.admin, firm_id=_FIRM_ID)
+    db = _mock_db()
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        await build_qdrant_filter(user, _MATTER_ID, db)
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "build_qdrant_filter is deprecated" in str(w[0].message)
