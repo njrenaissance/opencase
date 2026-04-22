@@ -1,7 +1,7 @@
 """MatterAccess — security construct governing matter visibility and work-product
 access.
 
-This is not a simple business join table. It is checked by build_qdrant_filter()
+This is not a simple business join table. It is checked by build_permission_filter()
 on every vector query to enforce per-user, per-matter access control. A user who
 is not present in this table for a given matter receives a 404 (not 403) on all
 matter-scoped endpoints — no enumeration of matters they cannot see.

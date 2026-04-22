@@ -1,4 +1,4 @@
-"""Unit tests for backend/app/core/permissions.py — RBAC and build_qdrant_filter."""
+"""Unit tests for backend/app/core/permissions.py — RBAC and build_permission_filter."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from shared.models.enums import Role
 from app.core.constants import GLOBAL_KNOWLEDGE_MATTER_ID, is_system_matter
 from app.core.permissions import (
     PermissionFilter,
-    build_qdrant_filter,
+    build_permission_filter,
     fetch_matter_access,
     require_matter_access,
     require_role,
@@ -51,7 +51,7 @@ def _mock_db(return_value: object = None) -> AsyncMock:
 
 
 # ---------------------------------------------------------------------------
-# build_qdrant_filter tests
+# build_permission_filter tests
 # ---------------------------------------------------------------------------
 
 
@@ -60,7 +60,7 @@ async def test_admin_no_exclusions() -> None:
     user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     db = _mock_db()  # should not be called
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.firm_id == user.firm_id
     assert result.matter_ids == frozenset({_MATTER_ID, GLOBAL_KNOWLEDGE_MATTER_ID})
@@ -74,7 +74,7 @@ async def test_attorney_excludes_jencks() -> None:
     access = _make_access(user.id)
     db = _mock_db(access)
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.excluded_classifications == frozenset({"jencks"})
 
@@ -85,7 +85,7 @@ async def test_paralegal_with_work_product_excludes_jencks() -> None:
     access = _make_access(user.id, view_work_product=True)
     db = _mock_db(access)
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.excluded_classifications == frozenset({"jencks"})
 
@@ -96,7 +96,7 @@ async def test_paralegal_without_work_product_excludes_both() -> None:
     access = _make_access(user.id, view_work_product=False)
     db = _mock_db(access)
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.excluded_classifications == frozenset({"work_product", "jencks"})
 
@@ -107,7 +107,7 @@ async def test_investigator_excludes_work_product_and_jencks() -> None:
     access = _make_access(user.id)
     db = _mock_db(access)
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.excluded_classifications == frozenset({"work_product", "jencks"})
 
@@ -119,7 +119,7 @@ async def test_non_admin_matter_ids_include_global_knowledge() -> None:
     access = _make_access(user.id)
     db = _mock_db(access)
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert result.matter_ids == frozenset({_MATTER_ID, GLOBAL_KNOWLEDGE_MATTER_ID})
 
@@ -131,7 +131,7 @@ async def test_system_matter_rejected_as_direct_query() -> None:
     db = _mock_db()
 
     with pytest.raises(HTTPException) as exc_info:
-        await build_qdrant_filter(user, GLOBAL_KNOWLEDGE_MATTER_ID, db)
+        await build_permission_filter(user, GLOBAL_KNOWLEDGE_MATTER_ID, db)
 
     assert exc_info.value.status_code == 400
 
@@ -142,7 +142,7 @@ async def test_unassigned_user_raises_404() -> None:
     db = _mock_db(None)  # no access row
 
     with pytest.raises(HTTPException) as exc_info:
-        await build_qdrant_filter(user, _MATTER_ID, db)
+        await build_permission_filter(user, _MATTER_ID, db)
 
     assert exc_info.value.status_code == 404
 
@@ -152,7 +152,7 @@ async def test_admin_bypasses_matter_access_check() -> None:
     user = make_user(role=Role.admin, firm_id=_FIRM_ID)
     db = _mock_db()
 
-    result = await build_qdrant_filter(user, _MATTER_ID, db)
+    result = await build_permission_filter(user, _MATTER_ID, db)
 
     assert isinstance(result, PermissionFilter)
     db.execute.assert_not_called()
@@ -164,7 +164,7 @@ async def test_firm_id_always_set() -> None:
         user = make_user(role=role, firm_id=_FIRM_ID)
         access = _make_access(user.id)
         db = _mock_db(access)
-        result = await build_qdrant_filter(user, _MATTER_ID, db)
+        result = await build_permission_filter(user, _MATTER_ID, db)
         assert result.firm_id == user.firm_id
 
 
@@ -181,7 +181,7 @@ async def test_cross_firm_matter_returns_404() -> None:
     db = _mock_db(None)  # join returns no row — firm mismatch
 
     with pytest.raises(HTTPException) as exc_info:
-        await build_qdrant_filter(user, other_firm_matter, db)
+        await build_permission_filter(user, other_firm_matter, db)
 
     assert exc_info.value.status_code == 404
 

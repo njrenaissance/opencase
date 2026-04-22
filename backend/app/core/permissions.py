@@ -1,6 +1,6 @@
 """RBAC middleware — role enforcement and vector query access control.
 
-build_qdrant_filter() is the most security-critical function in the
+build_permission_filter() is the most security-critical function in the
 codebase. It is called on every vector query without exception, never
 bypassed, and never accepts client-supplied filter parameters.
 """
@@ -32,7 +32,7 @@ tracer = trace.get_tracer(__name__)
 
 
 # ---------------------------------------------------------------------------
-# PermissionFilter — abstract filter returned by build_qdrant_filter()
+# PermissionFilter — abstract filter returned by build_permission_filter()
 # ---------------------------------------------------------------------------
 
 
@@ -95,11 +95,11 @@ async def fetch_matter_access(
 
 
 # ---------------------------------------------------------------------------
-# build_qdrant_filter() — called on every vector query
+# build_permission_filter() — called on every vector query
 # ---------------------------------------------------------------------------
 
 
-async def build_qdrant_filter(
+async def build_permission_filter(
     user: User,
     matter_id: uuid.UUID,
     db: AsyncSession,
@@ -120,7 +120,7 @@ async def build_qdrant_filter(
     # standard pattern for opentelemetry-api (Python). The SDK propagates
     # the span correctly across await boundaries via contextvars.
     with tracer.start_as_current_span(
-        "permissions.build_qdrant_filter",
+        "permissions.build_permission_filter",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
     ):
         # Reject direct queries against system matters — they are
@@ -161,6 +161,10 @@ async def build_qdrant_filter(
             matter_ids=frozenset({matter_id, GLOBAL_KNOWLEDGE_MATTER_ID}),
             excluded_classifications=frozenset(excluded),
         )
+
+
+# Backwards compatibility alias — use build_permission_filter instead
+build_qdrant_filter = build_permission_filter
 
 
 # ---------------------------------------------------------------------------

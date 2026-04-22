@@ -1,13 +1,13 @@
 """RAG pipeline — embed query, retrieve chunks, assemble prompt, run inference.
 
 This module is the core of Feature 7.3. It wires together:
-  - Qdrant similarity search (always gated by build_qdrant_filter)
+  - Qdrant similarity search (always gated by build_permission_filter)
   - Ollama embedding for query vectorisation
   - Prompt assembly (SYSTEM_PROMPT + retrieved context + user query)
   - Ollama inference via LangChain ChatOllama (non-streaming and streaming)
   - ChatSession / ChatQuery persistence
 
-build_qdrant_filter() is called first in every entrypoint and is never
+build_permission_filter() is called first in every entrypoint and is never
 bypassed. The PermissionFilter it returns is converted to a
 qdrant_client.models.Filter before any search is issued.
 """
@@ -30,7 +30,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.permissions import PermissionFilter, build_qdrant_filter
+from app.core.permissions import PermissionFilter, build_permission_filter
 from app.db.models.chat_query import ChatQuery
 from app.db.models.chat_session import ChatSession
 from app.db.models.user import User
@@ -84,12 +84,12 @@ def _to_qdrant_filter(pf: PermissionFilter) -> models.Filter:
     """Convert a PermissionFilter to a qdrant_client Filter.
 
     ``matter_ids`` always includes the requested matter plus
-    ``GLOBAL_KNOWLEDGE_MATTER_ID`` (set by ``build_qdrant_filter``).
+    ``GLOBAL_KNOWLEDGE_MATTER_ID`` (set by ``build_permission_filter()``).
     ``excluded_classifications`` is empty for admin, contains ``jencks``
     for attorney/paralegal, and ``jencks`` + ``work_product`` for investigator.
 
     Args:
-        pf: Qdrant-agnostic permission filter from ``build_qdrant_filter()``.
+        pf: Qdrant-agnostic permission filter from ``build_permission_filter()``.
 
     Returns:
         A ``qdrant_client.models.Filter`` ready to pass to ``client.search()``.
@@ -337,7 +337,7 @@ async def run_query(
     ) as span:
         try:
             # 1. Permission gate — must be first
-            perm_filter = await build_qdrant_filter(user, matter_id, db)
+            perm_filter = await build_permission_filter(user, matter_id, db)
 
             # 2. Embed the query
             query_vector = await embed_query(query)
@@ -429,7 +429,7 @@ async def stream_query(
     ) as span:
         try:
             # 1. Permission gate — must be first
-            perm_filter = await build_qdrant_filter(user, matter_id, db)
+            perm_filter = await build_permission_filter(user, matter_id, db)
 
             # 2. Embed the query
             query_vector = await embed_query(query)

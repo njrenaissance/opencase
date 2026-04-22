@@ -48,7 +48,7 @@ async def submit_query(
     """Run a matter-scoped RAG query and return the full response.
 
     Retrieves the top-K most semantically relevant chunks from Qdrant
-    (permission-filtered via ``build_qdrant_filter``), assembles a prompt
+    (permission-filtered via ``build_permission_filter``), assembles a prompt
     with the SYSTEM_PROMPT and retrieved context, calls Ollama for inference,
     and persists the query + response to the database.
     """

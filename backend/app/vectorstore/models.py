@@ -15,7 +15,7 @@ class VectorPayload(TypedDict):
     """Qdrant point payload matching the permission metadata contract.
 
     Every vector stored in Qdrant must carry these fields so that
-    ``build_qdrant_filter()`` can enforce RBAC on every query.
+    ``build_permission_filter()`` can enforce RBAC on every query.
 
     ``text`` stores the raw chunk text so that the RAG pipeline can
     build context blocks directly from search results without a

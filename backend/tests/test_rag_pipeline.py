@@ -277,8 +277,8 @@ def _make_chat_query(session_id: uuid.UUID) -> MagicMock:
 
 class TestRunQuery:
     @pytest.mark.asyncio
-    async def test_build_qdrant_filter_called_before_search(self) -> None:
-        """build_qdrant_filter must be the first external call."""
+    async def test_build_permission_filter_called_before_search(self) -> None:
+        """build_permission_filter must be the first external call."""
         call_order: list[str] = []
         pf = _make_perm_filter()
         fake_session = _make_chat_session()
@@ -304,7 +304,7 @@ class TestRunQuery:
         db = FakeSession()
 
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", _mock_filter),
+            patch("app.rag.pipeline.build_permission_filter", _mock_filter),
             patch("app.rag.pipeline.embed_query", _mock_embed),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",
@@ -338,7 +338,10 @@ class TestRunQuery:
         db = FakeSession()
 
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", AsyncMock(return_value=pf)),
+            patch(
+                "app.rag.pipeline.build_permission_filter",
+                AsyncMock(return_value=pf),
+            ),
             patch("app.rag.pipeline.embed_query", AsyncMock(return_value=[0.1] * 768)),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",
@@ -372,7 +375,10 @@ class TestRunQuery:
         db = FakeSession()
 
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", AsyncMock(return_value=pf)),
+            patch(
+                "app.rag.pipeline.build_permission_filter",
+                AsyncMock(return_value=pf),
+            ),
             patch("app.rag.pipeline.embed_query", AsyncMock(return_value=[0.1] * 768)),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",
@@ -419,7 +425,10 @@ class TestStreamQuery:
 
         tokens: list[str] = []
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", AsyncMock(return_value=pf)),
+            patch(
+                "app.rag.pipeline.build_permission_filter",
+                AsyncMock(return_value=pf),
+            ),
             patch("app.rag.pipeline.embed_query", AsyncMock(return_value=[0.1] * 768)),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",
@@ -466,7 +475,10 @@ class TestStreamQuery:
         db = FakeSession()
 
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", AsyncMock(return_value=pf)),
+            patch(
+                "app.rag.pipeline.build_permission_filter",
+                AsyncMock(return_value=pf),
+            ),
             patch("app.rag.pipeline.embed_query", AsyncMock(return_value=[0.1] * 768)),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",
@@ -506,7 +518,10 @@ class TestStreamQuery:
         db = FakeSession()
 
         with (
-            patch("app.rag.pipeline.build_qdrant_filter", AsyncMock(return_value=pf)),
+            patch(
+                "app.rag.pipeline.build_permission_filter",
+                AsyncMock(return_value=pf),
+            ),
             patch("app.rag.pipeline.embed_query", AsyncMock(return_value=[0.1] * 768)),
             patch(
                 "app.rag.pipeline.get_vectorstore_service",

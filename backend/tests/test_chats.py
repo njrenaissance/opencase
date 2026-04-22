@@ -106,7 +106,7 @@ class TestSubmitQuery:
 
     @pytest.mark.asyncio
     async def test_matter_access_denied_returns_404(self) -> None:
-        """build_qdrant_filter raises 404 when user has no matter access."""
+        """build_permission_filter raises 404 when user has no matter access."""
         user = make_user(firm_id=_FIRM_ID, role=Role.attorney)
         fake = FakeSession()
 
