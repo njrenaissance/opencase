@@ -127,7 +127,7 @@ def verify_download(client: Client, doc_id: str, local_hash: str) -> None:
     print("\nVerifying download (GET /documents/{id}/download)...")  # noqa: T201
     resp = httpx.get(
         f"{BASE_URL}/documents/{doc_id}/download",
-        headers=client._auth.authorization_header,  # noqa: SLF001
+        headers=client.authorization_header,
         timeout=30,
     )
     if resp.status_code != 200:  # noqa: PLR2004

@@ -99,6 +99,15 @@ class Client:
         """Close the underlying HTTP connection pool."""
         self._http.close()
 
+    @property
+    def authorization_header(self) -> dict[str, str]:
+        """Return the current Bearer authorization header dict.
+
+        Returns ``{"Authorization": "Bearer <token>"}`` if authenticated,
+        or ``{}`` if not.
+        """
+        return self._auth.authorization_header
+
     # -- health (unauthenticated) --------------------------------------------
 
     def health(self) -> HealthResponse:

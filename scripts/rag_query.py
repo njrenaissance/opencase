@@ -40,11 +40,12 @@ import httpx
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import FieldCondition, MatchAny, MatchValue
 
+from _ollama import OLLAMA_URL, _post_json
+
 # ---------------------------------------------------------------------------
 # Constants — mirror defaults from app/core/config.py
 # ---------------------------------------------------------------------------
 
-OLLAMA_URL = "http://localhost:11434"
 QDRANT_URL = "http://localhost:6333"
 COLLECTION = "gideon"
 EMBEDDING_MODEL = "nomic-embed-text"
@@ -74,16 +75,6 @@ def load_system_prompt() -> str:
         if content:
             return content
     return _DEFAULT_SYSTEM_PROMPT
-
-
-def _post_json(url: str, payload: dict, timeout: int = 30) -> dict:
-    """POST JSON via stdlib urllib — avoids httpx WinError 10054 on localhost."""
-    data = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read())
 
 
 def embed_query(query: str) -> list[float]:

@@ -33,85 +33,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import urllib.request
 from pathlib import Path
+
+from _ollama import OLLAMA_URL, call_ollama_blocking, call_ollama_stream
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-OLLAMA_URL = "http://localhost:11434"
 DEFAULT_MAX_TOKENS = -2
 DEFAULT_MODELS = "llama3"
-
-
-# ---------------------------------------------------------------------------
-# Ollama helpers (urllib only — avoids WinError 10054 on localhost)
-# ---------------------------------------------------------------------------
-
-
-def _post_json(url: str, payload: dict, timeout: int = 30) -> dict:
-    data = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read())
-
-
-def call_ollama_blocking(
-    model: str,
-    messages: list[dict],
-    max_tokens: int,
-) -> str:
-    result = _post_json(
-        f"{OLLAMA_URL}/api/chat",
-        {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-            "options": {"num_predict": max_tokens},
-        },
-        timeout=300,
-    )
-    return result["message"]["content"]
-
-
-def call_ollama_stream(
-    model: str,
-    messages: list[dict],
-    max_tokens: int,
-) -> str:
-    """Stream response from Ollama, print tokens as they arrive, return full text."""
-    payload = json.dumps({
-        "model": model,
-        "messages": messages,
-        "stream": True,
-        "options": {"num_predict": max_tokens},
-    }).encode()
-    req = urllib.request.Request(
-        f"{OLLAMA_URL}/api/chat",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-    )
-    parts: list[str] = []
-    with urllib.request.urlopen(req, timeout=300) as resp:
-        for raw_line in resp:
-            line = raw_line.decode().strip()
-            if not line:
-                continue
-            try:
-                data = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            token = data.get("message", {}).get("content", "")
-            if token:
-                print(token, end="", flush=True)
-                parts.append(token)
-            if data.get("done"):
-                break
-    print()
-    return "".join(parts)
 
 
 def _run(model: str, messages: list[dict], max_tokens: int, no_stream: bool) -> str:

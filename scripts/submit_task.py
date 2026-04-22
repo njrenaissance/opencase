@@ -4,7 +4,7 @@ from gideon import Client
 
 BASE_URL = "http://127.0.0.1:8000"
 
-def submit_log_running_task(client: Client) -> None:
+def submit_long_running_task(client: Client) -> None:
     print("Submitting long-running task (sleep for 30 seconds)...")
     result = client.submit_task(task_name="sleep", kwargs={"seconds": 30})
     print(f"Submitted: {result.task_id}")
@@ -39,7 +39,7 @@ def main(config_file: str) -> None:
 
         client.login(email=admin_email, password=admin_password)
 
-        submit_log_running_task(client)
+        submit_long_running_task(client)
 
         ping_result = submit_ping_task(client)
         wait_for_task_result(client, ping_result.task_id)

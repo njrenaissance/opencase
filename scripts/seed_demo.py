@@ -19,12 +19,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+import uuid
 
 import dotenv
 from gideon import Client
 from gideon.exceptions import GideonError, ValidationError
 
 BASE_URL = "http://127.0.0.1:8000"
+HTTP_CONFLICT = 409
 DEMO_PASSWORD = "DemoPassword123!"  # noqa: S105
 
 
@@ -47,7 +49,7 @@ def _create_user(
         print(f"  Created user: {first_name} {last_name} <{email}> ({role})")  # noqa: T201
         return str(user.id)
     except (GideonError, ValidationError) as exc:
-        if "already" in str(exc).lower() or getattr(exc, "status_code", 0) == 409:  # noqa: PLR2004
+        if "already" in str(exc).lower() or getattr(exc, "status_code", 0) == HTTP_CONFLICT:
             # User exists — find them
             users = client.list_users()
             for u in users:
@@ -59,8 +61,6 @@ def _create_user(
 
 def _create_matter(client: Client, name: str) -> str:
     """Create a matter, return matter_id.  Skip if already exists."""
-    import uuid
-
     matters = client.list_matters()
     for m in matters:
         if m.name == name:
