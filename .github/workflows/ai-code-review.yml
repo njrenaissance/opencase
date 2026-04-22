@@ -3,12 +3,6 @@ name: AI Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "PR number to review"
-        required: true
-        type: number
 
 permissions:
   contents: read
@@ -16,6 +10,8 @@ permissions:
 
 jobs:
   ai-review:
-    uses: njrenaissance/pr-review-agent/.github/workflows/ai-code-review.yml@1.0.0
+    if: github.event.pull_request.draft != true
+    uses: njrenaissance/pr-review-agent/.github/workflows/ai-code-review.yml@4569050f5db7b2b9a2f4bcd1ccd38890caaadc8f
     secrets:
       anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
