@@ -10,6 +10,9 @@ on:
         required: true
         type: number
 
+permissions:
+  contents: read
+
 jobs:
   ai-review:
     uses: njrenaissance/pr-review-agent/.github/workflows/ai-code-review.yml@1.0.0
