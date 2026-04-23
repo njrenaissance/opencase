@@ -28,82 +28,71 @@ Gideon welcomes contributors of all kinds:
 
 ## Development Setup
 
+The repository contains multiple projects: `backend/` (FastAPI), `frontend/`
+(Next.js), `shared/` (shared utilities), `sdk/` (Python SDK), and `cli/`
+(command-line interface).
+
 ### Prerequisites
 
-- **Docker** + Docker Compose (v2+)
-  - **Windows**: Use [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-    (includes Docker and Docker Compose)
 - **Git**
-- **Python 3.12+** with `uv` (for running tests/scripts outside Docker)
+- **Python 3.12+** with `uv` (for unit tests and linting)
+- **Docker** (optional, required only for integration tests)
+  - **Windows**: Use [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-### Setup Steps
+### Quick Start
 
-1. Clone the repository and navigate to the root:
+1. Clone the repository:
 
    ```bash
    git clone https://github.com/njrenaissance/gideon.git
    cd gideon
    ```
 
-2. Copy the example environment file and edit secrets:
+2. Sync Python dependencies (creates `.venv/`):
 
    ```bash
-   cp .env.example .env
-   # Edit .env — replace every CHANGE_ME value with your own
+   uv sync
    ```
 
-3. Create persistent external Docker volumes (one-time setup):
+3. Run unit tests and linting:
 
    ```bash
-   docker volume create gideon-postgres-data
-   docker volume create gideon-qdrant-data
-   docker volume create gideon-ollama-models
+   # Format code with ruff
+   uv run ruff format backend/
+
+   # Lint with ruff
+   uv run ruff check backend/
+
+   # Run unit tests
+   uv run pytest backend/tests/
    ```
 
-4. Start all services:
+### Integration Tests (Optional)
+
+Integration tests require Docker and the backend image to be built locally.
+
+1. Build the backend Docker image:
 
    ```bash
-   docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
+   docker build -f infrastructure/Dockerfile.backend -t gideon-backend:dev .
    ```
 
-   ⚠️ **First run** — Ollama downloads and caches LLM models (~5–10 GB).
-   This takes 5–10 minutes depending on your internet connection.
-   Check progress with `docker compose logs ollama` or wait for the
-   `gideon-ollama-1` container to report `Listening on 127.0.0.1:11434`.
+2. Run integration tests:
 
-### Running Tests (Backend)
+   ```bash
+   uv run pytest backend/tests/ -m integration
+   ```
 
-From the repo root:
+   Or use the integration Compose file to spin up a full stack:
 
-```bash
-# Format code with ruff
-uv run ruff format backend/
+   ```bash
+   docker compose -f infrastructure/docker-compose.integration.yml up -d
+   uv run pytest backend/tests/
+   docker compose -f infrastructure/docker-compose.integration.yml down
+   ```
 
-# Lint with ruff
-uv run ruff check backend/
-
-# Run BDD tests with pytest-bdd
-# (requires dev stack to be running)
-uv run pytest backend/tests/
-```
-
-For faster iteration, you can run a single test:
-
-```bash
-uv run pytest backend/tests/features/ingestion/
-```
-
-### Stopping the Dev Stack
-
-```bash
-docker compose -f infrastructure/docker-compose.yml down
-```
-
-To also remove volumes (careful — deletes data):
-
-```bash
-docker compose -f infrastructure/docker-compose.yml down -v
-```
+For a persistent local environment (non-development), see
+[QUICKSTART.md](../QUICKSTART.md).
 
 ## Git Workflow
 
@@ -214,10 +203,7 @@ These cannot be relaxed by any contribution:
 
 ## Code of Conduct
 
-Be respectful, constructive, and professional. This
-project serves people whose liberty depends on effective
-legal representation. We take that responsibility
-seriously.
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for the full Code of Conduct.
 
 ## License
 

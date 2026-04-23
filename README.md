@@ -90,26 +90,11 @@ full details.
 
 ## Quick Start
 
-1. Copy the example environment file and edit secrets:
+**For development:** See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
+test instructions.
 
-   ```bash
-   cp .env.example .env
-   # Edit .env — replace every CHANGE_ME value
-   ```
-
-2. Create persistent external volumes (one-time setup):
-
-   ```bash
-   docker volume create gideon-postgres-data
-   docker volume create gideon-qdrant-data
-   docker volume create gideon-ollama-models
-   ```
-
-3. Start all services:
-
-   ```bash
-   docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
-   ```
+**For local deployment:** See [QUICKSTART.md](QUICKSTART.md) for instructions
+on running a persistent Gideon instance.
 
 ## Scripts
 
