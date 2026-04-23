@@ -65,10 +65,17 @@ def _upload_kwargs(
 
 class TestCreateDocument:
     @pytest.mark.asyncio
-    async def test_upload_returns_201(self) -> None:
+    async def test_upload_returns_201(self, monkeypatch) -> None:
         user = make_user(firm_id=_FIRM_ID, role=Role.admin)
         fake = FakeSession()
         mock_storage = _mock_storage()
+
+        # Mock the ingestion service to avoid celery broker connections
+        mock_ingestion_service = AsyncMock()
+        monkeypatch.setattr(
+            "app.ingestion.get_ingestion_service",
+            lambda: mock_ingestion_service,
+        )
 
         from app.main import app
 
