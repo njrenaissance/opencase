@@ -233,10 +233,10 @@ graph LR
         Redis --> Celery["Celery Workers + Beat"]
         Celery --> Tika["Tika + Tesseract"]
         Celery --> TmpVol[("celery-tmp\nvolume")]
+        FastAPI --> Grafana[("Grafana otel-lgtm\n:3001")]
     end
 
     Celery -.->|internet mode only| OneDrive["OneDrive / SharePoint"]
-    FastAPI --> Grafana[("Grafana otel-lgtm\n:3001")]
 
     style docker fill:#f8f9fa,stroke:#333
     style Browser fill:#fff,stroke:#333
