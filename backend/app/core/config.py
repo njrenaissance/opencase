@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 class OtelSettings(BaseSettings):
     """OpenTelemetry sub-config (GIDEON_OTEL_ prefix)."""
 
-    enabled: bool = False
-    exporter: Literal["console", "otlp"] = "console"
-    endpoint: str = "http://localhost:4318"
+    enabled: bool = True
+    exporter: Literal["console", "otlp"] = "otlp"
+    endpoint: str = "http://grafana:4318"
     service_name: str = "gideon-api"
     sample_rate: float = 1.0
 
@@ -221,8 +221,8 @@ class ChunkingSettings(BaseSettings):
     """
 
     strategy: Literal["recursive"] = "recursive"
-    chunk_size: int = Field(1000, gt=0)
-    chunk_overlap: int = Field(200, ge=0)
+    chunk_size: int = Field(3000, gt=0)
+    chunk_overlap: int = Field(600, ge=0)
     separators: list[str] = Field(default_factory=lambda: ["\n\n", "\n", ". ", " ", ""])
 
     @model_validator(mode="after")

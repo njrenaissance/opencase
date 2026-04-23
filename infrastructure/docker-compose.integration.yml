@@ -9,7 +9,9 @@
 #   - Points celery-worker result backend at gideon_tasks_test database
 #   - Disables services not needed for tests (nextjs)
 #     so pytest-docker starts postgres + redis + minio + qdrant + ollama + fastapi + workers + grafana
-#   - Tears down with -v so the test database is wiped between runs
+#   - Uses ephemeral volumes for postgres, qdrant, minio (clean per test run)
+#   - Keeps ollama-models as external volume (models cached across tests)
+#   - Tears down with -v so ephemeral volumes are wiped between runs
 
 services:
   fastapi:
@@ -57,6 +59,9 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    volumes:
+      # Ephemeral volume: cleaned between test runs
+      - minio-data-test:/data
 
   ollama:
     ports:
@@ -66,13 +71,27 @@ services:
     ports:
       - "6333:6333"
       - "6334:6334"
+    volumes:
+      # Ephemeral volume: cleaned between test runs
+      - qdrant-data-test:/qdrant/storage
 
   qdrant-init:
     environment:
       - COLLECTION_NAME=gideon_test
+
+  postgres:
+    volumes:
+      # Ephemeral volume: cleaned between test runs
+      - postgres-data-test:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   # nextjs is disabled via profiles in the base docker-compose.yml.
   # Flower is disabled for tests only.
   # grafana (otel-lgtm) runs with defaults from docker-compose.yml — do NOT disable it.
   flower:
     profiles: [disabled]
+
+volumes:
+  postgres-data-test:
+  qdrant-data-test:
+  minio-data-test:

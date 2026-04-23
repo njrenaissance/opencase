@@ -1,0 +1,32 @@
+# Override for local development: build backend image locally instead of pulling from GHCR
+# Usage: docker compose -f infrastructure/docker-compose.yml -f infrastructure/docker-compose.local-build.yml up
+
+name: gideon
+
+services:
+  db-migrate:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+
+  fastapi:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+
+  flower:
+    build:
+      context: ..
+      dockerfile: backend/docker/Dockerfile
+      args:
+        INSTALL_EXTRAS: monitoring

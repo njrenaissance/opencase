@@ -138,8 +138,8 @@ DEFAULTS = {
     },
     "chunking": {
         "strategy": "recursive",
-        "chunk_size": 1000,
-        "chunk_overlap": 200,
+        "chunk_size": 3000,
+        "chunk_overlap": 600,
         "separators": ["\n\n", "\n", ". ", " ", ""],
     },
     "embedding": {
@@ -615,22 +615,22 @@ def test_ingestion_prefix_isolation(monkeypatch):
 def test_chunking_defaults():
     cfg = ChunkingSettings()
     assert cfg.strategy == "recursive"
-    assert cfg.chunk_size == 1000
-    assert cfg.chunk_overlap == 200
+    assert cfg.chunk_size == 3000
+    assert cfg.chunk_overlap == 600
     assert cfg.separators == ["\n\n", "\n", ". ", " ", ""]
 
 
 def test_chunking_env_override(monkeypatch):
-    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_SIZE", "500")
+    monkeypatch.setenv("GIDEON_CHUNKING_CHUNK_SIZE", "5000")
     cfg = ChunkingSettings()
-    assert cfg.chunk_size == 500
+    assert cfg.chunk_size == 5000
 
 
 def test_chunking_prefix_isolation(monkeypatch):
     # GIDEON_CHUNK_SIZE (wrong prefix) must not override GIDEON_CHUNKING_CHUNK_SIZE
     monkeypatch.setenv("GIDEON_CHUNK_SIZE", "999")
     cfg = ChunkingSettings()
-    assert cfg.chunk_size == 1000
+    assert cfg.chunk_size == 3000
 
 
 @pytest.mark.parametrize(
