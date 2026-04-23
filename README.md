@@ -93,7 +93,7 @@ full details.
 **For development:** See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
 test instructions.
 
-**For local deployment:** See [QUICKSTART.md](QUICKSTART.md) for instructions
+**For local deployment:** See [LOCAL_DEPLOYMENT.md](LOCAL_DEPLOYMENT.md) for instructions
 on running a persistent Gideon instance.
 
 ## Scripts
