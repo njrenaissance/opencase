@@ -1,7 +1,8 @@
-# Persistent Environment Setup
+# Local Deployment Setup
 
-For setting up a persistent Gideon instance to ingest and work with
-documents (not for unit or integration testing).
+For setting up a persistent Gideon instance on your local machine to ingest
+and work with documents. This is separate from development setup — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for development instructions.
 
 ## Update Environment Variables
 
@@ -51,6 +52,12 @@ Then start the stack:
 ```bash
 docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
 ```
+
+> **Note on exposed ports:** The exposed ports in this configuration (MinIO
+> 9001, Flower 5555, Qdrant 6333, Ollama 11434, Grafana 3001, FastAPI 8000)
+> are for debugging and local development only. In production, only the API
+> port (8000) should be exposed, and only to trusted networks. All other
+> services should be internal to the Docker network.
 
 ## Verify Services
 

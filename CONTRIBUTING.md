@@ -92,7 +92,7 @@ Integration tests require Docker and the backend image to be built locally.
    ```
 
 For a persistent local environment (non-development), see
-[QUICKSTART.md](../QUICKSTART.md).
+[LOCAL_DEPLOYMENT.md](../LOCAL_DEPLOYMENT.md).
 
 ## Git Workflow
 
