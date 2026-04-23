@@ -155,14 +155,14 @@ via `working-directory` and path filters.
 Pull requests run the full pipeline via GitHub Actions:
 lint → unit tests → container build.
 
-AI code review runs separately on PR open.
+AI code review runs separately on PR open via a public
+workflow in `njrenaissance/pr-review-agent`.
 
 ### Required GitHub Secrets
 
 | Secret | Workflow | Purpose |
 | --- | --- | --- |
-| `GH_PAT` | `ai-code-review.yml` | Clone `SignaTrustDev/pr-review-agent` |
-| `ANTHROPIC_API_KEY` | `ai-code-review.yml` | Anthropic API for review |
+| `ANTHROPIC_API_KEY` | `ai-code-review.yml` | Anthropic API for code review |
 
 `GITHUB_TOKEN` is provided automatically by GitHub
 Actions and requires no configuration.
