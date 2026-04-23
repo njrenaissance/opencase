@@ -41,17 +41,17 @@ The repository contains multiple projects: `backend/` (FastAPI), `frontend/`
 
 ### Quick Start
 
-1. Install Python 3.12 with uv:
-
-   ```bash
-   uv python install 3.12
-   ```
-
-2. Clone the repository:
+1. Clone the repository:
 
    ```bash
    git clone https://github.com/njrenaissance/gideon.git
    cd gideon
+   ```
+
+2. Install Python 3.12 with uv:
+
+   ```bash
+   uv python install 3.12
    ```
 
 3. Sync Python dependencies (creates `.venv/` with all dependency groups):
