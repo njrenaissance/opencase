@@ -187,6 +187,7 @@ return {
 ```
 
 **TOTP Validation:**
+
 - TOTP is time-based (30-second windows)
 - `valid_window=1` allows ±1 window (60 seconds total tolerance) to account for clock skew
 - Each TOTP code can only be used once (prevents replay attacks)
@@ -216,6 +217,7 @@ token = jwt.encode(
 ```
 
 **JWT Claims:**
+
 - `user_id`: Unique user identifier (for lookups)
 - `email`: User's email (for audits)
 - `firm_id`: Firm scope (for multi-tenant filtering)
@@ -223,6 +225,7 @@ token = jwt.encode(
 - `iat`, `exp`: Issued-at and expiration (for freshness validation)
 
 **Secret Management:** `settings.auth.jwt_secret` is loaded from environment variable `GIDEON_JWT_SECRET`. It should be:
+
 - At least 32 bytes (256 bits)
 - Randomly generated (not hardcoded)
 - Rotated periodically (V2 feature)
@@ -264,6 +267,7 @@ The API returns:
 ```
 
 The Next.js frontend:
+
 1. Stores the **access_token** in memory (not localStorage/sessionStorage to prevent XSS theft)
 2. Stores the **refresh_token** in a `HttpOnly` cookie (inaccessible to JavaScript; only sent with HTTP requests)
 3. Includes the access_token in subsequent API request headers: `Authorization: Bearer {token}`
@@ -374,7 +378,7 @@ async def refresh_token(
 ## Error Handling
 
 | Scenario | Response | Action |
-|----------|----------|--------|
+| --- | --- | --- |
 | Email not found | 401 Unauthorized | Do not reveal if email exists (prevent enumeration) |
 | Password incorrect | 401 Unauthorized | Log failed attempt; lock account after 5 attempts |
 | TOTP invalid | 401 Unauthorized | Allow retry; no account lockout for TOTP |

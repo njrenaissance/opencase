@@ -43,6 +43,7 @@ sequenceDiagram
 ### 1. **User Submits Question** (UI Layer)
 
 User types a question in the Gideon chat interface. The request specifies:
+
 - Matter context (matter_id is implicit from the session or explicitly provided)
 - Question text
 - Optional: streaming preference (SSE vs. blocking response)
@@ -234,6 +235,7 @@ async for token in llm.astream(messages):
 The LLM generates tokens one by one. In streaming mode, tokens are sent to the client via SSE (Server-Sent Events) for real-time display.
 
 **Model Constraints:**
+
 - Default model: Llama 3 8B or Mistral 7B (configurable)
 - Context window: 4096 tokens (max 5 chunks + prompt + answer)
 - Temperature: 0.1 (deterministic, factual)
@@ -297,6 +299,7 @@ db.commit()
 ```
 
 This creates:
+
 1. An immutable audit record (for compliance with ABA Rule 1.6)
 2. A chat history for the user to review later
 3. Metrics for observability (query count, latency, citation accuracy)
@@ -324,6 +327,7 @@ The API stream completes, and the full response is displayed in the UI:
 ```
 
 The UI displays:
+
 - The answer text with citation links
 - A list of sources (with links to the document viewer)
 - Confidence metadata (model used, execution time)
@@ -351,7 +355,7 @@ The UI displays:
 If any stage fails:
 
 | Stage | Error | Behavior |
-|-------|-------|----------|
+| --- | --- | --- |
 | Permission Filter | User not in matter | 403 Forbidden |
 | Embedding | Ollama unreachable | 503 Service Unavailable |
 | Vector Search | Qdrant timeout | 504 Gateway Timeout; retry with top_k=3 |

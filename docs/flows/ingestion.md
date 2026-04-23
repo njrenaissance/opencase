@@ -79,7 +79,7 @@ if file_hash_exists_in_db:
 
 Upload the original file to MinIO:
 
-```
+```text
 gideon/{firm_id}/{matter_id}/{document_id}/original.{ext}
 ```
 
@@ -119,6 +119,7 @@ result = await TikaExtractionService.extract_document(
 ```
 
 **Extraction Details:**
+
 - Uses Apache Tika REST server to extract text and metadata
 - Detects content-type; auto-detects language
 - Runs OCR (Tesseract) if enabled and document is image-heavy
@@ -147,6 +148,7 @@ chunks = await ChunkingService.chunk_text(
 ```
 
 **Chunking Details:**
+
 - Uses recursive character splitting with configurable separators (`\n\n`, `\n`, ` `, `)
 - Tracks character offsets (char_start, char_end) for hit highlighting in the UI
 - Respects chunk_overlap to preserve context across chunk boundaries
@@ -172,6 +174,7 @@ embeddings = await EmbeddingService.embed_chunks(
 ```
 
 **Embedding Details:**
+
 - Batches chunk texts to Ollama's `/api/embed` endpoint (default model: `nomic-embed-text`, 768 dims)
 - Validates each vector has exactly the expected dimension count
 - Emits OpenTelemetry metrics (embedding latency, batch size)
