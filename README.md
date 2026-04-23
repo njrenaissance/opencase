@@ -21,7 +21,7 @@ Clone the repository and set up your Python environment:
 ```bash
 git clone https://github.com/njrenaissance/gideon.git
 cd gideon
-uv sync
+uv sync --all-groups
 ```
 
 Run linting and unit tests:
@@ -29,8 +29,11 @@ Run linting and unit tests:
 ```bash
 uv run ruff format backend/
 uv run ruff check backend/
-uv run pytest backend/tests/
+cd backend
+uv run pytest tests -m "not integration"
 ```
+
+There are three other projects that should also be tested: cli, shared, and sdk.
 
 For integration tests, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
