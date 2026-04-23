@@ -138,13 +138,6 @@ Track work via GitHub Issues, not TODO comments in code. When referencing
 an issue in a commit, use `fixes #123` or `relates to #123` in the commit
 message footer.
 
-### Git Worktrees
-
-[Git worktrees](https://git-scm.com/docs/git-worktree) are allowed for
-parallel work on multiple issues. Each worktree opens as a separate VS Code
-window. Use [Peacock](https://marketplace.visualstudio.com/items?itemName=johnpapa.vscode-peacock)
-to color-code windows so you can distinguish them at a glance.
-
 ## Code Standards
 
 ### Python (Backend)
