@@ -470,14 +470,11 @@ services:
 
 volumes:
   postgres-data:
-    external: true
     name: gideon-postgres-data
   qdrant-data:
-    external: true
     name: gideon-qdrant-data
   redis-data:
   ollama-models:
-    external: true
     name: gideon-ollama-models
   minio-data:
   celery-tmp:
