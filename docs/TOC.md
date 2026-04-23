@@ -40,6 +40,10 @@ BDD scenarios.*
   traces/metrics/logs instrumentation, Grafana otel-lgtm
 - [Background Tasks](TASKS.md) — Celery architecture, task
   registry, adding new tasks, result backend
+- [Deployment](DEPLOYMENT.md) — Production deployment strategies
+  and infrastructure considerations
+- [Local Deployment](LOCAL_DEPLOYMENT.md) — Running Gideon locally
+  with Docker Compose for development and testing
 
 ### Reference
 
@@ -54,8 +58,11 @@ BDD scenarios.*
 
 ### Legal Framework
 
-- [Third-Party Licenses](../LICENSING.md) — component
+- [Compliance & Legal](LEGAL_COMPLIANCE.md) — ABA rules,
+  jurisdiction-specific requirements (NY CPL, FRCP), Brady/Giglio,
+  Jencks material gating
+- [Third-Party Licenses](LICENSING.md) — component
   license inventory and compatibility analysis
 
 *Coming soon — jurisdiction-specific discovery rules,
-compliance references, and domain glossary.*
+domain glossary.*
