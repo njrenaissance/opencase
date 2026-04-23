@@ -50,6 +50,7 @@ The authenticated user carries:
 ### Goal
 
 Transform user context into a **Qdrant filter** that restricts vectors to:
+
 1. The user's firm only (multi-tenant isolation)
 2. The user's assigned matters (or all if admin)
 3. Document classifications the user can see (exclude work_product if not allowed, exclude jencks if witness hasn't testified)
@@ -115,7 +116,7 @@ def build_permission_filter(
 **Role Definitions:**
 
 | Role | Access | Work Product | Jencks |
-|------|--------|--------------|--------|
+| --- | --- | --- | --- |
 | Admin | All matters in firm | Yes | Yes |
 | Attorney | Assigned matters | Yes | Yes |
 | Paralegal | Assigned matters | If granted | Yes |
@@ -193,6 +194,7 @@ Jencks material (prior statements of government witnesses) is special under the 
 ```
 
 **Example:**
+
 - Matter A has Witness 1, who has testified → `jencks_exclusions[A] = False` (show Jencks)
 - Matter B has Witness 2, who has NOT testified → `jencks_exclusions[B] = True` (hide Jencks)
 
@@ -294,6 +296,7 @@ results = await vector_store.search(
 ### 1. **Never Bypassed**
 
 `build_permission_filter()` is **always** called before a vector search. There are no exceptions:
+
 - If a developer tries to search without it, the code won't compile (it's a required parameter)
 - If a rogue actor somehow calls the Qdrant API directly (bypassing FastAPI), they still need the Qdrant filter applied
 
@@ -357,11 +360,13 @@ The filter is built identically regardless of whether the user is authorized. Th
 ### Scenario 1: Attorney in Matter A
 
 **User Context:**
+
 - Role: attorney
 - Assigned matters: [Matter A]
 
 **Filter Generated:**
-```
+
+```text
 firm_id = "user's firm"
 AND matter_id IN ["Matter A"]
 AND classification NOT IN ["... (all are allowed for attorneys)"]
@@ -376,12 +381,14 @@ AND (
 ### Scenario 2: Paralegal in Matter B (without view_work_product)
 
 **User Context:**
+
 - Role: paralegal
 - Assigned matters: [Matter B]
 - Permissions: [] (no view_work_product)
 
 **Filter Generated:**
-```
+
+```text
 firm_id = "user's firm"
 AND matter_id IN ["Matter B"]
 AND classification NOT IN ["work_product"]
@@ -396,11 +403,13 @@ AND (
 ### Scenario 3: Investigator in Matter C
 
 **User Context:**
+
 - Role: investigator
 - Assigned matters: [Matter C]
 
 **Filter Generated:**
-```
+
+```text
 firm_id = "user's firm"
 AND matter_id IN ["Matter C"]
 AND classification NOT IN ["work_product", "jencks", "giglio", "brady", "rule16"]
@@ -433,6 +442,7 @@ This allows forensic analysis: "What did user X query on date Y?"
 ## Performance
 
 `build_permission_filter()` typically executes in **50-200ms**:
+
 - Matter assignment lookup: ~20-50ms (DB query + index)
 - Witness testimony check: ~20-50ms (per matter, if paralegal/investigator)
 - Filter construction: ~10-20ms (in-memory object creation)
@@ -444,7 +454,7 @@ For users with many matter assignments (e.g., admins), this can be slower. V2 op
 ## Failure Modes
 
 | Failure | Behavior |
-|---------|----------|
+| --- | --- |
 | Database unavailable | 503 Service Unavailable; user cannot query (fail-safe) |
 | Invalid user role in JWT | 403 Forbidden; unknown role is rejected |
 | Matter not found | Filter built with empty matter list; no results returned |

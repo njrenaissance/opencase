@@ -7,7 +7,7 @@
 ## Job Schedule
 
 | Job | Schedule | Purpose | Layer |
-|-----|----------|---------|-------|
+| --- | --- | --- | --- |
 | Cloud Ingestion | Every 15 min | Poll SharePoint/OneDrive, ingest new files | Worker |
 | Deadline Monitor | Every 1 hour | CPL 245 and CPL 30.30 clock alerts | Worker |
 | Audit Chain Validator | Nightly (2 AM) | Verify hash-chain integrity | Auth & Permissions |
@@ -32,9 +32,9 @@ flowchart TD
     I -->|"Record job completion"| J["PostgreSQL tasks table"]
 ```
 
-### Step-by-Step
+### Step-by-Step: Cloud Ingestion
 
-**1. Scheduler Triggers Task** (Celery Beat)
+#### 1. Scheduler Triggers Task (Celery Beat)
 
 ```python
 # In workers/tasks/cloud_ingestion.py
@@ -56,7 +56,7 @@ def cloud_ingestion_worker():
         send_alert(f"Cloud ingestion failed: {e}")
 ```
 
-**2. Load Configuration**
+#### 2. Load Configuration
 
 ```python
 # Load firm's Cloud ingestion config
@@ -79,7 +79,7 @@ if config.access_token_expires_at < datetime.utcnow():
     db.commit()
 ```
 
-**3. Query SharePoint for New Documents**
+#### 3. Query SharePoint for New Documents
 
 ```python
 # Call Microsoft Graph API
@@ -99,7 +99,7 @@ new_documents = [
 logger.info(f"Found {len(new_documents)} new documents")
 ```
 
-**4. Download & Dispatch for Ingestion**
+#### 4. Download & Dispatch for Ingestion
 
 ```python
 # For each new document
@@ -156,7 +156,7 @@ db.commit()
 logger.info(f"Cloud ingestion job completed. Dispatched {len(new_documents)} tasks")
 ```
 
-**5. Cleanup & Record Completion**
+#### 5. Cleanup & Record Completion
 
 ```python
 # Remove orphaned temp files (from crashed jobs)
@@ -174,6 +174,7 @@ db.commit()
 ```
 
 **Security Notes:**
+
 - SharePoint is read-only; Gideon never writes back
 - Only SharePoint document libraries are supported (not personal OneDrive)
 - Access token is refreshed automatically; never hardcoded
@@ -183,7 +184,7 @@ db.commit()
 
 ## Job 2: Deadline Monitor (Every 1 Hour)
 
-### Workflow
+### Workflow: Deadline Monitor
 
 ```mermaid
 flowchart TD
@@ -198,9 +199,9 @@ flowchart TD
     I -->|"Record alerts in audit log"| J["PostgreSQL"]
 ```
 
-### Step-by-Step
+### Step-by-Step: Deadline Monitor
 
-**1. Query All Matters**
+#### 1. Query All Matters
 
 ```python
 @shared_task
@@ -224,7 +225,7 @@ def deadline_monitor_task():
             # ... (see steps below)
 ```
 
-**2. Calculate CPL 245 Clock**
+#### 2. Calculate CPL 245 Clock
 
 ```python
         # CPL 245: Discovery demand deadline
@@ -259,7 +260,7 @@ def deadline_monitor_task():
                 alerts_sent += 1
 ```
 
-**3. Calculate CPL 30.30 Clock**
+#### 3. Calculate CPL 30.30 Clock
 
 ```python
         # CPL 30.30: Speedy trial (120 days from arraignment)
@@ -280,7 +281,7 @@ def deadline_monitor_task():
                 alerts_sent += 1
 ```
 
-**4. Notify Users & Record Alerts**
+#### 4. Notify Users & Record Alerts
 
 ```python
     # For each alert, notify assigned users
@@ -315,11 +316,11 @@ def deadline_monitor_task():
 
 ## Job 3: Audit Chain Validator (Nightly, 2 AM)
 
-### Purpose
+### Purpose: Audit Validation
 
 Verify the hash-chain integrity of the immutable audit log. Every audit entry includes a `hash` and `previous_hash`, forming a blockchain-like chain. If any entry is tampered with, the chain breaks.
 
-### Workflow
+### Workflow: Audit Validation
 
 ```mermaid
 flowchart TD
@@ -478,7 +479,7 @@ async def delete_document(
 ## Failure Modes & Recovery
 
 | Failure | Behavior | Recovery |
-|---------|----------|----------|
+| --- | --- | --- |
 | Cloud ingestion times out | Job fails; retried next cycle (15 min) | Manual retry via API if urgent |
 | SharePoint token expires | Job fails; admin notified | Admin re-authorizes in UI |
 | Database unavailable | All jobs fail; retried at next scheduled time | DBA restores DB; jobs retry automatically |
