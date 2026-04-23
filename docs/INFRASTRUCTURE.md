@@ -449,24 +449,6 @@ when `GIDEON_ADMIN_EMAIL` and `GIDEON_ADMIN_PASSWORD` are set.
 See [SETTINGS.md](SETTINGS.md) for the full list of `GIDEON_ADMIN_*`
 variables.
 
-### Demo Seed (manual)
-
-The `seed_demo` script populates the database with sample data for
-development and testing via the API:
-
-- **Virginia Cora** (attorney) — access to both matters
-- **Jonathan Phillips** (paralegal) — access to Matter B only
-- **People v. Smith** (Matter A)
-- **People v. Jones** (Matter B)
-
-```bash
-# From the repo root (requires the stack to be running)
-uv run python scripts/seed_demo.py
-```
-
-The script is idempotent — safe to run multiple times. Skips existing
-records. Password for both demo users: `DemoPassword123!`
-
 ---
 
 ## Integration Test Stack

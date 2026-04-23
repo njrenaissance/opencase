@@ -6,7 +6,7 @@
 Responsible disclosure protects users and gives the maintainers time to
 prepare a fix.
 
-To report a vulnerability, email **security@corafirm.com** with the subject
+To report a vulnerability, email **<security@corafirm.com>** with the subject
 line `[SECURITY] Gideon`.
 
 Include:

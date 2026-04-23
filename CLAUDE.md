@@ -288,6 +288,63 @@ definitions live in matching subdirectories under
 
 ---
 
+## Git Workflow
+
+### Branch Naming
+
+Use short-lived branches named with the pattern:
+`<type>/<issue-number>-<description>`
+
+Examples:
+
+- `feature/42-bulk-send-api`
+- `fix/118-fix-qdrant-filter-bypass`
+- `docs/116-overhaul-quickstart`
+
+Each branch should address a single GitHub issue.
+
+### Commit Size
+
+Keep commits small and focused — one logical change per commit. This makes
+history easy to review, bisect, and understand.
+
+### Conventional Commits
+
+Follow the [Conventional Commits](https://www.conventionalcommits.org/)
+specification:
+
+- **Format:** `<type>[optional scope]: <description>`
+- **Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
+  `build`, `ci`, `chore`, `revert`
+- **Breaking changes:** Append `!` after the type (e.g., `feat!: redesign
+  API`) or include `BREAKING CHANGE:` in the footer. **IMPORTANT:** When
+  the user indicates a change is breaking (API changes, removed features,
+  incompatible updates), always include `!` after the type or
+  `BREAKING CHANGE:` in the footer. This triggers a major version bump in
+  automated releases.
+
+**Examples:**
+
+- `feat: add bulk send feature` → minor version bump (0.X.0)
+- `fix(auth): resolve login timeout issue` → patch version bump (0.0.X)
+- `docs: update API documentation` → patch version bump (0.0.X)
+- `feat!: redesign authentication flow` → major version bump (X.0.0)
+
+### Issue Tracking
+
+Track work via GitHub Issues, not TODO comments in code. When referencing
+an issue in a commit, use `fixes #123` or `relates to #123` in the commit
+message footer.
+
+### Git Worktrees
+
+[Git worktrees](https://git-scm.com/docs/git-worktree) are allowed for
+parallel work on multiple issues. Each worktree opens as a separate VS Code
+window. Use [Peacock](https://marketplace.visualstudio.com/items?itemName=johnpapa.vscode-peacock)
+to color-code windows so you can distinguish them at a glance.
+
+---
+
 ## Key Legal Compliance References
 
 | Rule | Relevance |
