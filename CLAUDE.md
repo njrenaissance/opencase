@@ -327,7 +327,6 @@ specification:
 
 - `feat: add bulk send feature` → minor version bump (0.X.0)
 - `fix(auth): resolve login timeout issue` → patch version bump (0.0.X)
-- `docs: update API documentation` → patch version bump (0.0.X)
 - `feat!: redesign authentication flow` → major version bump (X.0.0)
 
 ### Issue Tracking

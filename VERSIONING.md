@@ -47,3 +47,10 @@ Breaking changes during pre-release (`0.x.x`) **also bump MINOR** (not MAJOR), s
 ## Release Cadence
 
 Releases are created when milestones are achieved or enough significant features/fixes accumulate. There is no fixed schedule.
+
+## Automated Release Tooling (In Progress)
+
+Version bumping and release automation are currently in development. When
+complete, releases will be automated via GitHub Actions using Conventional
+Commits to determine version bumps and generate changelogs. See GitHub
+Issues for tracking.
