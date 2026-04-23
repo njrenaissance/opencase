@@ -5,82 +5,46 @@
 
 **Open source criminal defense discovery platform.**
 
-A free, fully self-hostable, AI-powered discovery platform for
-solo and small criminal defense practitioners. Runs entirely
-on-premise with no third-party LLM API calls, protecting client
-confidentiality under ABA Rules 1.6 and 1.1.
+A free, fully self-hostable, AI-powered discovery platform for criminal
+defense practitioners. Runs entirely on-premise with no third-party LLM API
+calls, protecting client confidentiality under ABA Rules 1.6 and 1.1.
 
-> **Legal Disclaimer:** Gideon is a software tool, not legal advice. See [DISCLAIMER.md](DISCLAIMER.md).
+> **Legal Disclaimer:** Gideon is a software tool, not legal advice. See
+> [DISCLAIMER.md](DISCLAIMER.md).
 
-## Mission
+## Getting Started
 
-Named after *Gideon v. Wainwright* (1963) — the Supreme Court
-decision establishing the constitutional right to effective
-counsel for criminal defendants who cannot afford an attorney.
+### For Development
 
-The principle is simple: **a defendant's right to counsel is
-meaningless without the tools to mount an effective defense.**
+Clone the repository and set up your Python environment:
 
-Large law firms have access to enterprise eDiscovery platforms
-(Relativity, Concordance, etc.). Solo practitioners and small
-criminal defense firms do not. This creates a two-tier system
-where a defendant's access to quality discovery analysis depends
-on their attorney's budget — not the strength of their case.
+```bash
+git clone https://github.com/njrenaissance/gideon.git
+cd gideon
+uv sync
+```
 
-Gideon exists to level that playing field. It's built on two
-commitments:
+Run linting and unit tests:
 
-1. **Data stays on-premise** — Client confidentiality is
-   non-negotiable. No third-party APIs, no cloud ingestion,
-   no telemetry. Your discovery materials never leave your
-   infrastructure.
+```bash
+uv run ruff format backend/
+uv run ruff check backend/
+uv run pytest backend/tests/
+```
 
-2. **Free and open source** — No licensing fees, no vendor
-   lock-in, no proprietary black boxes. You own your data and
-   your tools.
+For integration tests, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Release Naming Convention
+### For Local Deployment
 
-Major releases are named after famous jurists. For details on versioning and
-release management, see [VERSIONING.md](VERSIONING.md).
+Deploy a persistent Gideon instance with Docker Compose:
 
-| Version | Codename | Jurist |
-| --- | --- | --- |
-| v1.0 | Ginsburg | Ruth Bader Ginsburg |
+See [docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md) for full
+instructions on running the complete stack.
 
-## Key Features (MVP)
+### For Testing & Operations
 
-1. **Document ingestion** — PDF, Word, email, images
-   with OCR; manual upload or scheduled cloud sync
-2. **Chatbot / Q&A** — matter-scoped RAG with citations
-   and audit logging
-3. **Brady/Giglio tracker** — demand/response log,
-   CPL 245 and CPL 30.30 clocks
-4. **Document viewer** — hit highlighting, batch
-   tagging, classification
-5. **Witness index** — entity extraction, Giglio flagging
-6. **RBAC & MFA** — Admin, Attorney, Paralegal,
-   Investigator roles
-7. **Audit logging** — immutable hash-chained log,
-   PDF/CSV export
-
-## Technology Stack
-
-Eleven Docker Compose services running on commodity
-hardware:
-
-- **Next.js** — UI and session management
-- **FastAPI** — API, auth, RAG pipeline (LangChain)
-- **MinIO** — S3-compatible document object storage
-- **Ollama** — local LLM inference and embeddings
-- **PostgreSQL** — relational data store
-- **Qdrant** — permission-filtered vector search
-- **Redis** — task queue broker
-- **Celery + Beat + Flower** — background workers and monitoring
-- **Grafana LGTM** — local observability (traces, metrics, logs)
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for
-full details.
+See [scripts/README.md](scripts/README.md) for documentation on operational
+and testing scripts (document upload, bulk ingestion, RAG testing, etc.).
 
 ## Project Structure
 
@@ -109,82 +73,62 @@ gideon/
 | `/sdk` | **Python project.** SDK providing `Client` and `Session` for API access; used by CLI and external tools |
 | `/shared` | **Python project.** Reusable Python models, exceptions, validators, and helpers shared across backend, SDK, CLI |
 
-## Hardware Requirements
+## Technology Stack
 
-| Tier | RAM | CPU | Storage | GPU |
-| --- | --- | --- | --- | --- |
-| Minimum | 16 GB | 8 cores | 500 GB | None (CPU-only) |
-| Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
+Eleven Docker Compose services running on commodity hardware:
 
-## Privacy & Security
+- **Next.js** — UI and session management
+- **FastAPI** — API, auth, RAG pipeline (LangChain)
+- **MinIO** — S3-compatible document object storage
+- **Ollama** — local LLM inference and embeddings
+- **PostgreSQL** — relational data store
+- **Qdrant** — permission-filtered vector search
+- **Redis** — task queue broker
+- **Celery + Beat + Flower** — background workers and monitoring
+- **Grafana LGTM** — local observability (traces, metrics, logs)
 
-All data stays on your infrastructure — no third-party LLM APIs,
-no telemetry, no model training on client data. Full details in
-[SECURITY.md](SECURITY.md) and [CONTRIBUTING.md](CONTRIBUTING.md)
-(Non-Negotiable Rules section).
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full details.
 
-## Target Users
+## Contributing
 
-- Solo criminal defense attorneys
-- Small criminal defense firms (2-10 attorneys)
-- Article 18B assigned counsel
-- Public defender offices without enterprise tooling
-- Law clinics and legal aid organizations
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines, including:
 
-## Jurisdictions
+- Git workflow (branch naming, conventional commits, issue tracking)
+- Code style and testing practices
+- Security considerations and non-negotiable rules
 
-- New York State (CPL Article 245, CPL 30.30)
-- Federal (FRCP Rule 16, Brady, Giglio, Jencks Act)
+## Documentation
 
-## CI
+- **[docs/TOC.md](docs/TOC.md)** — Full documentation index
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Service topology and
+  module structure
+- **[docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md)** — Running Gideon
+  locally with Docker Compose
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Contribution guidelines and
+  developer setup
+- **[GOVERNANCE.md](GOVERNANCE.md)** — Project governance, versioning, and
+  release process
+- **[SECURITY.md](SECURITY.md)** — Security model and privacy guarantees
 
-Workflows live in `.github/workflows/` at the repo root (GitHub Actions only
-reads from this path). CI currently covers only the `backend/` service — all
-jobs are scoped via `working-directory` and path filters.
+## CI / Testing
 
-### Workflows and Jobs
+Workflows live in `.github/workflows/` and run automatically on pull requests.
 
-| Workflow | Trigger | Jobs | Purpose |
-| --- | --- | --- | --- |
-| `ci.yml` | PR to main; manual dispatch | **Setup Docker Volumes** → **Lint & Format** → **Unit Tests** | Core pipeline: prepares test environment, checks code quality, runs unit tests with coverage |
-| `format-lint.yml` | Called by ci.yml; manual dispatch | Ruff format check, ruff lint, mypy (backend, shared, sdk, cli) | Validates code formatting and type safety across all Python projects |
-| `unit-tests.yml` | Called by ci.yml; manual dispatch | pytest (backend, shared, sdk, cli) with coverage | Runs unit tests (excludes integration tests) and enforces 70% minimum coverage |
-| `build-container.yml` | Manual dispatch only | Build & Push Container | Builds backend Docker image and pushes to GHCR with tags (latest, commit SHA, branch/PR refs). Requires manual trigger via **Actions > Build Container > Run workflow** |
-| `ai-code-review.yml` | PR open (non-draft) | AI Code Review | Delegates to public `njrenaissance/pr-review-agent` for automated code review |
-
-### Required GitHub Secrets
-
-| Secret | Workflow | Purpose |
+| Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | `ai-code-review.yml` | Anthropic API for code review |
+| `ci.yml` | PR to main | Linting, type checking, unit tests (70% coverage minimum) |
+| `format-lint.yml` | Called by ci.yml | Ruff format/lint, mypy across all Python projects |
+| `unit-tests.yml` | Called by ci.yml | pytest with coverage reporting |
+| `build-container.yml` | Manual dispatch | Build and push backend image to GHCR |
+| `ai-code-review.yml` | PR open | Automated code review via external agent |
 
-`GITHUB_TOKEN` is provided automatically by GitHub Actions and requires no
-configuration.
+**Required secret:** `ANTHROPIC_API_KEY` for code review workflow.
 
 ## Status
 
-Early development. Not yet suitable for production use.
+Early development. Not yet suitable for production use. See
+[docs/ROADMAP.md](docs/ROADMAP.md) for planned features.
 
 ## License
 
 [Apache 2.0](LICENSE)
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## Documentation
-
-See [docs/TOC.md](docs/TOC.md) for full documentation
-index.
-
-## Getting Started
-
-**For development:** See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
-test instructions.
-
-**For local deployment:** See [docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md)
-for instructions on running a persistent Gideon instance.
-
-**For operational and testing scripts:** See [scripts/README.md](scripts/README.md)
-for a complete reference of available scripts.
