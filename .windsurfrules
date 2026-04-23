@@ -1,0 +1,16 @@
+# Windsurf Rules for Gideon
+
+> Mirrors `.cursorrules`
+
+Self-hostable discovery platform for criminal defense. All on-premise.
+
+## Standards
+
+[docs/coding_standards/](docs/coding_standards/) — Essentials, Clean Code, Architecture, Patterns
+
+**Critical:**
+
+- No third-party LLM API calls
+- `build_permissions_filter()` on every Qdrant query
+- Legal hold = immutable
+- No external telemetry
