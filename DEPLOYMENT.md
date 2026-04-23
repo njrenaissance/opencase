@@ -2,7 +2,10 @@
 
 ## Overview
 
-Gideon backend services (FastAPI, Celery Worker, Celery Beat, Flower) are now deployed as pre-built container images from GitHub Container Registry (GHCR). This replaces the previous local build approach, ensuring consistent, versioned artifacts across environments.
+Gideon backend services (FastAPI, Celery Worker, Celery Beat, Flower) are now
+deployed as pre-built container images from GitHub Container Registry (GHCR).
+This replaces the previous local build approach, ensuring consistent, versioned
+artifacts across environments.
 
 ---
 
@@ -10,16 +13,19 @@ Gideon backend services (FastAPI, Celery Worker, Celery Beat, Flower) are now de
 
 ### Triggering the Build
 
-The GitHub Actions workflow `build-container.yml` builds and pushes the backend image to GHCR on-demand.
+The GitHub Actions workflow `build-container.yml` builds and pushes the backend
+image to GHCR on-demand.
 
 1. Go to **GitHub → Actions → Build Container**
 2. Click **Run workflow**
-3. The workflow will:
-   - Build the backend image with all extras (including Flower monitoring support)
-   - Tag it with `latest`, commit SHA, and branch/PR refs
+3. Optionally specify a branch/tag/SHA (defaults to `main`)
+4. The workflow will:
+   - Build the backend image with all extras (including Flower monitoring)
+   - Tag with `latest` (if on `main`), commit SHA, and branch/PR refs
    - Push all tags to `ghcr.io/njrenaissance/gideon/backend`
 
-The image is pushed immediately after successful build — no separate "release" step.
+The image is pushed immediately after successful build — no separate release
+step.
 
 ---
 
@@ -30,11 +36,12 @@ The image is pushed immediately after successful build — no separate "release"
 - Docker Compose 2.0+
 - `.env` file (copy from `.env.example` and fill in secrets)
 - External Docker volumes for persistent data:
-  ```bash
-  docker volume create gideon-postgres-data
-  docker volume create gideon-qdrant-data
-  docker volume create gideon-ollama-models
-  ```
+
+```bash
+docker volume create gideon-postgres-data
+docker volume create gideon-qdrant-data
+docker volume create gideon-ollama-models
+```
 
 ### Pulling Pre-Built Images
 
@@ -45,7 +52,9 @@ cd infrastructure
 docker compose -f docker-compose.yml --env-file ../.env up -d
 ```
 
-All five backend services will pull `ghcr.io/njrenaissance/gideon/backend:latest`:
+All five backend services will pull
+`ghcr.io/njrenaissance/gideon/backend:latest`:
+
 - `db-migrate` — runs Alembic migrations once, then exits
 - `fastapi` — FastAPI API server (port 8000)
 - `celery-worker` — background task processor
@@ -77,15 +86,20 @@ To build the backend image locally instead of pulling from GHCR:
 
 ```bash
 cd infrastructure
-docker compose -f docker-compose.yml -f docker-compose.local-build.yml --env-file ../.env up -d
+docker compose -f docker-compose.yml \
+  -f docker-compose.local-build.yml \
+  --env-file ../.env up -d
 ```
 
-The `local-build` override restores the `build:` directives, so Docker Compose will:
+The `local-build` override restores the `build:` directives, so Docker Compose
+will:
+
 1. Build the image from `backend/docker/Dockerfile`
 2. Include the `monitoring` extra for Flower
 3. Use the same compose network and services as production
 
 This is useful for:
+
 - Testing local code changes before pushing
 - Development without Docker Hub/GHCR access
 - Rapid iteration on the Dockerfile itself
@@ -93,8 +107,10 @@ This is useful for:
 ### Rebuilding After Code Changes
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.local-build.yml build
-docker compose -f docker-compose.yml -f docker-compose.local-build.yml up -d
+docker compose -f docker-compose.yml \
+  -f docker-compose.local-build.yml build
+docker compose -f docker-compose.yml \
+  -f docker-compose.local-build.yml up -d
 ```
 
 ---
@@ -103,12 +119,15 @@ docker compose -f docker-compose.yml -f docker-compose.local-build.yml up -d
 
 Integration tests use the `docker-compose.integration.yml` override, which:
 
-1. **Uses ephemeral volumes** for PostgreSQL, Qdrant, and MinIO — data is wiped between test runs for a clean slate
-2. **Caches Ollama models** in an external volume (`gideon-ollama-models`) — models are reused across test runs (pulling takes time)
+1. **Uses ephemeral volumes** for PostgreSQL, Qdrant, and MinIO — data is
+   wiped between test runs for a clean slate
+2. **Caches Ollama models** in an external volume (`gideon-ollama-models`) —
+   models are reused across test runs (pulling takes time)
 3. **Enables OTEL tracing** with the OTLP exporter to Grafana (otel-lgtm)
 4. **Disables Flower** (not needed for tests)
 
-The integration compose is applied automatically by `pytest-docker` via `conftest.py` — developers do not invoke it directly.
+The integration compose is applied automatically by `pytest-docker` via
+`conftest.py` — developers do not invoke it directly.
 
 ### Running Integration Tests
 
@@ -118,9 +137,11 @@ pytest -m integration
 ```
 
 This will:
+
 1. Create/start all services with ephemeral volumes
 2. Run tests against `gideon_test` and `gideon_tasks_test` databases
-3. Tear down services with `docker compose down -v` (removes ephemeral volumes, keeps `gideon-ollama-models`)
+3. Tear down services with `docker compose down -v` (removes ephemeral
+   volumes, keeps `gideon-ollama-models`)
 
 ---
 
@@ -129,24 +150,37 @@ This will:
 Each build produces multiple tags:
 
 | Tag | Used for |
-|---|---|
-| `latest` | Most recent build (production default) |
+| --- | --- |
+| `latest` | Most recent build on `main` (production default) |
 | `<commit-sha>` | Specific commit — useful for rollback |
 | `<branch-name>` | Latest on a branch (e.g., `main`, `feature/xxx`) |
 | `<pr-number>` | Preview builds for pull requests |
 
 Example tags for a commit on `main`:
+
 ```
 ghcr.io/njrenaissance/gideon/backend:latest
 ghcr.io/njrenaissance/gideon/backend:abc1234def5678
 ghcr.io/njrenaissance/gideon/backend:main
 ```
 
-To pin a specific version, update the `docker-compose.yml` `image:` fields:
-```yaml
-fastapi:
-  image: ghcr.io/njrenaissance/gideon/backend:abc1234def5678  # specific commit
+### Pinning a Specific Image Version
+
+All backend services use `${IMAGE_TAG:-latest}`, which allows overriding via
+an environment variable. To pin to a specific commit or tag:
+
+```bash
+# Pin to a specific commit SHA for rollback
+export IMAGE_TAG=abc1234def5678
+docker compose -f docker-compose.yml up -d
+
+# Or set in .env file:
+echo "IMAGE_TAG=abc1234def5678" >> .env
+docker compose -f docker-compose.yml up -d
 ```
+
+This is safer than editing compose files and allows quick rollback by
+changing one env variable.
 
 ---
 
@@ -157,7 +191,7 @@ fastapi:
 Default values are in `.env.example`. Key variables:
 
 | Variable | Description |
-|---|---|
+| --- | --- |
 | `GIDEON_OTEL_ENABLED` | Enable OpenTelemetry (true/false) |
 | `GIDEON_OTEL_EXPORTER` | Exporter type (console/otlp) |
 | `GIDEON_OTEL_ENDPOINT` | OTLP collector endpoint |
@@ -168,6 +202,7 @@ Default values are in `.env.example`. Key variables:
 | `GIDEON_ADMIN_EMAIL`, `GIDEON_ADMIN_PASSWORD` | Initial admin user |
 
 Copy `.env.example` to `.env` and fill in secrets:
+
 ```bash
 cp .env.example .env
 # Edit .env and set required values
@@ -180,6 +215,7 @@ cp .env.example .env
 ### Image Pull Fails (403 Forbidden)
 
 The image is private. Authenticate:
+
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u <username> --password-stdin
 ```
@@ -189,22 +225,26 @@ Or use a Personal Access Token (PAT) with `read:packages` scope.
 ### Migrations Fail
 
 `db-migrate` runs migrations on startup. Check logs:
+
 ```bash
 docker compose logs db-migrate
 ```
 
 Common issues:
+
 - Database is not healthy — check `postgres` logs
 - Schema version mismatch — ensure you're using the right image version
 
 ### Ollama Models Don't Persist
 
 Ensure `gideon-ollama-models` is an external volume created on the host:
+
 ```bash
 docker volume ls | grep gideon-ollama-models
 ```
 
 If missing, create it:
+
 ```bash
 docker volume create gideon-ollama-models
 ```
@@ -223,7 +263,10 @@ Models are pulled by `ollama-init` once and reused across container restarts.
 ## Security Notes
 
 1. **Do not commit `.env`** — use `.env.example` as a template
-2. **Image pull credentials** — store `$GITHUB_TOKEN` in CI secrets, not in `.env`
-3. **No third-party LLM API calls** — Ollama runs locally; no external inference
-4. **Self-hosted only** — Gideon is designed for on-premise deployment; do not expose to the public internet without additional hardening (VPN, mTLS, etc.)
-
+2. **Image pull credentials** — store `$GITHUB_TOKEN` in CI secrets, not in
+   `.env`
+3. **No third-party LLM API calls** — Ollama runs locally; no external
+   inference
+4. **Self-hosted only** — Gideon is designed for on-premise deployment; do not
+   expose to the public internet without additional hardening (VPN, mTLS,
+   etc.)
