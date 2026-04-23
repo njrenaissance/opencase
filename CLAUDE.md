@@ -105,7 +105,7 @@ not a separate service.
    metrics, logs) stays on-premise; no data sent to
    third-party services.
 4. **All vector queries must be limited to matter scope,
-   enforced via `build_qdrant_filter()`.** This function
+   enforced via `build_permissions_filter()`.** This function
    is called on every query without exception. It is never
    bypassed and never accepts client-supplied filter
    parameters. This is the most security-critical function
@@ -153,7 +153,7 @@ not a separate service.
 Jencks material is filtered from all queries until
 `has_testified = true` is set on the witness record for
 that matter. This flag lives in PostgreSQL and is checked
-inside `build_qdrant_filter()`.
+inside `build_permissions_filter()`.
 
 ---
 

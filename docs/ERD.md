@@ -176,7 +176,7 @@ via `JOIN chat_queries`.
 - `legal_hold` on a matter blocks document deletion in all downstream services
   (MinIO, Qdrant, Postgres) — enforced by the Legal Hold Celery task (Feature 12).
 - `matter_access` is a **security construct**, not a business join table. It is
-  checked by `build_qdrant_filter()` on every vector query. A missing row means
+  checked by `build_permissions_filter()` on every vector query. A missing row means
   404, not 403 — matter existence is not revealed to unauthorized users.
 - `view_work_product` defaults to `false` for all access rows. Only Admin can grant
   it to Paralegal users; Investigators can never receive it (enforced in RBAC layer).

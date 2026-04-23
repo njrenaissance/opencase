@@ -162,7 +162,7 @@ These cannot be relaxed by any contribution:
 3. No external telemetry — keep all observability
    (traces, metrics, logs) on-premise
 4. All vector queries must be limited to matter scope
-   (enforced via `build_qdrant_filter()`)
+   (enforced via `build_permissions_filter()`)
 5. Legal hold = immutable documents
 6. SHA-256 hash on every ingested document
 7. Immutable hash-chained audit log

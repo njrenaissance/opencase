@@ -83,7 +83,7 @@ Prior statements of government witnesses are discoverable only AFTER the witness
 **Gideon's Implementation:**
 - **Jencks flag in vector payload**: Every chunk carries a "classification" field including "jencks" as a possible value
 - **Witness testimony gate**: The vector search respects a "has_testified" flag on each witness record in PostgreSQL
-- **Architectural enforcement**: Jencks material is filtered from chatbot queries until "has_testified = true" is set — this is enforced inside `build_qdrant_filter()` and is never bypassed
+- **Architectural enforcement**: Jencks material is filtered from chatbot queries until "has_testified = true" is set — this is enforced inside `build_permissions_filter()` and is never bypassed
 - **Audit trail**: Every Jencks classification is logged; access to Jencks material after testimony is granted is fully audit-logged
 
 ---

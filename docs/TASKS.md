@@ -170,6 +170,26 @@ result = app.send_task("gideon.ping")
 assert result.get(timeout=10) == "pong"
 ```
 
+### `gideon.sleep`
+
+Sleep task for testing task queue behavior and timeouts.
+
+| Field | Value |
+| --- | --- |
+| Module | `app.workers.tasks.sleep` |
+| Name | `gideon.sleep` |
+| Arguments | `seconds: int` — duration to sleep |
+| Returns | `{"slept_seconds": int}` |
+| Purpose | Testing Celery worker, task timeouts, and queue latency |
+
+```python
+from celery import Celery
+
+app = Celery(broker="redis://redis:6379/0", backend="redis://redis:6379/1")
+result = app.send_task("gideon.sleep", args=(5,))
+assert result.get(timeout=10) == {"slept_seconds": 5}
+```
+
 ### `gideon.ingest_document`
 
 Orchestrates the full document ingestion pipeline. Downloads the original
@@ -235,7 +255,7 @@ overwritten.
 `payload_metadata` must contain at least: `firm_id`, `matter_id`,
 `client_id`, `classification`, `source`. Optional: `bates_number`,
 `page_number`. These fields are stored in every Qdrant point payload
-to support `build_qdrant_filter()` RBAC enforcement.
+to support `build_permissions_filter()` RBAC enforcement.
 
 ### Future tasks
 
