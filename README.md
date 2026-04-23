@@ -100,14 +100,14 @@ gideon/
 
 | Directory | Purpose |
 | --- | --- |
-| `/backend` | FastAPI REST API, JWT authentication, RBAC, audit logging, LangChain RAG pipeline, Celery task submission |
-| `/cli` | Command-line tool built on the Python SDK; enables programmatic document ingestion and queries |
+| `/backend` | **Python project.** FastAPI REST API, JWT authentication, RBAC, audit logging, LangChain RAG pipeline, Celery task submission |
+| `/cli` | **Python project.** Command-line tool built on the Python SDK; enables programmatic document ingestion and queries |
 | `/docs` | User documentation: architecture diagrams, data flow guides, deployment instructions, legal compliance, settings reference |
 | `/frontend` | Next.js React app (UI in development); will proxy to FastAPI and manage httpOnly session cookies |
 | `/infrastructure` | Docker Compose services, init scripts, volume/network setup, CI/CD workflows |
 | `/scripts` | Utility scripts for document upload, bulk ingestion, RAG testing, database queries, and local deployment |
-| `/sdk` | Python SDK providing `Client` and `Session` for API access; used by CLI and external tools |
-| `/shared` | Reusable Python models, exceptions, validators, and helpers shared across backend, SDK, CLI |
+| `/sdk` | **Python project.** SDK providing `Client` and `Session` for API access; used by CLI and external tools |
+| `/shared` | **Python project.** Reusable Python models, exceptions, validators, and helpers shared across backend, SDK, CLI |
 
 ## Hardware Requirements
 
