@@ -116,17 +116,6 @@ gideon/
 | Minimum | 16 GB | 8 cores | 500 GB | None (CPU-only) |
 | Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
 
-## Quick Start
-
-**For development:** See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
-test instructions.
-
-**For local deployment:** See [LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md) for
-instructions on running a persistent Gideon instance.
-
-**For operational and testing scripts:** See [scripts/README.md](scripts/README.md)
-for a complete reference of available scripts.
-
 ## Privacy & Security
 
 All data stays on your infrastructure — no third-party LLM APIs,
@@ -188,3 +177,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 See [docs/TOC.md](docs/TOC.md) for full documentation
 index.
+
+## Getting Started
+
+**For development:** See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
+test instructions.
+
+**For local deployment:** See [docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md)
+for instructions on running a persistent Gideon instance.
+
+**For operational and testing scripts:** See [scripts/README.md](scripts/README.md)
+for a complete reference of available scripts.
