@@ -156,7 +156,8 @@ def _setup_log_exporter(settings: Settings, resource: Resource) -> None:
     from opentelemetry.exporter.otlp.proto.http._log_exporter import (
         OTLPLogExporter,
     )
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+    from opentelemetry.sdk._logs import LoggerProvider
     from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 
     endpoint = f"{settings.otel.endpoint}/v1/logs"
@@ -169,10 +170,7 @@ def _setup_log_exporter(settings: Settings, resource: Resource) -> None:
     set_logger_provider(log_provider)
     _log_provider = log_provider
 
-    # Attach an OTel logging handler to the root logger so all app logs
-    # are forwarded to the OTLP backend alongside stdout.
-    otel_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
-    logging.getLogger().addHandler(otel_handler)
+    LoggingInstrumentor().instrument()
 
     logger.debug("OTel log bridge wired")
 
@@ -285,7 +283,8 @@ def reattach_log_handler(settings: Settings) -> None:
     from opentelemetry.exporter.otlp.proto.http._log_exporter import (
         OTLPLogExporter,
     )
-    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
+    from opentelemetry.sdk._logs import LoggerProvider
     from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor
 
     # Shut down stale provider (inherited from parent). The background thread
@@ -296,12 +295,6 @@ def reattach_log_handler(settings: Settings) -> None:
         except Exception:
             logger.debug("Failed to shut down stale log provider", exc_info=True)
         _log_provider = None
-
-    # Remove stale handlers from root logger (inherited from parent before fork).
-    root_logger = logging.getLogger()
-    stale_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
-    for h in stale_handlers:
-        root_logger.removeHandler(h)
 
     # Reuse the resource from the parent setup_telemetry call for consistency.
     resource = _otel_resource
@@ -327,9 +320,7 @@ def reattach_log_handler(settings: Settings) -> None:
     set_logger_provider(log_provider)
     _log_provider = log_provider
 
-    # Attach fresh handler to root logger.
-    otel_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
-    root_logger.addHandler(otel_handler)
+    LoggingInstrumentor().instrument()
 
     logger.debug("OTel log bridge re-attached in forked process")
 

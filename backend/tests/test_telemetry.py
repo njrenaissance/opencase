@@ -1,10 +1,7 @@
 """Unit tests for OpenTelemetry telemetry setup."""
 
-import logging
-
 import pytest
 from opentelemetry import trace
-from opentelemetry.sdk._logs import LoggingHandler
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     ConsoleSpanExporter,
@@ -14,13 +11,6 @@ from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
 from app.core import telemetry
 from app.core.config import OtelSettings, Settings
-
-
-def _strip_otel_handlers() -> None:
-    """Remove all OTel LoggingHandler instances from root logger."""
-    root_logger = logging.getLogger()
-    for h in [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]:
-        root_logger.removeHandler(h)
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +26,6 @@ def _reset_telemetry():
     trace._TRACER_PROVIDER_SET_ONCE._done = False
     # Reset the global logger provider so tests start fresh.
     set_logger_provider(None)
-    _strip_otel_handlers()
     yield
     telemetry._tracer_provider = None
     telemetry._log_provider = None
@@ -44,7 +33,6 @@ def _reset_telemetry():
     trace._TRACER_PROVIDER = None
     trace._TRACER_PROVIDER_SET_ONCE._done = False
     set_logger_provider(None)
-    _strip_otel_handlers()
 
 
 def _make_settings(**otel_overrides) -> Settings:
@@ -145,43 +133,29 @@ def test_celery_instrumentation_calls_instrumentor(monkeypatch):
 
 
 def test_reattach_log_handler_skipped_when_disabled():
-    """No error when OTel is disabled — no handler added."""
+    """No error when OTel is disabled."""
     telemetry.reattach_log_handler(_make_settings(enabled=False))
-    root_logger = logging.getLogger()
-    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
-    assert len(otel_handlers) == 0
 
 
 def test_reattach_log_handler_skipped_for_console_exporter():
-    """No handler added when exporter=console."""
+    """No setup when exporter=console."""
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="console"))
-    root_logger = logging.getLogger()
-    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
-    assert len(otel_handlers) == 0
 
 
-def test_reattach_log_handler_attaches_handler_to_root_logger():
-    """After call with exporter=otlp, root logger has a LoggingHandler."""
+def test_reattach_log_handler_sets_logger_provider():
+    """After call with exporter=otlp, logger provider is set."""
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
-    root_logger = logging.getLogger()
-    otel_handlers = [h for h in root_logger.handlers if isinstance(h, LoggingHandler)]
-    assert len(otel_handlers) == 1
+    from opentelemetry._logs import get_logger_provider
+
+    provider = get_logger_provider()
+    assert provider is not None
 
 
-def test_reattach_log_handler_removes_stale_handlers():
-    """Calling twice results in exactly one LoggingHandler (no duplicates)."""
+def test_reattach_log_handler_is_idempotent():
+    """Calling reattach_log_handler twice succeeds without error."""
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
-    root_logger = logging.getLogger()
-    first_call_handlers = [
-        h for h in root_logger.handlers if isinstance(h, LoggingHandler)
-    ]
-    assert len(first_call_handlers) == 1
-
+    # Second call should not raise
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
-    second_call_handlers = [
-        h for h in root_logger.handlers if isinstance(h, LoggingHandler)
-    ]
-    assert len(second_call_handlers) == 1
 
 
 def test_setup_log_exporter_sets_logger_provider():

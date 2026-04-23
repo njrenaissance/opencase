@@ -566,6 +566,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         json_file="config.json",
         json_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @classmethod

@@ -83,28 +83,56 @@ full details.
 | Minimum | 32 GB | 8 cores | 500 GB | None (CPU-only) |
 | Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
 
-## Quick Start
+## Quick Start for Local Development
 
-1. Copy the example environment file and edit secrets:
+### Prerequisites
 
-   ```bash
-   cp .env.example .env
-   # Edit .env — replace every CHANGE_ME value
-   ```
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) package manager
 
-2. Create persistent external volumes (one-time setup):
+### 1. Install Dependencies
 
-   ```bash
-   docker volume create gideon-postgres-data
-   docker volume create gideon-qdrant-data
-   docker volume create gideon-ollama-models
-   ```
+```bash
+uv sync
+```
 
-3. Start all services:
+This installs all workspace dependencies (backend, shared, SDK, CLI)
+and dev tools (pytest, ruff, mypy).
 
-   ```bash
-   docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
-   ```
+### 2. Run Tests
+
+This is a monorepo with multiple packages. Test from each package's
+directory:
+
+```bash
+# Backend tests
+cd backend
+uv run pytest              # all tests
+uv run pytest -m 'not integration'  # unit tests
+uv run pytest -m integration        # integration tests only
+uv run pytest --cov        # with coverage
+
+# SDK, CLI, Shared
+cd sdk && uv run pytest
+cd cli && uv run pytest
+cd shared && uv run pytest
+```
+
+### 3. Code Quality
+
+```bash
+# Lint
+uv run ruff check .
+
+# Format
+uv run ruff format .
+
+# Type check
+uv run mypy app/
+```
+
+For deployment, see [QUICKSTART.md](QUICKSTART.md) for Docker
+setup and service verification instructions.
 
 ## Scripts
 
