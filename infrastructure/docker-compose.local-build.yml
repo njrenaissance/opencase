@@ -1,5 +1,9 @@
 # Override for local development: build backend image locally instead of pulling from GHCR
 # Usage: docker compose -f infrastructure/docker-compose.yml -f infrastructure/docker-compose.local-build.yml up
+#
+# All backend services build from backend/docker/Dockerfile.
+# Only flower includes INSTALL_EXTRAS=monitoring (Celery Flower UI requires flower package).
+# db-migrate, fastapi, celery-worker, and celery-beat don't need monitoring extras.
 
 name: gideon
 

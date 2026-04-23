@@ -4,13 +4,14 @@
 # Do NOT use this file for normal development — use docker-compose.yml only.
 #
 # Changes from base:
-#   - Points FastAPI at gideon_test database (created by postgres/init.sql)
+#   - Points FastAPI and Celery at gideon_test / gideon_tasks_test databases (created by postgres/init.sql)
 #   - Exposes Redis port for host-side test access
-#   - Points celery-worker result backend at gideon_tasks_test database
-#   - Disables services not needed for tests (nextjs)
-#     so pytest-docker starts postgres + redis + minio + qdrant + ollama + fastapi + workers + grafana
+#   - Exposes Tika port for text extraction during tests
+#   - Disables services not needed for tests (nextjs, flower)
+#   - Services started: postgres, redis, minio, minio-init, qdrant, qdrant-init, ollama, ollama-init, tika, fastapi, celery-worker, celery-beat, grafana
 #   - Uses ephemeral volumes for postgres, qdrant, minio (clean per test run)
 #   - Keeps ollama-models as external volume (models cached across tests)
+#   - Enables OTEL tracing via http://grafana:4318
 #   - Tears down with -v so ephemeral volumes are wiped between runs
 
 services:
@@ -49,6 +50,7 @@ services:
 
   celery-beat:
     environment:
+      - GIDEON_DB_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_test
       - GIDEON_CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gideon_tasks_test
       - GIDEON_OTEL_ENABLED=true
       - GIDEON_OTEL_EXPORTER=otlp

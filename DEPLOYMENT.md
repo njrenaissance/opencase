@@ -52,10 +52,20 @@ All five backend services will pull `ghcr.io/njrenaissance/gideon/backend:latest
 - `celery-beat` — scheduled task submitter (cron)
 - `flower` — Celery monitoring UI (port 5555)
 
-**Authentication for private registries**: If the image is private, configure Docker credentials:
+**Authentication for private registries**: If the image is private, configure
+Docker credentials:
+
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u <username> --password-stdin
 ```
+
+Docker Compose respects daemon credentials for `image:` pulls once you've
+logged in via `docker login`. Ensure the token has `read:packages` scope.
+
+For advanced credential management (e.g., in CI/CD), consider:
+
+- Docker 25.0+: Use `--registry-auth` flag with embedded credentials in compose
+- Earlier versions: Set credentials in `.env` or use `DOCKER_CONFIG` env var
 
 ---
 
