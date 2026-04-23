@@ -292,7 +292,7 @@ def reattach_log_handler(settings: Settings) -> None:
     # and HTTP connection pool are in an invalid state post-fork.
     if _log_provider is not None:
         try:
-            _log_provider.shutdown()  # type: ignore[no-untyped-call]
+            _log_provider.shutdown()
         except Exception:
             logger.debug("Failed to shut down stale log provider", exc_info=True)
         _log_provider = None

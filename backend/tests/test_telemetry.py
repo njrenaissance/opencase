@@ -160,6 +160,7 @@ def test_reattach_log_handler_skipped_for_console_exporter():
     assert len(otel_handlers) == 0
 
 
+@pytest.mark.integration
 def test_reattach_log_handler_attaches_handler_to_root_logger():
     """After call with exporter=otlp, root logger has a LoggingHandler."""
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
@@ -168,6 +169,7 @@ def test_reattach_log_handler_attaches_handler_to_root_logger():
     assert len(otel_handlers) == 1
 
 
+@pytest.mark.integration
 def test_reattach_log_handler_removes_stale_handlers():
     """Calling twice results in exactly one LoggingHandler (no duplicates)."""
     telemetry.reattach_log_handler(_make_settings(enabled=True, exporter="otlp"))
@@ -184,6 +186,7 @@ def test_reattach_log_handler_removes_stale_handlers():
     assert len(second_call_handlers) == 1
 
 
+@pytest.mark.integration
 def test_setup_log_exporter_sets_logger_provider():
     """Verify setup_telemetry sets up a LoggerProvider when otlp is enabled."""
     telemetry.setup_telemetry(_make_settings(enabled=True, exporter="otlp"))
