@@ -48,10 +48,10 @@ The repository contains multiple projects: `backend/` (FastAPI), `frontend/`
    cd gideon
    ```
 
-2. Sync Python dependencies (creates `.venv/`):
+2. Sync Python dependencies (creates `.venv/` with all dependency groups):
 
    ```bash
-   uv sync
+   uv sync --all-groups
    ```
 
 3. Run unit tests and linting:
