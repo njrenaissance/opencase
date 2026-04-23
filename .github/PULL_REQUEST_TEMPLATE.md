@@ -29,7 +29,7 @@ Describe how you tested this change:
 Before submitting, please confirm:
 
 - [ ] All vector queries limited to matter scope via
-  `build_qdrant_filter()` (if modifying RAG/search)
+  `build_permissions_filter()` (if modifying RAG/search)
 - [ ] No new third-party LLM API calls introduced
 - [ ] No external telemetry (all observability stays local)
 - [ ] No client data sent outside the container

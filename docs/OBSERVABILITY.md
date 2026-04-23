@@ -56,7 +56,7 @@ Current manually instrumented spans:
 
 | Span name | Module | Purpose |
 | --- | --- | --- |
-| `permissions.build_qdrant_filter` | `core/permissions.py` | Vector query access control |
+| `permissions.build_permissions_filter` | `core/permissions.py` | Vector query access control |
 | `permissions.check_role` | `core/permissions.py` | Role enforcement on endpoints |
 | `permissions.check_matter_access` | `core/permissions.py` | Matter-level access verification |
 | `auth.login` | `api/auth.py` | Login flow |
@@ -260,9 +260,9 @@ from app.core.metrics import access_denied
 
 tracer = trace.get_tracer(__name__)
 
-async def build_qdrant_filter(user, matter_id, db):
+async def build_permissions_filter(user, matter_id, db):
     with tracer.start_as_current_span(
-        "permissions.build_qdrant_filter",
+        "permissions.build_permissions_filter",
         attributes={"user.id": str(user.id), "matter.id": str(matter_id)},
     ):
         # ... permission logic ...

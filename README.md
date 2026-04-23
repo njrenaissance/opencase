@@ -41,7 +41,8 @@ commitments:
 
 ## Release Naming Convention
 
-Major releases are named after famous jurists:
+Major releases are named after famous jurists. For details on versioning and
+release management, see [VERSIONING.md](VERSIONING.md).
 
 | Version | Codename | Jurist |
 | --- | --- | --- |

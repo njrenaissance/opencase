@@ -26,7 +26,7 @@ Security vulnerabilities in Gideon include:
 - Access control bypass (e.g., one user accessing another user's matters)
 - Data isolation failures (e.g., cross-matter data leakage)
 - Audit log tampering (e.g., deleting or forging audit records)
-- Qdrant filter bypass (e.g., circumventing `build_qdrant_filter()`)
+- Qdrant filter bypass (e.g., circumventing `build_permissions_filter()`)
 - Authentication/JWT weaknesses (e.g., token forgery, replay attacks)
 - LLM prompt injection (e.g., jailbreaking system prompts)
 - Encryption bypass (e.g., plaintext storage of sensitive data)
@@ -80,7 +80,7 @@ For general guidance on responsible disclosure, see:
 
 Maintainers review security-sensitive code carefully:
 
-- `build_qdrant_filter()` — every vector query must pass through this
+- `build_permissions_filter()` — every vector query must pass through this
   function; bypassing it is a critical security issue
 - `create_audit_log_entry()` — every LLM query, document access, and
   permission change is logged
