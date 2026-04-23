@@ -1,5 +1,29 @@
 # Governance
 
+## Mission
+
+Named after *Gideon v. Wainwright* (1963) — the Supreme Court decision
+establishing the constitutional right to effective counsel for criminal
+defendants who cannot afford an attorney.
+
+The principle is simple: **a defendant's right to counsel is meaningless
+without the tools to mount an effective defense.**
+
+Large law firms have access to enterprise eDiscovery platforms (Relativity,
+Concordance, etc.). Solo practitioners and small criminal defense firms do
+not. This creates a two-tier system where a defendant's access to quality
+discovery analysis depends on their attorney's budget — not the strength of
+their case.
+
+Gideon exists to level that playing field. It's built on two commitments:
+
+1. **Data stays on-premise** — Client confidentiality is non-negotiable. No
+   third-party APIs, no cloud ingestion, no telemetry. Your discovery
+   materials never leave your infrastructure.
+
+2. **Free and open source** — No licensing fees, no vendor lock-in, no
+   proprietary black boxes. You own your data and your tools.
+
 ## Governance Model
 
 This project is currently governed by a single maintainer (BDFL model). As the community grows, the intent is to evolve toward a core committer group where trusted contributors earn commit rights and shared decision-making authority.

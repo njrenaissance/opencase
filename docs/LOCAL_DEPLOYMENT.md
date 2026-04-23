@@ -2,7 +2,18 @@
 
 For setting up a persistent Gideon instance on your local machine to ingest
 and work with documents. This is separate from development setup — see
-[CONTRIBUTING.md](CONTRIBUTING.md) for development instructions.
+[CONTRIBUTING.md](../CONTRIBUTING.md) for development instructions.
+
+## Hardware Requirements
+
+| Tier | RAM | CPU | Storage | GPU |
+| --- | --- | --- | --- | --- |
+| Minimum | 16 GB | 8 cores | 500 GB | None (CPU-only) |
+| Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
+
+The minimum configuration runs the full stack on commodity hardware. GPU
+acceleration via NVIDIA is optional and speeds up LLM inference and
+embeddings.
 
 ## Update Environment Variables
 
