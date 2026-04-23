@@ -168,5 +168,5 @@ See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for the full Code of Conduct.
 
 ## License
 
-By contributing, you agree that your contributions will
-be licensed under the [Apache 2.0](LICENSE) license.
+By contributing, you agree that your contributions will be licensed under the
+Apache 2.0 license. See [LICENSING.md](LICENSING.md) for details.
