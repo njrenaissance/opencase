@@ -68,19 +68,31 @@ The repository contains multiple projects: `backend/` (FastAPI), `frontend/`
 
 ### Integration Tests (Optional)
 
-Integration tests require Docker and the backend image.
+Integration tests require Docker and pull several service images.
 
-1. Pull the latest Docker image for the application:
+**Images used by integration tests:**
+
+- `ghcr.io/njrenaissance/gideon/backend:latest` — FastAPI, Celery, migrations
+- `postgres:17-alpine` — PostgreSQL database
+- `qdrant/qdrant:latest` — Vector database
+- `redis:7-alpine` — Cache & message broker
+- `minio/minio:latest` — S3-compatible storage
+- `ollama/ollama:latest` — Local LLM inference
+- `ghcr.io/grafana/otel-lgtm:latest` — Observability stack
+
+**Before running integration tests:**
+
+1. Pull the backend image (or build locally):
 
    ```bash
+   # Option A: Pull from GitHub Container Registry
    docker pull ghcr.io/njrenaissance/gideon/backend:latest
-   ```
-
-   Alternativley, you can build it locally:
-
-   ```bash
+   
+   # Option B: Build locally for faster iteration
    docker build -f backend/docker/Dockerfile -t ghcr.io/njrenaissance/gideon/backend:latest .
    ```
+
+   All other images are pulled automatically by Docker Compose during test startup.
 
 2. Run integration tests:
 
@@ -88,7 +100,12 @@ Integration tests require Docker and the backend image.
    uv run pytest backend/tests/ -m integration
    ```
 
-   Or use the integration Compose file to spin up a full stack:
+   This will:
+   - Spin up all services via `pytest-docker`
+   - Run tests against a clean test database
+   - Tear down all services after tests complete
+
+   For manual stack control:
 
    ```bash
    docker compose -f infrastructure/docker-compose.integration.yml up -d
