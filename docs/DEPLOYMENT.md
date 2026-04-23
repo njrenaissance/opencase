@@ -37,12 +37,6 @@ step.
 - `.env` file (copy from `.env.example` and fill in secrets)
 - External Docker volumes for persistent data:
 
-```bash
-docker volume create gideon-postgres-data
-docker volume create gideon-qdrant-data
-docker volume create gideon-ollama-models
-```
-
 ### Pulling Pre-Built Images
 
 Use the main compose file, which references the GHCR image by default:
@@ -119,12 +113,10 @@ docker compose -f docker-compose.yml \
 
 Integration tests use the `docker-compose.integration.yml` override, which:
 
-1. **Uses ephemeral volumes** for PostgreSQL, Qdrant, and MinIO — data is
-   wiped between test runs for a clean slate
-2. **Caches Ollama models** in an external volume (`gideon-ollama-models`) —
-   models are reused across test runs (pulling takes time)
-3. **Enables OTEL tracing** with the OTLP exporter to Grafana (otel-lgtm)
-4. **Disables Flower** (not needed for tests)
+1. **Uses ephemeral volumes** for all services — data is wiped between test
+   runs for a clean slate
+2. **Enables OTEL tracing** with the OTLP exporter to Grafana (otel-lgtm)
+3. **Disables Flower** (not needed for tests)
 
 The integration compose is applied automatically by `pytest-docker` via
 `conftest.py` — developers do not invoke it directly.
@@ -140,8 +132,8 @@ This will:
 
 1. Create/start all services with ephemeral volumes
 2. Run tests against `gideon_test` and `gideon_tasks_test` databases
-3. Tear down services with `docker compose down -v` (removes ephemeral
-   volumes, keeps `gideon-ollama-models`)
+3. Tear down services with `docker compose down -v` (removes all ephemeral
+   volumes)
 
 ---
 
@@ -234,22 +226,6 @@ Common issues:
 
 - Database is not healthy — check `postgres` logs
 - Schema version mismatch — ensure you're using the right image version
-
-### Ollama Models Don't Persist
-
-Ensure `gideon-ollama-models` is an external volume created on the host:
-
-```bash
-docker volume ls | grep gideon-ollama-models
-```
-
-If missing, create it:
-
-```bash
-docker volume create gideon-ollama-models
-```
-
-Models are pulled by `ollama-init` once and reused across container restarts.
 
 ### OTEL Traces Not Appearing in Grafana
 

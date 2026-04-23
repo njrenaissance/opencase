@@ -59,9 +59,6 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
 Docker Compose automatically creates the named volumes defined in the
 compose file:
 
-- `gideon-postgres-data` — PostgreSQL data
-- `gideon-qdrant-data` — Qdrant vector embeddings
-- `gideon-ollama-models` — Ollama LLM model cache
 - `minio-data` — MinIO S3 documents and extracted text
 
 These volumes **persist across restarts** until you explicitly delete them.
