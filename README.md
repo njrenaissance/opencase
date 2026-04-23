@@ -147,16 +147,19 @@ no telemetry, no model training on client data. Full details in
 
 ## CI
 
-Workflows live in `.github/workflows/` at the repo root
-(GitHub Actions only reads from this path). CI currently
-covers only the `backend/` service — all jobs are scoped
-via `working-directory` and path filters.
+Workflows live in `.github/workflows/` at the repo root (GitHub Actions only
+reads from this path). CI currently covers only the `backend/` service — all
+jobs are scoped via `working-directory` and path filters.
 
-Pull requests run the full pipeline via GitHub Actions:
-lint → unit tests → container build.
+### Workflows and Jobs
 
-AI code review runs separately on PR open via a public
-workflow in `njrenaissance/pr-review-agent`.
+| Workflow | Trigger | Jobs | Purpose |
+| --- | --- | --- | --- |
+| `ci.yml` | PR to main; manual dispatch | **Setup Docker Volumes** → **Lint & Format** → **Unit Tests** | Core pipeline: prepares test environment, checks code quality, runs unit tests with coverage |
+| `format-lint.yml` | Called by ci.yml; manual dispatch | Ruff format check, ruff lint, mypy (backend, shared, sdk, cli) | Validates code formatting and type safety across all Python projects |
+| `unit-tests.yml` | Called by ci.yml; manual dispatch | pytest (backend, shared, sdk, cli) with coverage | Runs unit tests (excludes integration tests) and enforces 70% minimum coverage |
+| `build-container.yml` | Manual dispatch only | Build & Push Container | Builds backend Docker image and pushes to GHCR with tags (latest, commit SHA, branch/PR refs). Requires manual trigger via **Actions > Build Container > Run workflow** |
+| `ai-code-review.yml` | PR open (non-draft) | AI Code Review | Delegates to public `njrenaissance/pr-review-agent` for automated code review |
 
 ### Required GitHub Secrets
 
@@ -164,8 +167,8 @@ workflow in `njrenaissance/pr-review-agent`.
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | `ai-code-review.yml` | Anthropic API for code review |
 
-`GITHUB_TOKEN` is provided automatically by GitHub
-Actions and requires no configuration.
+`GITHUB_TOKEN` is provided automatically by GitHub Actions and requires no
+configuration.
 
 ## Status
 
