@@ -1,2 +1,11 @@
+[project]
+name = "gideon"
+version = "0.1.0"
+description = "AI-powered criminal defense discovery platform"
+
+[tool.hatch.version]
+path = "pyproject.toml"
+pattern = "version = \"(?P<version>[^\"]+)\""
+
 [tool.uv.workspace]
 members = ["backend", "shared", "sdk", "cli"]

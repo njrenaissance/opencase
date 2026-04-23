@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "gideon",
+    "gideon-backend",
     "gideon-cli",
     "gideon-sdk",
     "gideon-shared",
@@ -1004,6 +1005,10 @@ wheels = [
 [[package]]
 name = "gideon"
 version = "0.1.0"
+source = { virtual = "." }
+
+[[package]]
+name = "gideon-backend"
 source = { editable = "backend" }
 dependencies = [
     { name = "alembic" },
@@ -1116,7 +1121,7 @@ requires-dist = [
     { name = "types-python-jose", marker = "extra == 'dev'", specifier = ">=3.3" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
-provides-extras = ["monitoring", "dev", "test"]
+provides-extras = ["dev", "monitoring", "test"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1139,7 +1144,6 @@ dev = [
 
 [[package]]
 name = "gideon-cli"
-version = "0.1.0"
 source = { editable = "cli" }
 dependencies = [
     { name = "gideon-sdk" },
@@ -1175,7 +1179,6 @@ provides-extras = ["dev", "test"]
 
 [[package]]
 name = "gideon-sdk"
-version = "0.1.0"
 source = { editable = "sdk" }
 dependencies = [
     { name = "gideon-shared" },
@@ -1205,7 +1208,6 @@ provides-extras = ["dev", "test"]
 
 [[package]]
 name = "gideon-shared"
-version = "0.1.0"
 source = { editable = "shared" }
 dependencies = [
     { name = "pydantic", extra = ["email"] },

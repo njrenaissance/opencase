@@ -1,6 +1,6 @@
 [project]
 name = "gideon-shared"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Shared Pydantic models for Gideon API and SDK"
 readme = "README.md"
 license = "Apache-2.0"
@@ -42,3 +42,7 @@ select = [
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[tool.hatch.version]
+path = "../pyproject.toml"
+pattern = "version = \"(?P<version>[^\"]+)\""

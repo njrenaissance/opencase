@@ -1,6 +1,6 @@
 [project]
-name = "gideon"
-version = "0.1.0"
+name = "gideon-backend"
+dynamic = ["version"]
 description = "AI-powered criminal defense discovery platform"
 readme = "README.md"
 license = "Apache-2.0"
@@ -146,3 +146,7 @@ omit = ["tests/*"]
 [tool.coverage.report]
 fail_under = 70
 show_missing = true
+
+[tool.hatch.version]
+path = "../pyproject.toml"
+pattern = "version = \"(?P<version>[^\"]+)\""

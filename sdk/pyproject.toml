@@ -1,6 +1,6 @@
 [project]
 name = "gideon-sdk"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Python REST client for the Gideon API"
 readme = "README.md"
 license = "Apache-2.0"
@@ -64,3 +64,7 @@ omit = ["tests/*"]
 [tool.coverage.report]
 fail_under = 70
 show_missing = true
+
+[tool.hatch.version]
+path = "../pyproject.toml"
+pattern = "version = \"(?P<version>[^\"]+)\""
