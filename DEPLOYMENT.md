@@ -158,7 +158,7 @@ Each build produces multiple tags:
 
 Example tags for a commit on `main`:
 
-```
+```text
 ghcr.io/njrenaissance/gideon/backend:latest
 ghcr.io/njrenaissance/gideon/backend:abc1234def5678
 ghcr.io/njrenaissance/gideon/backend:main

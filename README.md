@@ -1,11 +1,15 @@
 # Gideon
 
+[![CI Pipeline](https://github.com/njrenaissance/gideon/actions/workflows/ci.yml/badge.svg)](https://github.com/njrenaissance/gideon/actions/workflows/ci.yml)
+
 **Open source criminal defense discovery platform.**
 
 A free, fully self-hostable, AI-powered discovery platform for
 solo and small criminal defense practitioners. Runs entirely
 on-premise with no third-party LLM API calls, protecting client
 confidentiality under ABA Rules 1.6 and 1.1.
+
+> **Legal Disclaimer:** Gideon is a software tool, not legal advice. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ## Mission
 
@@ -40,7 +44,7 @@ Major releases are named after famous jurists:
 
 | Version | Codename | Jurist |
 | --- | --- | --- |
-| v1 | Ginsburg | Ruth Bader Ginsburg |
+| v1.0 | Ginsburg | Ruth Bader Ginsburg |
 
 ## Key Features (MVP)
 
@@ -80,7 +84,7 @@ full details.
 
 | Tier | RAM | CPU | Storage | GPU |
 | --- | --- | --- | --- | --- |
-| Minimum | 32 GB | 8 cores | 500 GB | None (CPU-only) |
+| Minimum | 16 GB | 8 cores | 500 GB | None (CPU-only) |
 | Recommended | 32 GB | 8 cores | 500 GB | NVIDIA 16+ GB VRAM |
 
 ## Quick Start
@@ -113,9 +117,6 @@ against the running dev stack. All Python scripts read credentials from
 `.env` via `dotenv`.
 
 ```bash
-# Seed demo data (users, matters, access grants)
-uv run python scripts/seed_demo.py
-
 # Submit a Celery task and poll for results
 uv run python scripts/submit_task.py
 
@@ -126,7 +127,6 @@ uv run python scripts/upload_file.py --file ./evidence.pdf
 
 | Script | Purpose |
 | --- | --- |
-| `seed_demo.py` | Create demo users, two matters, and access grants via the API. Idempotent. |
 | `submit_task.py` | Submit a ping task and a 30-second sleep task via the API; poll until completion. |
 | `upload_file.py` | Upload a file (or auto-generated test file) to the first matter, then verify the DB record, S3 object, and download round-trip. |
 
