@@ -82,6 +82,33 @@ hardware:
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for
 full details.
 
+## Project Structure
+
+```text
+gideon/
+├── backend/              # FastAPI application (REST API, auth, RAG, celery integration)
+├── cli/                  # Command-line interface (built on SDK)
+├── docs/                 # User-facing documentation (architecture, guides, references)
+├── frontend/             # Next.js application (UI, session management) — in development
+├── infrastructure/       # Docker Compose configuration and init scripts
+├── scripts/              # Operational and testing scripts (data management, RAG testing)
+├── sdk/                  # Python SDK for programmatic access to Gideon API
+├── shared/               # Shared Python utilities (models, exceptions, helpers)
+├── .github/workflows/    # CI/CD pipelines (linting, tests, container builds)
+└── pyproject.toml        # Root versioning (single source of truth for all projects)
+```
+
+| Directory | Purpose |
+| --- | --- |
+| `/backend` | FastAPI REST API, JWT authentication, RBAC, audit logging, LangChain RAG pipeline, Celery task submission |
+| `/cli` | Command-line tool built on the Python SDK; enables programmatic document ingestion and queries |
+| `/docs` | User documentation: architecture diagrams, data flow guides, deployment instructions, legal compliance, settings reference |
+| `/frontend` | Next.js React app (UI in development); will proxy to FastAPI and manage httpOnly session cookies |
+| `/infrastructure` | Docker Compose services, init scripts, volume/network setup, CI/CD workflows |
+| `/scripts` | Utility scripts for document upload, bulk ingestion, RAG testing, database queries, and local deployment |
+| `/sdk` | Python SDK providing `Client` and `Session` for API access; used by CLI and external tools |
+| `/shared` | Reusable Python models, exceptions, validators, and helpers shared across backend, SDK, CLI |
+
 ## Hardware Requirements
 
 | Tier | RAM | CPU | Storage | GPU |
