@@ -6,7 +6,7 @@
 
 ## Why This Flow Matters
 
-Gideon stores 11 billion+ vectors (for a large firm) in a single Qdrant collection. Without strict filtering, a compromised JWT or a malicious actor could retrieve any document in the firm. `build_permission_filter()` is the **only place** access control is enforced for vector queries. It is called on **every** vector search without exception and never accepts client-supplied filter parameters.
+Gideon stores all document vectors in a single Qdrant collection for efficient similarity search. Without strict filtering, a compromised JWT or a malicious actor could retrieve any document in the firm. `build_permission_filter()` is the **only place** access control is enforced for vector queries. It is called on **every** vector search without exception and never accepts client-supplied filter parameters.
 
 ---
 

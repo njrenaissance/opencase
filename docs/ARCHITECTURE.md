@@ -168,6 +168,55 @@ The following vendor/technology choices support the service layers above:
 
 ---
 
+## Architectural Layers (Logical View)
+
+```mermaid
+graph TB
+    subgraph ui["UI Layer"]
+        Browser["Browser / Client"]
+    end
+
+    subgraph api["API Layer"]
+        APIRouter["FastAPI Routers<br/>(auth, chats, documents, etc.)"]
+    end
+
+    subgraph auth["Auth & Permissions"]
+        JWT["JWT/MFA<br/>build_permission_filter()"]
+    end
+
+    subgraph domain["Domain Layers"]
+        DataLyr["Data Layer"]
+        StorageLyr["Storage Layer"]
+        VectorLyr["Vector Layer"]
+        RAGLyr["RAG Layer"]
+        WorkerLyr["Worker Layer"]
+    end
+
+    subgraph obs["Observability Layer"]
+        Metrics["Traces, Metrics, Logs"]
+    end
+
+    Browser -->|HTTP/WebSocket| APIRouter
+    APIRouter -->|Permission Filter| JWT
+    JWT -->|Request Context| DataLyr
+    JWT -->|Document Access| StorageLyr
+    JWT -->|Vector Search| VectorLyr
+    APIRouter -->|RAG Query| RAGLyr
+    RAGLyr -->|Embed & Search| VectorLyr
+    RAGLyr -->|Store Result| DataLyr
+    APIRouter -->|Task Submit| WorkerLyr
+
+    DataLyr -->|Audit Log| Metrics
+    WorkerLyr -->|Background Tasks| DataLyr
+    WorkerLyr -->|Embedding| VectorLyr
+
+    style auth fill:#ff6b6b,color:#fff
+    style ui fill:#e7f5ff
+    style obs fill:#f0f0f0
+```
+
+---
+
 ## Deployment Architecture
 
 ```mermaid
