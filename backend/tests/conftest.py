@@ -1,3 +1,5 @@
+import asyncio
+import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,6 +12,10 @@ from dotenv import load_dotenv
 # before config.py is imported, because Settings() is instantiated at module level.
 _ENV_TEST = Path(__file__).parent.parent / ".env.test"
 load_dotenv(_ENV_TEST)
+
+# Windows event loop policy — must be set before pytest starts
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from collections.abc import AsyncGenerator, AsyncIterator  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
