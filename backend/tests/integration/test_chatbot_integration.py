@@ -16,7 +16,7 @@ BASE_URL = "http://localhost:8000"
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def http_client(fastapi_service):
     async with httpx.AsyncClient(base_url=BASE_URL, timeout=10.0) as client:
         yield client

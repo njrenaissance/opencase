@@ -132,11 +132,11 @@ def seed_pipeline(
 class TestIngestionPipelineEndToEnd:
     """Upload a document via the API and verify vectors land in Qdrant."""
 
-    @pytest.mark.xfail(
-        reason="Pipeline times out — Celery worker errors during ingest_document",
-        strict=True,
-        raises=AssertionError,
-    )
+    # @pytest.mark.xfail(
+    #     reason="Pipeline times out — Celery worker errors during ingest_document",
+    #     strict=True,
+    #     raises=AssertionError,
+    # )
     def test_upload_triggers_full_pipeline(
         self,
         fastapi_service: str,
