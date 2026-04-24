@@ -112,8 +112,9 @@ docker compose -f docker-compose.yml \
 
 Integration tests use the `docker-compose.integration.yml` override, which:
 
-1. **Uses ephemeral test volumes** for postgres, qdrant, minio, and ollama
-   — data is wiped between test runs for a clean slate
+1. **Uses ephemeral test volumes** for postgres, qdrant, and minio — data is
+   wiped between test runs for a clean slate. The `ollama-models-test` volume
+   is persistent (external) so LLM models are cached across test runs
 2. **Enables OTEL tracing** with the OTLP exporter to Grafana (otel-lgtm)
 3. **Disables Flower** (not needed for tests)
 
@@ -129,10 +130,10 @@ pytest -m integration
 
 This will:
 
-1. Create/start all services (with ephemeral test volumes)
+1. Create/start all services (ephemeral test volumes for postgres, qdrant, minio)
 2. Run tests against `gideon_test` and `gideon_tasks_test` databases
-3. Tear down services with `docker compose down -v` (removes all ephemeral
-   test volumes)
+3. Tear down services with `docker compose down -v` (removes ephemeral test
+   volumes; ollama-models-test is preserved)
 
 ---
 

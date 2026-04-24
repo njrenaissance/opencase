@@ -101,3 +101,5 @@ volumes:
   qdrant-data-test:
   minio-data-test:
   ollama-models-test:
+    external: true
+    name: gideon-ollama-models-test

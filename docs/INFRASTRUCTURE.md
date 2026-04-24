@@ -445,7 +445,7 @@ automatically by `pytest-docker` (configured in `backend/tests/conftest.py`).
 - `redis` exposes port `6379` to the host for test access
 - `celery-worker` result backend points at `gideon_tasks_test`
 - `minio` uses `minio-data-test` (ephemeral test volume)
-- `ollama` uses `ollama-models-test` (ephemeral — models re-downloaded after teardown)
+- `ollama` uses `ollama-models-test` (persistent external volume; models cached across test runs)
 - `flower` is disabled (not needed for tests)
 - `nextjs` is disabled via profiles in the base compose file
 - `qdrant` uses `qdrant-data-test` (ephemeral test volume)
