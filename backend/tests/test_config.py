@@ -50,7 +50,7 @@ DEFAULTS = {
     "otel": {
         "enabled": False,
         "exporter": "console",
-        "endpoint": "http://grafana:4318",
+        "endpoint": "http://localhost:4318",
         "service_name": "gideon-api",
         "sample_rate": 1.0,
     },
