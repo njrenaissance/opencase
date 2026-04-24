@@ -80,9 +80,18 @@ Integration tests require Docker and pull several service images.
 - `ollama/ollama:latest` — Local LLM inference
 - `ghcr.io/grafana/otel-lgtm:latest` — Observability stack
 
-**Before running integration tests:**
+**Before running integration tests (one-time setup):**
 
-1. Pull the backend image (or build locally):
+1. Create the persistent test Ollama models volume (one-time):
+
+   ```bash
+   docker volume create gideon-ollama-models-test
+   ```
+
+   This volume caches LLM models across integration test runs to avoid re-downloading
+   multi-GB models on each test cycle.
+
+2. Pull the backend image (or build locally):
 
    ```bash
    # Option A: Pull from GitHub Container Registry
@@ -94,7 +103,7 @@ Integration tests require Docker and pull several service images.
 
    All other images are pulled automatically by Docker Compose during test startup.
 
-2. Run integration tests:
+3. Run integration tests:
 
    ```bash
    uv run pytest backend/tests/ -m integration
