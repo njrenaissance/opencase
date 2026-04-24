@@ -16,11 +16,9 @@ BASE_URL = "http://localhost:8000"
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def http_client(fastapi_service):
-    client = httpx.AsyncClient(base_url=BASE_URL, timeout=10.0)
-    yield client
-    await client.aclose()
+    return httpx.AsyncClient(base_url=BASE_URL, timeout=10.0)
 
 
 async def test_ready_includes_ollama_service(http_client):

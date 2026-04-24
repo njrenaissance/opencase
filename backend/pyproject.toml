@@ -123,9 +123,7 @@ testpaths = ["tests"]
 bdd_features_base_dir = "tests/features/"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
-markers = [
-    "integration: tests that require a running server or database",
-]
+markers = ["integration: tests that require a running server or database"]
 
 [tool.coverage.run]
 source = ["app"]
