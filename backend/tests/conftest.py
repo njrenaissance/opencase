@@ -349,11 +349,21 @@ def ollama_service(docker_ip, docker_services):
 
 
 @pytest.fixture(scope="session")
-def fastapi_service(docker_ip, docker_services):
+def fastapi_service(
+    docker_ip,
+    docker_services,
+    postgres_service,
+    redis_service,
+    minio_service,
+    tika_service,
+    qdrant_service,
+    ollama_service,
+):
     """Start the integration compose stack and return the FastAPI base URL.
 
-    Requires Docker to be running. The stack is torn down (with volumes)
-    after the test session completes, leaving no residual data.
+    Requires Docker to be running. Depends on all services to ensure the
+    entire stack is initialized before tests run. The stack is torn down
+    (with volumes) after the test session completes, leaving no residual data.
     """
     url = f"http://{docker_ip}:8000"
     docker_services.wait_until_responsive(
