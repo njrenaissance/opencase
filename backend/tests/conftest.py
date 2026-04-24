@@ -586,3 +586,24 @@ def seed_demo(postgres_service):
         session.commit()
 
     engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# pytest hooks — suppress expected errors
+# ---------------------------------------------------------------------------
+
+
+def pytest_configure(config):
+    """Suppress OpenTelemetry metrics export errors during shutdown.
+
+    The metrics exporter tries to write to stdout after pytest has closed
+    the file handle during shutdown, causing harmless but noisy errors.
+    """
+    import warnings
+
+    # Suppress ValueError from metrics exporter writing to closed file
+    warnings.filterwarnings(
+        "ignore",
+        message="I/O operation on closed file",
+        category=ValueError,
+    )
