@@ -88,7 +88,8 @@ class TestDocumentUploadRoundtrip:
             timeout=10,
         )
         assert resp.status_code == 200
-        docs = resp.json()
+        data = resp.json()
+        docs = data["items"]
         assert any(d["id"] == doc_id for d in docs)
 
         # Get metadata
