@@ -44,7 +44,7 @@ def _mock_minio_ok():
     return patch("app.api.health.urlopen", return_value=mock_resp)
 
 
-def _mock_ollama_ok(model: str = "llama3"):
+def _mock_ollama_ok(model: str = "tinyllama"):
     """Return a patch that stubs httpx.AsyncClient so check_ollama returns 'ok'."""
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
@@ -177,16 +177,16 @@ async def test_ready_minio_error(_mock_urlopen, _mock_redis, _mock_ollama, clien
 
 async def test_check_ollama_ok():
     """Model present in /api/tags — returns 'ok'."""
-    with _mock_ollama_ok("llama3"):
+    with _mock_ollama_ok("tinyllama"):
         result = await check_ollama()
     assert result == "ok"
 
 
 async def test_check_ollama_tagless_match():
-    """Config model 'llama3' matches 'llama3:8b' returned by Ollama."""
+    """Config model 'tinyllama' matches 'tinyllama:latest' returned by Ollama."""
     mock_response = MagicMock()
     mock_response.raise_for_status = MagicMock()
-    mock_response.json.return_value = {"models": [{"name": "llama3:8b"}]}
+    mock_response.json.return_value = {"models": [{"name": "tinyllama:latest"}]}
     mock_client = AsyncMock()
     mock_client.get = AsyncMock(return_value=mock_response)
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)

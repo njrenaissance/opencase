@@ -269,7 +269,7 @@ def _make_chat_query(session_id: uuid.UUID) -> MagicMock:
     q.session_id = session_id
     q.query = "test query"
     q.response = "test response"
-    q.model_name = "llama3"
+    q.model_name = "tinyllama"
     q.latency_ms = 1234
     q.created_at = datetime.now(UTC)
     return q

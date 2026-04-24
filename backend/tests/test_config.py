@@ -160,7 +160,7 @@ DEFAULTS = {
             "If the answer is not in the provided context, say so clearly. "
             "Always cite your sources."
         ),
-        "model": "llama3",
+        "model": "tinyllama",
         "temperature": 0.1,
         "max_tokens": 4096,
         "retrieval_chunk_count": 5,
@@ -694,7 +694,7 @@ def test_chatbot_prefix_isolation(monkeypatch):
     # GIDEON_MODEL (wrong prefix) must not override GIDEON_CHATBOT_MODEL
     monkeypatch.setenv("GIDEON_MODEL", "wrong")
     cfg = ChatbotSettings()
-    assert cfg.model == "llama3"
+    assert cfg.model == "tinyllama"
 
 
 def test_chatbot_system_prompt_override(monkeypatch):
@@ -776,7 +776,7 @@ def test_chatbot_validation_failures(monkeypatch, env_var, value):
 def test_chatbot_present_on_settings():
     cfg = Settings()
     assert isinstance(cfg.chatbot, ChatbotSettings)
-    assert cfg.chatbot.model == "llama3"
+    assert cfg.chatbot.model == "tinyllama"
 
 
 # ---------------------------------------------------------------------------

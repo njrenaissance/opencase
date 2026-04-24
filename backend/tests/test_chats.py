@@ -37,7 +37,7 @@ def _make_fake_query_obj(response: str = "The answer is 42.") -> MagicMock:
     q.session_id = _SESSION_ID
     q.query = "What Brady material exists?"
     q.response = response
-    q.model_name = "llama3"
+    q.model_name = "tinyllama"
     q.created_at = datetime.now(UTC)
     return q
 
