@@ -168,15 +168,15 @@ DEFAULTS = {
         "request_timeout": 120,
     },
     "qdrant": {
-        "host": "localhost",
+        "host": "qdrant",
         "port": 6333,
         "grpc_port": 6334,
         "collection": "gideon_test",
         "prefer_grpc": False,
         "use_ssl": False,
         "api_key": None,
-        "url": "http://localhost:6333",
-        "grpc_url": "localhost:6334",
+        "url": "http://qdrant:6333",
+        "grpc_url": "qdrant:6334",
     },
 }
 
@@ -799,12 +799,12 @@ def test_qdrant_prefix_isolation(monkeypatch):
     # GIDEON_HOST (wrong prefix) must not override GIDEON_QDRANT_HOST
     monkeypatch.setenv("GIDEON_HOST", "wrong")
     cfg = QdrantSettings()
-    assert cfg.host == "localhost"
+    assert cfg.host == "qdrant"
 
 
 def test_qdrant_url_computed():
     cfg = QdrantSettings()
-    assert cfg.url == "http://localhost:6333"
+    assert cfg.url == "http://qdrant:6333"
 
 
 def test_qdrant_url_custom_host_port(monkeypatch):
@@ -817,12 +817,12 @@ def test_qdrant_url_custom_host_port(monkeypatch):
 def test_qdrant_url_https(monkeypatch):
     monkeypatch.setenv("GIDEON_QDRANT_USE_SSL", "true")
     cfg = QdrantSettings()
-    assert cfg.url == "https://localhost:6333"
+    assert cfg.url == "https://qdrant:6333"
 
 
 def test_qdrant_grpc_url_computed():
     cfg = QdrantSettings()
-    assert cfg.grpc_url == "localhost:6334"
+    assert cfg.grpc_url == "qdrant:6334"
 
 
 def test_qdrant_grpc_url_custom(monkeypatch):
