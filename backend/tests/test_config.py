@@ -145,7 +145,7 @@ DEFAULTS = {
     "embedding": {
         "provider": "ollama",
         "model": "nomic-embed-text",
-        "base_url": "http://localhost:11434",
+        "base_url": "http://ollama:11434",
         "dimensions": 768,
         "batch_size": 100,
         "request_timeout": 120,
@@ -164,7 +164,7 @@ DEFAULTS = {
         "temperature": 0.1,
         "max_tokens": 4096,
         "retrieval_chunk_count": 5,
-        "base_url": "http://localhost:11434",
+        "base_url": "http://ollama:11434",
         "request_timeout": 120,
     },
     "qdrant": {
