@@ -345,7 +345,7 @@ def test_db_prefix_isolation(monkeypatch):
 
 def test_redis_defaults():
     cfg = RedisSettings()
-    assert cfg.host == "localhost"  # from .env.test
+    assert cfg.host == "redis"  # from .env.test
     assert cfg.port == 6379
     assert cfg.db == 0
     assert cfg.password is None
@@ -355,19 +355,19 @@ def test_redis_defaults():
 
 def test_redis_url_no_password():
     cfg = RedisSettings()
-    assert cfg.url == "redis://localhost:6379/0"
+    assert cfg.url == "redis://redis:6379/0"
 
 
 def test_redis_url_with_password(monkeypatch):
     monkeypatch.setenv("GIDEON_REDIS_PASSWORD", "s3cret")
     cfg = RedisSettings()
-    assert cfg.url == "redis://:s3cret@localhost:6379/0"
+    assert cfg.url == "redis://:s3cret@redis:6379/0"
 
 
 def test_redis_url_encodes_special_chars(monkeypatch):
     monkeypatch.setenv("GIDEON_REDIS_PASSWORD", "p@ss/word")
     cfg = RedisSettings()
-    assert cfg.url == "redis://:p%40ss%2Fword@localhost:6379/0"
+    assert cfg.url == "redis://:p%40ss%2Fword@redis:6379/0"
 
 
 def test_redis_url_ssl(monkeypatch):
