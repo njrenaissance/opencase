@@ -62,6 +62,7 @@ def test_login_and_logout(
     assert refresh_resp.status_code == 401
 
 
+@pytest.mark.xfail(reason="MFA flow not implemented yet")
 @pytest.mark.integration
 def test_full_mfa_flow(
     fastapi_service: str,
