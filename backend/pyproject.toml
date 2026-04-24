@@ -89,6 +89,9 @@ dev = [
     "psycopg2-binary>=2.9",
     "flower>=2.0",
 ]
+monitoring = [
+    "flower>=2.0",
+]
 
 [tool.uv.sources]
 gideon-shared = { workspace = true }
