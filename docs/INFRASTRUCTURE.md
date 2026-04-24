@@ -54,6 +54,8 @@ docker compose -f infrastructure/docker-compose.yml --env-file .env up -d
 # Stop and remove containers (preserve volumes)
 docker compose -f infrastructure/docker-compose.yml --env-file .env down
 
+# NOT RECOMMENDED
+# NOTE: After you have run ingestion for hours you will LOSE ALL YOUR DATA
 # Stop and wipe all volumes (clean slate)
 docker compose -f infrastructure/docker-compose.yml --env-file .env down -v
 ```
@@ -155,8 +157,8 @@ does not stay running.
 
 | Setting | Value |
 | --- | --- |
-| Build context | `../backend` |
-| Dockerfile | `docker/Dockerfile` |
+| Build context | `..` (repo root) |
+| Dockerfile | `backend/docker/Dockerfile` |
 | Command | `["true"]` (entrypoint runs migrations, then `exec true` exits) |
 | Depends on | `postgres` (healthy) |
 | Restart | `no` |
