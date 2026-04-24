@@ -26,14 +26,19 @@ def _strip_otel_handlers() -> None:
 @pytest.fixture(autouse=True)
 def _reset_telemetry():
     """Reset module-level and global OTel state between tests."""
+    from opentelemetry import metrics
     from opentelemetry._logs import set_logger_provider
+    from opentelemetry.sdk.metrics import MeterProvider
 
     telemetry._tracer_provider = None
     telemetry._log_provider = None
     telemetry._otel_resource = None
+    telemetry._meter = None
     # Reset the global provider lock so tests can set it again.
     trace._TRACER_PROVIDER = None
     trace._TRACER_PROVIDER_SET_ONCE._done = False
+    # Reset the global meter provider to no-op (no exporters).
+    metrics.set_meter_provider(MeterProvider())
     # Reset the global logger provider so tests start fresh.
     set_logger_provider(None)
     _strip_otel_handlers()
@@ -41,8 +46,10 @@ def _reset_telemetry():
     telemetry._tracer_provider = None
     telemetry._log_provider = None
     telemetry._otel_resource = None
+    telemetry._meter = None
     trace._TRACER_PROVIDER = None
     trace._TRACER_PROVIDER_SET_ONCE._done = False
+    metrics.set_meter_provider(MeterProvider())
     set_logger_provider(None)
     _strip_otel_handlers()
 
