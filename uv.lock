@@ -1098,6 +1098,9 @@ dev = [
     { name = "ruff" },
     { name = "types-python-jose" },
 ]
+monitoring = [
+    { name = "flower" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1149,6 +1152,7 @@ dev = [
     { name = "ruff", specifier = ">=0.9" },
     { name = "types-python-jose", specifier = ">=3.3" },
 ]
+monitoring = [{ name = "flower", specifier = ">=2.0" }]
 
 [[package]]
 name = "gideon-cli"
