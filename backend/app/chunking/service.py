@@ -49,6 +49,11 @@ class ChunkingService:
         # All concrete strategies accept ChunkingSettings; the Protocol
         # does not declare __init__, so mypy cannot verify the call.
         self._strategy: ChunkingStrategy = strategy_cls(settings)  # type: ignore[call-arg]
+        self._chunk_size = settings.chunk_size
+        # Minimum chunk size — smaller chunks are merged with adjacent chunks.
+        # Only apply if min_chunk_size < chunk_size (don't merge if it would
+        # create chunks larger than the target chunk_size).
+        self._min_chunk_size = min(settings.min_chunk_size, settings.chunk_size)
 
     def chunk_text(
         self,
@@ -85,6 +90,15 @@ class ChunkingService:
                 meta = metadata or {}
                 chunks = self._strategy.split(text)
                 offsets = self._compute_offsets(text, chunks)
+                # Merge small chunks to avoid fragmentation (only if chunk_size
+                # is large enough that merging won't dominate). Pass chunks and
+                # offsets to merge function, which returns merged offset ranges.
+                if self._chunk_size >= self._min_chunk_size:
+                    merged_offsets = self._merge_small_chunks_offsets(offsets)
+                else:
+                    merged_offsets = offsets
+                # Extract actual text from original using merged offsets
+                merged_chunks = [text[s:e] for s, e in merged_offsets]
 
                 results = [
                     ChunkResult(
@@ -96,7 +110,7 @@ class ChunkingService:
                         metadata=dict(meta),
                     )
                     for i, (chunk, (start, end)) in enumerate(
-                        zip(chunks, offsets, strict=True)
+                        zip(merged_chunks, merged_offsets, strict=True)
                     )
                 ]
 
@@ -118,6 +132,47 @@ class ChunkingService:
                 chunking_failed.add(1, {"error_type": type(exc).__name__})
                 chunking_duration_seconds.record(elapsed, {"strategy": strategy_name})
                 raise
+
+    def _merge_small_chunks_offsets(
+        self, offsets: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        """Merge offset ranges for chunks smaller than min_chunk_size.
+
+        Returns merged offset ranges that can be used to extract text from
+        the original source. Merging is cascading—if a merged range is still
+        smaller than min_chunk_size, it continues merging with the next
+        range.
+
+        Args:
+            offsets: List of (char_start, char_end) offset tuples.
+
+        Returns:
+            List of merged offset ranges.
+        """
+        if not offsets:
+            return offsets
+
+        merged: list[tuple[int, int]] = []
+        i = 0
+        while i < len(offsets):
+            start, end = offsets[i]
+            size = end - start
+
+            # Keep merging with next offset while too small (unless last)
+            while (
+                size < self._min_chunk_size
+                and i + 1 < len(offsets)
+            ):
+                next_start, next_end = offsets[i + 1]
+                # Extend range to include next chunk
+                end = next_end
+                size = end - start
+                i += 1
+
+            merged.append((start, end))
+            i += 1
+
+        return merged
 
     @staticmethod
     def _compute_offsets(text: str, chunks: list[str]) -> list[tuple[int, int]]:

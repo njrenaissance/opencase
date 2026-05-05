@@ -223,6 +223,7 @@ class ChunkingSettings(BaseSettings):
     strategy: Literal["recursive"] = "recursive"
     chunk_size: int = Field(3000, gt=0)
     chunk_overlap: int = Field(600, ge=0)
+    min_chunk_size: int = Field(500, gt=0)
     separators: list[str] = Field(default_factory=lambda: ["\n\n", "\n", ". ", " ", ""])
 
     @model_validator(mode="after")
@@ -375,6 +376,7 @@ DEFAULT_EXTENSIONS = frozenset(
         ".pdf",
         ".doc",
         ".docx",
+        ".wpd",
         ".xlsx",
         ".pptx",
         ".rtf",

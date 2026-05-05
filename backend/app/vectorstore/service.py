@@ -316,6 +316,7 @@ class QdrantVectorStore:
             "matter_id": str(payload_metadata["matter_id"]),
             "client_id": str(payload_metadata["client_id"]),
             "document_id": emb.document_id,
+            "filename": str(payload_metadata.get("filename", "unknown")),
             "chunk_index": emb.chunk_index,
             "classification": str(payload_metadata["classification"]),
             "source": str(payload_metadata["source"]),
