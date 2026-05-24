@@ -40,20 +40,27 @@ import httpx
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import FieldCondition, MatchAny, MatchValue
 
-from _ollama import OLLAMA_URL, _post_json
+from _ollama import OLLAMA_URL
 
 # ---------------------------------------------------------------------------
 # Constants — mirror defaults from app/core/config.py
 # ---------------------------------------------------------------------------
 
-QDRANT_URL = "http://localhost:6333"
+QDRANT_URL = "http://127.0.0.1:6333"
 COLLECTION = "gideon"
-EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_MODEL = "nomic-embed-text:v1.5"
 DEFAULT_MODEL = "llama3"
-DEFAULT_TOP_K = 5
+DEFAULT_TOP_K = 3
+# System matter UUIDs (from app/core/constants.py)
+DEFAULT_MATTER_ID = "00000000-0000-0000-0000-000000000001"  # GLOBAL_KNOWLEDGE_MATTER_ID
+DEFAULT_FIRM_ID = "4cad8128-9692-4ab3-91d3-c53a2620d2a5"
 # -2 = fill context window; matches Ollama behaviour when no limit is wanted.
 # Override with --max-tokens if you want a hard cap.
 DEFAULT_MAX_TOKENS = -2
+# Minimum chunk text length (characters) — filters out headers, citations, tiny snippets
+# With neighboring chunk expansion, can be more permissive
+# Set to 0 to disable filtering
+MIN_CHUNK_TEXT_LENGTH = 0
 
 SYSTEM_PROMPT_PATH = Path("./backend/SYSTEM_PROMPT.md")
 _DEFAULT_SYSTEM_PROMPT = (
@@ -78,11 +85,17 @@ def load_system_prompt() -> str:
 
 
 def embed_query(query: str) -> list[float]:
-    result = _post_json(
-        f"{OLLAMA_URL}/api/embed",
-        {"model": EMBEDDING_MODEL, "input": [query]},
-    )
-    return result["embeddings"][0]
+    # Use httpx with keep-alive disabled to avoid WinError 10054 on Windows
+    with httpx.Client(
+        limits=httpx.Limits(max_keepalive_connections=0, max_connections=10),
+        timeout=300,
+    ) as client:
+        resp = client.post(
+            f"{OLLAMA_URL}/api/embed",
+            json={"model": EMBEDDING_MODEL, "input": [query]},
+        )
+        resp.raise_for_status()
+        return resp.json()["embeddings"][0]
 
 
 def build_filter(
@@ -121,20 +134,74 @@ def search_qdrant(
     return result.points
 
 
-def format_context(chunks: list[models.ScoredPoint]) -> str:
+def expand_with_neighbors(
+    client: QdrantClient,
+    hits: list[models.ScoredPoint],
+) -> list[models.ScoredPoint]:
+    """For each hit, fetch neighboring chunks (N-1, N, N+1) from same document.
+
+    Returns all chunks (original + neighbors) grouped by document and sorted by index.
+    """
+    expanded: dict[str, list[models.ScoredPoint]] = {}
+
+    for hit in hits:
+        doc_id = str((hit.payload or {}).get("document_id", ""))
+        chunk_idx = (hit.payload or {}).get("chunk_index", 0)
+
+        if doc_id not in expanded:
+            expanded[doc_id] = []
+
+        # Fetch this chunk and its neighbors
+        for offset in [-1, 0, 1]:
+            neighbor_idx = chunk_idx + offset
+            if neighbor_idx < 0:
+                continue
+
+            # Build point ID (same logic as backend)
+            import uuid
+            point_id_ns = uuid.UUID("b6e7f2a1-4c3d-4e8f-9a1b-2d3e4f5a6b7c")
+            neighbor_point_id = str(uuid.uuid5(point_id_ns, f"{doc_id}:{neighbor_idx}"))
+
+            try:
+                result = client.retrieve(COLLECTION, ids=[neighbor_point_id], with_payload=True)
+                if result:
+                    expanded[doc_id].extend(result)
+            except Exception:
+                pass  # Chunk doesn't exist
+
+    # Flatten, deduplicate by point ID, sort by chunk_index
+    all_chunks: dict[str, models.ScoredPoint] = {}
+    for doc_chunks in expanded.values():
+        for chunk in doc_chunks:
+            all_chunks[chunk.id] = chunk
+
+    # Sort by document_id, then chunk_index
+    result_list = sorted(
+        all_chunks.values(),
+        key=lambda c: (
+            str((c.payload or {}).get("document_id", "")),
+            (c.payload or {}).get("chunk_index", 0),
+        ),
+    )
+    return result_list
+
+
+def format_context(chunks: list[models.ScoredPoint], filenames: dict[str, str] | None = None) -> str:
     if not chunks:
         return "No relevant documents were found for this query."
+    filenames = filenames or {}
     parts: list[str] = []
     for i, point in enumerate(chunks, 1):
         p = point.payload or {}
-        doc_id = str(p.get("document_id", ""))[:8]
+        doc_id = str(p.get("document_id", ""))
         page = p.get("page_number")
         bates = p.get("bates_number")
         # Text is stored directly in the Qdrant payload (Feature 7.3+).
         # Older points without 'text' fall back to a placeholder.
         text = str(p.get("text") or "(chunk text not in payload — re-ingest document)")
 
-        header_parts = [f"Source {i}", f"Doc: {doc_id}"]
+        filename = filenames.get(doc_id, "unknown")
+        header_parts = [f"Source {i}", f"File: {filename}"]
         if page is not None:
             header_parts.append(f"Page: {page}")
         if bates:
@@ -159,18 +226,20 @@ def call_ollama_stream(
             "content": f"Context from case documents:\n\n{context}\n\nQuestion: {query}",
         },
     ]
-    payload = json.dumps({
-        "model": model,
-        "messages": messages,
-        "stream": True,
-        "options": {"num_predict": max_tokens},
-    }).encode()
+    payload = json.dumps(
+        {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "options": {"num_predict": max_tokens},
+        }
+    ).encode()
     req = urllib.request.Request(
         f"{OLLAMA_URL}/api/chat",
         data=payload,
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    with urllib.request.urlopen(req, timeout=300) as resp:
         for raw_line in resp:
             line = raw_line.decode().strip()
             if not line:
@@ -202,17 +271,21 @@ def call_ollama_blocking(
             "content": f"Context from case documents:\n\n{context}\n\nQuestion: {query}",
         },
     ]
-    result = _post_json(
-        f"{OLLAMA_URL}/api/chat",
-        {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-            "options": {"num_predict": max_tokens},
-        },
+    with httpx.Client(
+        limits=httpx.Limits(max_keepalive_connections=0, max_connections=10),
         timeout=120,
-    )
-    return result["message"]["content"]
+    ) as client:
+        resp = client.post(
+            f"{OLLAMA_URL}/api/chat",
+            json={
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "options": {"num_predict": max_tokens},
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()["message"]["content"]
 
 
 # ---------------------------------------------------------------------------
@@ -221,12 +294,18 @@ def call_ollama_blocking(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="RAG query against the Gideon stack (dev/debug tool)."
-    )
+    parser = argparse.ArgumentParser(description="RAG query against the Gideon stack (dev/debug tool).")
     parser.add_argument("query", nargs="+", help="The query text.")
-    parser.add_argument("--matter-id", required=True, help="Matter UUID to query.")
-    parser.add_argument("--firm-id", required=True, help="Firm UUID to filter by.")
+    parser.add_argument(
+        "--matter-id",
+        default=DEFAULT_MATTER_ID,
+        help=f"Matter UUID to query (default: {DEFAULT_MATTER_ID}).",
+    )
+    parser.add_argument(
+        "--firm-id",
+        default=DEFAULT_FIRM_ID,
+        help=f"Firm UUID to filter by (default: {DEFAULT_FIRM_ID}).",
+    )
     parser.add_argument(
         "--top-k",
         type=int,
@@ -247,10 +326,7 @@ def parse_args() -> argparse.Namespace:
         "--max-tokens",
         type=int,
         default=DEFAULT_MAX_TOKENS,
-        help=(
-            f"Max tokens to generate (default: {DEFAULT_MAX_TOKENS}, "
-            "-2 = fill context, -1 = infinite)."
-        ),
+        help=(f"Max tokens to generate (default: {DEFAULT_MAX_TOKENS}, -2 = fill context, -1 = infinite)."),
     )
     parser.add_argument(
         "--no-stream",
@@ -271,7 +347,7 @@ def parse_args() -> argparse.Namespace:
         "--no-infer",
         action="store_true",
         help="Stop after prompt assembly — skip the Ollama call entirely. "
-             "Useful with --export-prompt to inspect prompts for private data.",
+        "Useful with --export-prompt to inspect prompts for private data.",
     )
     return parser.parse_args()
 
@@ -317,26 +393,54 @@ def main() -> None:
         print(f"ERROR: Qdrant search failed: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Retrieved {len(hits)} chunk(s).\n")
+    # Filter out tiny chunks (headers, citations, etc.)
+    hits = [
+        h for h in hits
+        if len(str((h.payload or {}).get("text", ""))) >= MIN_CHUNK_TEXT_LENGTH
+    ]
 
-    # 3. Print retrieved context so developer can see what the model receives
-    context = format_context(hits)
+    print(f"Retrieved {len(hits)} chunk(s) (min {MIN_CHUNK_TEXT_LENGTH} chars).")
+
+    # De-duplicate by document — keep only top-scoring chunk from each
+    print("De-duplicating by document...", flush=True)
+    hits_by_doc: dict[str, models.ScoredPoint] = {}
+    for hit in hits:
+        doc_id = str((hit.payload or {}).get("document_id", ""))
+        if doc_id not in hits_by_doc or hit.score > hits_by_doc[doc_id].score:
+            hits_by_doc[doc_id] = hit
+
+    hits = sorted(hits_by_doc.values(), key=lambda h: h.score, reverse=True)
+    print(f"De-duplicated to {len(hits)} unique documents.")
+
+    # Expand with neighboring chunks (N-1, N, N+1)
+    print("Expanding with neighboring chunks...", flush=True)
+    hits = expand_with_neighbors(client, hits)
+    print(f"Expanded to {len(hits)} total chunks.\n")
+
+    # 3. Build filename map from Qdrant payload
+    filenames = {
+        str((h.payload or {}).get("document_id", "")): str((h.payload or {}).get("filename", "unknown")) for h in hits
+    }
+
+    # 4. Print retrieved context so developer can see what the model receives
+    context = format_context(hits, filenames)
     print("=" * 60)
     print("RETRIEVED CONTEXT")
     print("=" * 60)
     print(context)
     print()
 
-    # 4. Print each result's metadata summary
+    # 5. Print each result's metadata summary
     for i, hit in enumerate(hits, 1):
         p = hit.payload or {}
-        print(
-            f"  [{i}] score={hit.score:.4f} | doc={str(p.get('document_id', ''))[:8]}"
-            f" | chunk={p.get('chunk_index')} | class={p.get('classification')}"
-        )
+        if p.get("document_id", "")[:8] == "9ae29c3a":
+            print(
+                f"  [{i}] score={hit.score:.4f} | doc={str(p.get('document_id', ''))[:8]}"
+                f" | chunk={p.get('chunk_index')} | class={p.get('classification')}"
+            )
     print()
 
-    # 5. Assemble prompt
+    # 6. Assemble prompt
     system_prompt = load_system_prompt()
     messages = [
         {"role": "system", "content": system_prompt},
@@ -346,7 +450,7 @@ def main() -> None:
         },
     ]
 
-    # 5a. Export prompt JSON if requested
+    # 6a. Export prompt JSON if requested
     if args.export_prompt:
         export_path = Path(args.export_prompt)
         prompt_export = {
@@ -374,7 +478,7 @@ def main() -> None:
     if args.no_infer:
         return
 
-    # 5b. Run inference
+    # 6b. Run inference
     print("=" * 60)
     print("LLM RESPONSE")
     print("=" * 60)

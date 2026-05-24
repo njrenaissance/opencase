@@ -160,6 +160,8 @@ def test_ingest_document_full_pipeline():
 
     # Mock the DB session to return document + matter
     mock_doc = SimpleNamespace(
+        id="doc-1",
+        filename="original.pdf",
         firm_id="firm-1",
         matter_id="matter-1",
         classification="unclassified",

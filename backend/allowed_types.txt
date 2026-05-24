@@ -1,0 +1,43 @@
+# Allowed MIME types and file extensions for document ingestion
+# Format: one entry per line, # comments allowed
+# Lines starting with . are extensions; all others are MIME types
+
+# Document formats
+application/pdf
+application/msword
+application/vnd.openxmlformats-officedocument.wordprocessingml.document
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+application/vnd.openxmlformats-officedocument.presentationml.presentation
+application/rtf
+text/plain
+text/markdown
+text/csv
+image/jpeg
+image/png
+image/tiff
+image/gif
+image/bmp
+image/webp
+application/octet-stream
+
+# File extensions
+.pdf
+.doc
+.docx
+.wpd
+.xlsx
+.pptx
+.rtf
+.txt
+.md
+.csv
+.html
+.htm
+.jpg
+.jpeg
+.png
+.tiff
+.tif
+.gif
+.bmp
+.webp

@@ -26,6 +26,7 @@ class VectorPayload(TypedDict):
     matter_id: str
     client_id: str
     document_id: str
+    filename: str
     chunk_index: int
     classification: str
     source: str

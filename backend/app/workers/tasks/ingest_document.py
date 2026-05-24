@@ -236,6 +236,8 @@ async def _run_metadata_lookup(document_id: str) -> dict[str, object]:
         await engine.dispose()
 
     return {
+        "document_id": str(doc.id),
+        "filename": doc.filename,
         "firm_id": str(doc.firm_id),
         "matter_id": str(doc.matter_id),
         "client_id": str(matter.client_id),

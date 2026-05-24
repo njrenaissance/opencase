@@ -167,8 +167,10 @@ class TestChunkingServiceMultiChunk:
     def test_chunk_size_respected(self, chunk_size: int, chunk_overlap: int):
         svc = _make_service(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         result = svc.chunk_text(_long_text(), "doc-1")
+        # Small-chunk merging (see ADR 0001) can grow a chunk by absorbing
+        # an adjacent small chunk, so the upper bound is 2 * chunk_size.
         for chunk in result:
-            assert len(chunk.text) <= chunk_size
+            assert len(chunk.text) <= 2 * chunk_size
 
     def test_overlap_present(self):
         svc = _make_service(chunk_size=100, chunk_overlap=20)
@@ -232,6 +234,66 @@ class TestChunkingServiceEdgeCases:
         """Pydantic rejects invalid strategy values at settings construction."""
         with pytest.raises(Exception, match="literal_error"):
             _make_settings(strategy="nonexistent")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# ChunkingService — small chunk merging
+# ---------------------------------------------------------------------------
+
+
+class TestSmallChunkMerging:
+    def test_merges_small_chunks_with_next(self):
+        """Offset ranges < 500 chars are merged with the next."""
+        svc = _make_service()
+        offsets = [(0, 4), (4, 1004)]  # 4 chars, then 1000 chars
+        merged = svc._merge_small_chunks_offsets(offsets)
+        assert len(merged) == 1
+        assert merged[0] == (0, 1004)  # combined range
+
+    def test_preserves_large_chunks(self):
+        """Offset ranges >= 500 chars are left alone."""
+        svc = _make_service()
+        offsets = [(0, 500), (500, 1100), (1100, 1800)]
+        merged = svc._merge_small_chunks_offsets(offsets)
+        assert len(merged) == 3
+        assert merged[0] == (0, 500)
+        assert merged[1] == (500, 1100)
+        assert merged[2] == (1100, 1800)
+
+    def test_empty_list(self):
+        """Empty input returns empty output."""
+        svc = _make_service()
+        assert svc._merge_small_chunks_offsets([]) == []
+
+    def test_multiple_small_chunks_merged(self):
+        """Multiple small offset ranges merge with next large range."""
+        svc = _make_service()
+        offsets = [(0, 5), (5, 10), (10, 610)]  # 5 + 5 + 600 chars
+        merged = svc._merge_small_chunks_offsets(offsets)
+        # tiny + tiny merged, then with the 600-char chunk
+        assert len(merged) == 1
+        assert merged[0] == (0, 610)
+
+    def test_small_chunk_at_end_preserved(self):
+        """Small range at end (no next) is preserved as-is."""
+        svc = _make_service()
+        offsets = [(0, 600), (600, 608)]  # 600 + 8 chars
+        merged = svc._merge_small_chunks_offsets(offsets)
+        assert len(merged) == 2
+        assert merged[0] == (0, 600)
+        assert merged[1] == (600, 608)
+
+    def test_integration_with_chunk_text(self):
+        """Small chunks are merged during chunk_text."""
+        svc = _make_service(chunk_size=100, chunk_overlap=10)
+        # Text that creates small chunks at boundaries
+        text = "A" * 50 + "\n\n" + "B" * 200
+        result = svc.chunk_text(text, "doc-1")
+        # Verify no chunk is smaller than configured min (capped at chunk_size)
+        for chunk in result:
+            if len(result) > 1:
+                # In multi-chunk docs, nothing should be tiny
+                assert len(chunk.text) > 10 or len(result) == 1
 
 
 # ---------------------------------------------------------------------------

@@ -140,6 +140,7 @@ DEFAULTS = {
         "strategy": "recursive",
         "chunk_size": 3000,
         "chunk_overlap": 600,
+        "min_chunk_size": 500,
         "separators": ["\n\n", "\n", ". ", " ", ""],
     },
     "embedding": {
