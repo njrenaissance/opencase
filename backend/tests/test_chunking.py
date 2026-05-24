@@ -167,8 +167,10 @@ class TestChunkingServiceMultiChunk:
     def test_chunk_size_respected(self, chunk_size: int, chunk_overlap: int):
         svc = _make_service(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
         result = svc.chunk_text(_long_text(), "doc-1")
+        # Small-chunk merging (see ADR 0001) can grow a chunk by absorbing
+        # an adjacent small chunk, so the upper bound is 2 * chunk_size.
         for chunk in result:
-            assert len(chunk.text) <= chunk_size
+            assert len(chunk.text) <= 2 * chunk_size
 
     def test_overlap_present(self):
         svc = _make_service(chunk_size=100, chunk_overlap=20)

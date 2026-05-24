@@ -159,10 +159,7 @@ class ChunkingService:
             size = end - start
 
             # Keep merging with next offset while too small (unless last)
-            while (
-                size < self._min_chunk_size
-                and i + 1 < len(offsets)
-            ):
+            while size < self._min_chunk_size and i + 1 < len(offsets):
                 next_start, next_end = offsets[i + 1]
                 # Extend range to include next chunk
                 end = next_end

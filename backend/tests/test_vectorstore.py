@@ -31,7 +31,9 @@ class TestVectorPayload:
         payload_keys = set(VectorPayload.__annotations__)
         # Required metadata keys + per-chunk keys = full payload
         per_chunk_keys = {"document_id", "chunk_index", "text"}
-        optional_keys = {"bates_number", "page_number"}
+        # filename is set by ingest_document from doc.filename; not enforced
+        # by REQUIRED_METADATA_KEYS so it lives with the optional keys here.
+        optional_keys = {"bates_number", "page_number", "filename"}
         assert REQUIRED_METADATA_KEYS | per_chunk_keys | optional_keys == payload_keys
 
     def test_required_metadata_keys_frozen(self) -> None:

@@ -1079,6 +1079,11 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
+[package.optional-dependencies]
+monitoring = [
+    { name = "flower" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "factory-boy" },
@@ -1106,6 +1111,7 @@ requires-dist = [
     { name = "celery", extras = ["redis"], specifier = ">=5.4" },
     { name = "cryptography", specifier = ">=44" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "flower", marker = "extra == 'monitoring'", specifier = ">=2.0" },
     { name = "gideon-shared", editable = "shared" },
     { name = "langchain", specifier = ">=0.3" },
     { name = "langchain-community", specifier = ">=0.3" },
@@ -1129,6 +1135,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34" },
 ]
+provides-extras = ["monitoring"]
 
 [package.metadata.requires-dev]
 dev = [
